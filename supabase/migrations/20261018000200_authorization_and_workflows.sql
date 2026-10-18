@@ -1,5 +1,5 @@
--- T-03: deny-by-default row security and atomic collaboration workflows.
--- Storage object policies and cleanup acknowledgements are implemented in T-05.
+-- T-01: deny-by-default row security and atomic collaboration workflows.
+-- Storage object policies and cleanup operations follow in the next migration.
 
 create or replace function public.is_workspace_member(p_workspace_id uuid, p_user_id uuid default auth.uid())
 returns boolean

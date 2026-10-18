@@ -34,7 +34,7 @@ This task groups the initial technical foundation into modules so each part keep
 
 - Implement deny-by-default RLS policies and trusted PostgreSQL functions using `SCHEMA.md` and `ARCHITECTURE.md`.
 - Enforce public-read boundaries, ownership, verified-email gates, request/collaboration transitions, workspace roles/membership, assignee actions, private-data access, and Realtime authorization.
-- **Status:** In progress (2026-10-18). Initial RLS policies and workflows are drafted in `supabase/migrations/20261018000200_authorization_and_workflows.sql`; database policy checks remain for T-03.
+- **Status:** Complete (2026-10-18). RLS policies and trusted workflows are applied. The three local and remote migration versions match, and the database check found RLS enabled on every public table and `storage.objects`.
 
 **Module: Set up the JavaScript quality toolchain**
 
@@ -46,10 +46,10 @@ This task groups the initial technical foundation into modules so each part keep
 
 - Implement private buckets, parent-record Storage policies, upload limits and type constraints, and access checks for media and attachments using `SCHEMA.md` and `ARCHITECTURE.md`.
 - Queue Storage API cleanup through trusted database operations; no Edge Function/background worker is planned.
-- **Status:** Not started.
+- **Status:** Complete (2026-10-18). Hosted buckets passed the migration configuration check; Storage policies and cleanup functions are applied, and RLS is enabled on `storage.objects`.
 
 - **Done when:** all foundation modules are implemented and reviewed. T-03 applies and verifies their migrations in a clean Supabase project.
-- **Status:** In progress. Schema and access-policy modules are drafted; the toolchain and app scaffold are complete. Storage policies remain.
+- **Status:** Complete (2026-10-18). Foundation migrations are applied to the hosted development project; migration history matches and RLS is enabled on all public tables and `storage.objects`.
 
 ### T-02 — Build the responsive app shell
 
@@ -62,10 +62,10 @@ This task groups the initial technical foundation into modules so each part keep
 
 ### T-03 — Establish Supabase database baseline
 
-- Add Supabase local/client configuration and migration workflow for the selected project.
+- Add Supabase client configuration and a migration workflow for a hosted development project.
 - Integrate and apply the schema, RLS policies, trusted functions, Storage policies, and cleanup operations implemented in T-01 after the app shell is ready.
-- **Done when:** a clean local project can be configured and migrated reproducibly, and unauthorized access is denied by default.
-- **Status:** Not started.
+- **Done when:** a clean development project can be linked and migrated reproducibly, and unauthorized access is denied by default.
+- **Status:** Complete (2026-10-18). Linked the hosted development project, passed bucket configuration preflight, applied all three migrations, confirmed matching local/remote migration history, and verified RLS is enabled on every public table and `storage.objects`.
 
 ## M2 — Accounts and profiles
 

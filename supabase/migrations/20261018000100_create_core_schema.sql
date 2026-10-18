@@ -1,5 +1,5 @@
--- T-02: Core EthioDev data model and database-enforced invariants.
--- Row-level security, Storage policies, and actor-authorized workflows are T-03/T-05.
+-- T-01: Core EthioDev data model and database-enforced invariants.
+-- Row-level security, Storage policies, and actor-authorized workflows follow in later migrations.
 
 create schema if not exists extensions;
 create extension if not exists pg_trgm with schema extensions;
@@ -236,21 +236,11 @@ create table public.private_attachments (
   check (
     (lower(original_name) ~ '\.(jpg|jpeg)$' and media_type = 'image/jpeg') or
     (lower(original_name) ~ '\.png$' and media_type = 'image/png') or
-    (lower(original_name) ~ '\.gif$' and media_type = 'image/gif') or
     (lower(original_name) ~ '\.webp$' and media_type = 'image/webp') or
     (lower(original_name) ~ '\.pdf$' and media_type = 'application/pdf') or
-    (lower(original_name) ~ '\.txt$' and media_type in ('text/plain','application/rtf','text/rtf')) or
+    (lower(original_name) ~ '\.txt$' and media_type = 'text/plain') or
     (lower(original_name) ~ '\.csv$' and media_type = 'text/csv') or
-    (lower(original_name) ~ '\.doc$' and media_type = 'application/msword') or
-    (lower(original_name) ~ '\.docx$' and media_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') or
-    (lower(original_name) ~ '\.xls$' and media_type = 'application/vnd.ms-excel') or
-    (lower(original_name) ~ '\.xlsx$' and media_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') or
-    (lower(original_name) ~ '\.ppt$' and media_type = 'application/vnd.ms-powerpoint') or
-    (lower(original_name) ~ '\.pptx$' and media_type = 'application/vnd.openxmlformats-officedocument.presentationml.presentation') or
-    (lower(original_name) ~ '\.rtf$' and media_type in ('application/rtf','text/rtf')) or
-    (lower(original_name) ~ '\.odt$' and media_type = 'application/vnd.oasis.opendocument.text') or
-    (lower(original_name) ~ '\.ods$' and media_type = 'application/vnd.oasis.opendocument.spreadsheet') or
-    (lower(original_name) ~ '\.odp$' and media_type = 'application/vnd.oasis.opendocument.presentation')
+    (lower(original_name) ~ '\.docx$' and media_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
   )
 );
 
@@ -305,21 +295,11 @@ create table public.workspace_attachments (
   check (
     (lower(original_name) ~ '\.(jpg|jpeg)$' and media_type = 'image/jpeg') or
     (lower(original_name) ~ '\.png$' and media_type = 'image/png') or
-    (lower(original_name) ~ '\.gif$' and media_type = 'image/gif') or
     (lower(original_name) ~ '\.webp$' and media_type = 'image/webp') or
     (lower(original_name) ~ '\.pdf$' and media_type = 'application/pdf') or
-    (lower(original_name) ~ '\.txt$' and media_type in ('text/plain','application/rtf','text/rtf')) or
+    (lower(original_name) ~ '\.txt$' and media_type = 'text/plain') or
     (lower(original_name) ~ '\.csv$' and media_type = 'text/csv') or
-    (lower(original_name) ~ '\.doc$' and media_type = 'application/msword') or
-    (lower(original_name) ~ '\.docx$' and media_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') or
-    (lower(original_name) ~ '\.xls$' and media_type = 'application/vnd.ms-excel') or
-    (lower(original_name) ~ '\.xlsx$' and media_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') or
-    (lower(original_name) ~ '\.ppt$' and media_type = 'application/vnd.ms-powerpoint') or
-    (lower(original_name) ~ '\.pptx$' and media_type = 'application/vnd.openxmlformats-officedocument.presentationml.presentation') or
-    (lower(original_name) ~ '\.rtf$' and media_type in ('application/rtf','text/rtf')) or
-    (lower(original_name) ~ '\.odt$' and media_type = 'application/vnd.oasis.opendocument.text') or
-    (lower(original_name) ~ '\.ods$' and media_type = 'application/vnd.oasis.opendocument.spreadsheet') or
-    (lower(original_name) ~ '\.odp$' and media_type = 'application/vnd.oasis.opendocument.presentation')
+    (lower(original_name) ~ '\.docx$' and media_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
   )
 );
 
