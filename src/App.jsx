@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import AuthPage from "./features/auth/AuthPage.jsx";
+import ProfilePage from "./features/profiles/ProfilePage.jsx";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient.js";
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
   { label: "Developers", href: "/developers", icon: "users" },
+  { label: "Profile", href: "/settings/profile", icon: "users" },
   { label: "Showcases", href: "/showcases", icon: "grid" },
   { label: "Messages", href: "/messages", icon: "message" },
   { label: "Workspace", href: "/workspace", icon: "briefcase" },
@@ -91,7 +93,7 @@ function Brand() {
   );
 }
 
-function NavItems({ mobile = false }) {
+function NavItems({ mobile = false, profileHref }) {
   return (
     <nav
       aria-label={mobile ? "Mobile navigation" : "Main navigation"}
@@ -101,7 +103,7 @@ function NavItems({ mobile = false }) {
         <a
           key={label}
           className={`nav-link${current ? " is-current" : ""}`}
-          href={href}
+          href={label === "Profile" ? profileHref : href}
           aria-current={current ? "page" : undefined}
         >
           <Icon name={icon} />
@@ -134,6 +136,8 @@ function App() {
     };
   }, []);
 
+  const profileHref = user ? "/my-profile" : "/auth/sign-in";
+
   if (window.location.pathname.startsWith("/auth/")) {
     return <AuthPage user={user} />;
   }
@@ -145,23 +149,30 @@ function App() {
       </a>
       <aside className="sidebar" aria-label="EthioDev sidebar">
         <Brand />
-        <NavItems />
+        <NavItems profileHref={profileHref} />
         <div className="sidebar-bottom">
           {user ? (
-            <div className="profile-link">
-              <span className="avatar-placeholder" aria-hidden="true">
-                {(user.email?.[0] ?? "D").toUpperCase()}
-              </span>
-              <span className="profile-copy">
-                <strong>{user.email}</strong>
-                <button
-                  className="sign-out-button"
-                  type="button"
-                  onClick={() => supabase.auth.signOut()}
-                >
-                  Sign out
-                </button>
-              </span>
+            <div className="account-menu">
+              <a className="profile-link" href={profileHref}>
+                <span className="avatar-placeholder" aria-hidden="true">
+                  {(user.email?.[0] ?? "D").toUpperCase()}
+                </span>
+                <span className="profile-copy">
+                  <strong>{user.email}</strong>
+                  <small>View profile</small>
+                </span>
+                <Icon name="arrow" size={16} />
+              </a>
+              <a className="sign-out-button" href="/settings/profile">
+                Edit profile
+              </a>
+              <button
+                className="sign-out-button"
+                type="button"
+                onClick={() => supabase.auth.signOut()}
+              >
+                Sign out
+              </button>
             </div>
           ) : (
             <a className="profile-link" href="/auth/sign-in">
@@ -178,87 +189,105 @@ function App() {
 
       <div className="app-main-column">
         <main className="main-content" id="main-content">
-          <div className="page-heading">
-            <div>
-              <h1>Discover</h1>
-              <p className="page-description">
-                Find a project or developer to work with.
-              </p>
-            </div>
-            <a
-              className="button button-secondary heading-action"
-              href="/developers"
-            >
-              <Icon name="users" size={18} /> Developers
-            </a>
-          </div>
-          <section className="welcome-panel" aria-labelledby="welcome-title">
-            <div className="welcome-copy">
-              <span className="welcome-kicker">ETHIODEV</span>
-              <h2 id="welcome-title">Build with developers across Ethiopia.</h2>
-              <p>
-                Find projects, meet collaborators, and share what you build.
-              </p>
-              <a className="button button-light" href="/auth/sign-in">
-                Get started <Icon name="arrow" size={17} />
-              </a>
-            </div>
-            <div className="welcome-art" aria-hidden="true">
-              <div className="art-orbit orbit-one" />
-              <div className="art-orbit orbit-two" />
-              <div className="art-code-card">
-                <span className="code-dot" />
-                <span className="code-dot" />
-                <span className="code-dot" />
-                <div className="code-lines">
-                  <i />
-                  <i />
-                  <i />
-                  <i />
+          {window.location.pathname === "/settings/profile" ? (
+            <ProfilePage user={user} />
+          ) : window.location.pathname === "/my-profile" ? (
+            <ProfilePage user={user} viewOwn />
+          ) : window.location.pathname.startsWith("/u/") ? (
+            <ProfilePage
+              user={user}
+              username={window.location.pathname.slice(3)}
+            />
+          ) : (
+            <>
+              <div className="page-heading">
+                <div>
+                  <h1>Discover</h1>
+                  <p className="page-description">
+                    Find a project or developer to work with.
+                  </p>
                 </div>
-                <div className="code-center">
-                  <Icon name="code" size={42} />
-                </div>
-              </div>
-              <span className="art-spark spark-one">✳</span>
-              <span className="art-spark spark-two">✦</span>
-            </div>
-          </section>
-          <section
-            className="discovery-section"
-            aria-labelledby="opportunities-title"
-          >
-            <div className="section-heading">
-              <div>
-                <h2 id="opportunities-title">Opportunities</h2>
-                <p>Find a project to join.</p>
-              </div>
-              <a className="text-link" href="/opportunities">
-                Browse all <Icon name="arrow" size={15} />
-              </a>
-            </div>
-            <div className="empty-card" role="status">
-              <div className="empty-icon">
-                <Icon name="search" size={23} />
-              </div>
-              <div className="empty-copy">
-                <h3>No opportunities yet</h3>
-                <p>New projects will appear here.</p>
-                <a className="text-link" href="/developers">
-                  Browse developers <Icon name="arrow" size={15} />
+                <a
+                  className="button button-secondary heading-action"
+                  href="/developers"
+                >
+                  <Icon name="users" size={18} /> Developers
                 </a>
               </div>
-              <div className="empty-decoration" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-          </section>
+              <section
+                className="welcome-panel"
+                aria-labelledby="welcome-title"
+              >
+                <div className="welcome-copy">
+                  <span className="welcome-kicker">ETHIODEV</span>
+                  <h2 id="welcome-title">
+                    Build with developers across Ethiopia.
+                  </h2>
+                  <p>
+                    Find projects, meet collaborators, and share what you build.
+                  </p>
+                  <a className="button button-light" href="/auth/sign-in">
+                    Get started <Icon name="arrow" size={17} />
+                  </a>
+                </div>
+                <div className="welcome-art" aria-hidden="true">
+                  <div className="art-orbit orbit-one" />
+                  <div className="art-orbit orbit-two" />
+                  <div className="art-code-card">
+                    <span className="code-dot" />
+                    <span className="code-dot" />
+                    <span className="code-dot" />
+                    <div className="code-lines">
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+                    <div className="code-center">
+                      <Icon name="code" size={42} />
+                    </div>
+                  </div>
+                  <span className="art-spark spark-one">✳</span>
+                  <span className="art-spark spark-two">✦</span>
+                </div>
+              </section>
+              <section
+                className="discovery-section"
+                aria-labelledby="opportunities-title"
+              >
+                <div className="section-heading">
+                  <div>
+                    <h2 id="opportunities-title">Opportunities</h2>
+                    <p>Find a project to join.</p>
+                  </div>
+                  <a className="text-link" href="/opportunities">
+                    Browse all <Icon name="arrow" size={15} />
+                  </a>
+                </div>
+                <div className="empty-card" role="status">
+                  <div className="empty-icon">
+                    <Icon name="search" size={23} />
+                  </div>
+                  <div className="empty-copy">
+                    <h3>No opportunities yet</h3>
+                    <p>New projects will appear here.</p>
+                    <a className="text-link" href="/developers">
+                      Browse developers <Icon name="arrow" size={15} />
+                    </a>
+                  </div>
+                  <div className="empty-decoration" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                </div>
+              </section>
+            </>
+          )}
         </main>
       </div>
       <nav className="mobile-tabbar" aria-label="Mobile navigation">
-        <NavItems mobile />
+        <NavItems mobile profileHref={profileHref} />
       </nav>
     </div>
   );

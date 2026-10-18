@@ -84,7 +84,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Preserve the intended destination through verification and password-reset flows.
 - **Done when:** verification and recovery work end to end, and verification gates are enforced by trusted policies/functions.
 
-**Status:** In progress (2026-10-18). Email/password, Google OAuth, profile completion, OTP verification and resend, and password-reset UI flows are implemented. The profile-creation migration is applied and local/remote migration history matches. Google OAuth and Brevo delivery are configured; the user confirmed six-digit signup verification and password recovery/sign-in work. The password-update screen requires a recovery session and clears that one-time permission after changing the password while keeping the user signed in. Recheck reset-link reuse and sign-out before completion.
+**Status:** Complete (2026-10-18). Email/password, Google OAuth, profile completion, OTP verification and resend, and password recovery are implemented. The profile-creation migration is applied and local/remote migration history matches. The user confirmed Google OAuth, six-digit signup verification, and password recovery work, including staying signed in after updating the password.
 
 ### T-05 — Build developer profiles and profile discovery pages
 
@@ -112,7 +112,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Provide sensible missing-field and avatar fallback states.
 - **Done when:** public profile pages work for signed-out visitors and never expose private account data.
 
-**Status:** Not started.
+**Status:** Complete (2026-10-18). Implemented profile editing for username, display name, bio, avatar, skills, city/Other, and external links; public profile pages at `/u/:username`; and an authenticated `/settings/profile` route. Profile links open the public view, which loads profile details in one query and renders before the avatar URL finishes loading. Uses the existing profile RLS policies, skill RPC, city catalog, and private image bucket. The user confirmed the profile flow works; lint, formatting, and production build pass.
 
 ## M3 — Discovery and engagement
 
