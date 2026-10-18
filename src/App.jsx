@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AuthPage from "./features/auth/AuthPage.jsx";
+import DiscoveryPage from "./features/discovery/DiscoveryPage.jsx";
 import ProfilePage from "./features/profiles/ProfilePage.jsx";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient.js";
 
@@ -94,22 +95,31 @@ function Brand() {
 }
 
 function NavItems({ mobile = false, profileHref }) {
+  const pathname = window.location.pathname;
   return (
     <nav
       aria-label={mobile ? "Mobile navigation" : "Main navigation"}
       className={mobile ? "mobile-nav-list" : "sidebar-nav-list"}
     >
-      {navigation.map(({ label, href, icon, current }) => (
-        <a
-          key={label}
-          className={`nav-link${current ? " is-current" : ""}`}
-          href={label === "Profile" ? profileHref : href}
-          aria-current={current ? "page" : undefined}
-        >
-          <Icon name={icon} />
-          <span>{label}</span>
-        </a>
-      ))}
+      {navigation.map(({ label, href, icon }) => {
+        const current =
+          (label === "Discover" &&
+            (pathname === "/" || pathname.startsWith("/opportunities"))) ||
+          (label === "Developers" && pathname === "/developers") ||
+          (label === "Profile" &&
+            (pathname === "/my-profile" || pathname.startsWith("/u/")));
+        return (
+          <a
+            key={label}
+            className={`nav-link${current ? " is-current" : ""}`}
+            href={label === "Profile" ? profileHref : href}
+            aria-current={current ? "page" : undefined}
+          >
+            <Icon name={icon} />
+            <span>{label}</span>
+          </a>
+        );
+      })}
     </nav>
   );
 }
@@ -189,7 +199,17 @@ function App() {
 
       <div className="app-main-column">
         <main className="main-content" id="main-content">
-          {window.location.pathname === "/settings/profile" ? (
+          {window.location.pathname === "/developers" ? (
+            <DiscoveryPage mode="developers" />
+          ) : window.location.pathname === "/" ||
+            window.location.pathname === "/opportunities" ? (
+            <DiscoveryPage mode="opportunities" />
+          ) : window.location.pathname.match(/^\/opportunities\/[^/]+$/) ? (
+            <DiscoveryPage
+              mode="opportunities"
+              opportunityId={window.location.pathname.split("/")[2]}
+            />
+          ) : window.location.pathname === "/settings/profile" ? (
             <ProfilePage user={user} />
           ) : window.location.pathname === "/my-profile" ? (
             <ProfilePage user={user} viewOwn />

@@ -12,7 +12,7 @@ EthioDev is a mobile-friendly collaboration platform for beginner and junior dev
 
 ## Status
 
-T-01, the product foundation, is complete: the React/Vite scaffold and JavaScript quality toolchain are in place; schema, authorization, and Storage migrations are applied and verified on the hosted development project. T-02, the responsive app shell, is complete. T-03 is complete: the hosted project is linked, bucket configuration passed migration preflight, all three foundation migrations are applied with matching local and remote history, and RLS is enabled on every public table and `storage.objects`. T-04 is in progress: account screens, Google OAuth, email verification by one-time code, and password recovery are implemented; the profile trigger migration is applied and local/remote migration history matches. Google OAuth and Brevo delivery are configured, and the user confirmed six-digit signup verification and password recovery/sign-in work. Verify sign-out and finish the final auth check. T-05 through T-19 have not started. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
+T-01 through T-05 are complete. T-06 is in progress: public developer discovery, opportunity search, and opportunity detail pages are implemented against Supabase. Manual data, filter, and signed-out access checks remain. T-07 through T-19 have not started. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
 
 ## Documentation
 

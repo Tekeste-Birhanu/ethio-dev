@@ -1232,3 +1232,397 @@ h1 {
   white-space: nowrap;
   clip-path: inset(50%);
 }
+.discovery-filters {
+  display: grid;
+  grid-template-columns: minmax(220px, 2fr) repeat(4, minmax(125px, 1fr));
+  align-items: end;
+  gap: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  padding: 17px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.discovery-search-label {
+  min-width: 0;
+}
+.discovery-filters .field-control {
+  min-width: 0;
+}
+.text-button {
+  min-height: 42px;
+  justify-self: start;
+  border: 0;
+  padding: 0 4px;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.text-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.results-summary {
+  margin: 21px 0 12px;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+.developer-grid,
+.opportunity-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 15px;
+}
+.opportunity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.developer-card,
+.opportunity-card,
+.discovery-status {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 15px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.developer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 19px;
+}
+.developer-card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.discovery-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.discovery-avatar-fallback {
+  background: #f0e8e1;
+  color: #846f60;
+  font-size: 1rem;
+  font-weight: 750;
+}
+.developer-card-identity {
+  min-width: 0;
+}
+.developer-card-identity h2 {
+  overflow: hidden;
+  margin: 0 0 3px;
+  font-size: 0.98rem;
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.developer-card-identity h2 a {
+  text-decoration: none;
+}
+.developer-card-identity h2 a:hover {
+  color: var(--color-primary);
+}
+.developer-card-identity p,
+.developer-location,
+.muted-small {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+.developer-bio {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #4f4944;
+  font-size: 0.83rem;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.developer-card .skill-list,
+.opportunity-card .skill-list {
+  gap: 6px;
+}
+.developer-card .skill-chip,
+.opportunity-card .skill-chip {
+  min-height: 27px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+}
+.developer-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: auto;
+  padding-top: 2px;
+  color: var(--color-primary);
+  font-size: 0.81rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+.developer-card-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.opportunity-card {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+.opportunity-card-image {
+  display: grid;
+  aspect-ratio: 16 / 8.5;
+  place-items: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #e5f1f5, #f6eee6 55%, #e7eee4);
+  color: #7093a0;
+  font-family: ui-monospace, monospace;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 700;
+  text-decoration: none;
+}
+.opportunity-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 180ms ease;
+}
+.opportunity-card-image:hover img {
+  transform: scale(1.025);
+}
+.opportunity-card-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+}
+.opportunity-card-meta,
+.opportunity-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: 0.73rem;
+}
+.opportunity-card-meta > span:not(.status-chip),
+.opportunity-detail-meta > span {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #fffdfa;
+}
+.status-chip {
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #eaf5ee;
+  color: #28704d;
+  font-size: 0.7rem;
+  font-weight: 750;
+  text-transform: capitalize;
+}
+.status-closed {
+  background: #f0ece8;
+  color: #665c54;
+}
+.opportunity-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: -0.035em;
+  line-height: 1.3;
+}
+.opportunity-card h2 a {
+  text-decoration: none;
+}
+.opportunity-card h2 a:hover {
+  color: var(--color-primary);
+}
+.opportunity-summary {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 0;
+  color: #554d47;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.opportunity-creator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  color: #514a45;
+  font-size: 0.77rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.opportunity-creator .discovery-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 0.75rem;
+}
+.opportunity-creator:hover span:last-child {
+  color: var(--color-primary);
+}
+.discovery-status {
+  display: grid;
+  justify-items: start;
+  gap: 9px;
+  padding: 24px;
+}
+.discovery-status h2 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: -0.025em;
+}
+.discovery-status p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+.discovery-results {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+.discovery-skeleton {
+  min-height: 210px;
+}
+.load-more-row {
+  display: flex;
+  justify-content: center;
+  padding: 22px 0 10px;
+}
+.opportunity-detail {
+  width: min(100%, 850px);
+  margin: 0 auto;
+  border: 1px solid var(--color-border);
+  border-radius: 17px;
+  padding: clamp(18px, 4vw, 34px);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+.back-link {
+  margin-bottom: 20px;
+}
+.opportunity-detail-cover {
+  display: block;
+  width: 100%;
+  max-height: 390px;
+  margin-bottom: 27px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+.opportunity-detail-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 15px;
+}
+.opportunity-detail-heading h1 {
+  overflow-wrap: anywhere;
+}
+.opportunity-detail-meta {
+  margin: 17px 0 24px;
+}
+.opportunity-detail-section {
+  display: grid;
+  gap: 12px;
+  border-top: 1px solid var(--color-border);
+  padding: 20px 0;
+}
+.opportunity-detail-section h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.opportunity-detail-section p {
+  margin: 0;
+  color: #4f4944;
+  font-size: 0.9rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+}
+.opportunity-detail-description {
+  overflow-wrap: anywhere;
+}
+.detail-creator {
+  margin-top: 0;
+  border-top: 1px solid var(--color-border);
+  padding-top: 18px;
+}
+.detail-creator .discovery-avatar {
+  width: 40px;
+  height: 40px;
+}
+.detail-creator span:last-child {
+  color: var(--color-muted);
+  font-weight: 500;
+}
+.detail-creator strong {
+  color: var(--color-text);
+}
+@media (max-width: 1050px) {
+  .discovery-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .discovery-search-label {
+    grid-column: span 2;
+  }
+  .developer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .discovery-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 13px;
+  }
+  .discovery-search-label {
+    grid-column: 1 / -1;
+  }
+  .discovery-filters .field-label {
+    font-size: 0.75rem;
+  }
+  .discovery-filters .field-control {
+    padding-right: 7px;
+    padding-left: 9px;
+    font-size: 0.8rem;
+  }
+  .text-button {
+    min-height: 38px;
+  }
+  .opportunity-grid {
+    grid-template-columns: 1fr;
+  }
+  .discovery-results {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .developer-grid {
+    grid-template-columns: 1fr;
+  }
+  .opportunity-detail-heading {
+    flex-direction: column;
+  }
+  .discovery-status {
+    padding: 19px;
+  }
+}

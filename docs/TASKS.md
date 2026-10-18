@@ -127,7 +127,7 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Build opportunity feed and detail pages**
 
 - Present public opportunities as a visual feed with cover image first when available and clear project information.
-- Add public detail pages, sample opportunities, loading, empty, and error states.
+- Add public detail pages backed by Supabase, with loading, empty, and error states.
 - **Done when:** visitors can browse opportunity details without an account and private/deleted content is not leaked.
 
 **Included module: Add opportunity search and filters**
@@ -136,7 +136,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Use predefined choices plus “Other” for categorical opportunity fields; omit commitment filtering.
 - **Done when:** filters compose correctly and are usable on mobile.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-18). Added the public developer directory and searchable opportunity feed/detail pages. Search and filters cover skills, city, project type, and experience; commitment is shown on detail pages but is not a filter. Lists are paginated and public images are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Lint, formatting, and production build pass; manual Supabase data/filter and signed-out access checks remain.
 
 ### T-07 — Add opportunity likes and threaded comments
 
