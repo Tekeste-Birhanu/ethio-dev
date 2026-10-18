@@ -46,11 +46,11 @@ Workspace member
 - **Preconditions / access:** Email/password or Google account. Registration collects a unique username and display name.
 - **Steps:**
   1. Register or sign in; email/password users can request a reset link if needed.
-  2. Verify email before publishing an opportunity or sending a join request. A Google account with provider-verified email meets this requirement.
+  2. Enter the one-time code sent to an email/password user's inbox to verify registration. A Google account with provider-verified email meets this requirement.
   3. Add optional bio, skills, city, or links now or later.
   4. Return to the originally requested destination after successful authentication.
 - **Success outcome:** The user has an account and can participate; optional profile incompleteness does not block participation.
-- **Failure and recovery:** Show field-level validation and preserve safe, non-secret form values. Expired or invalid verification/reset links offer a way to request another link. A sign-in prompt returns the user to their intended action after authentication.
+- **Failure and recovery:** Show field-level validation and preserve safe, non-secret form values. An invalid or expired verification code can be retried or resent. Expired or invalid password-reset links offer a way to request another link. A sign-in prompt returns the user to their intended action after authentication.
 - **Related requirements:** F-01, F-02.
 
 ### J-03 — Publish and manage an opportunity

@@ -12,7 +12,7 @@ EthioDev is a mobile-friendly collaboration platform for beginner and junior dev
 
 ## Status
 
-T-01, the product foundation, is complete: the React/Vite scaffold and JavaScript quality toolchain are in place; schema, authorization, and Storage migrations are applied and verified on the hosted development project. T-02, the responsive app shell, is complete. T-03 is complete: the hosted project is linked, bucket configuration passed migration preflight, all three migrations are applied with matching local and remote history, and RLS is enabled on every public table and `storage.objects`. T-04 through T-19 have not started. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
+T-01, the product foundation, is complete: the React/Vite scaffold and JavaScript quality toolchain are in place; schema, authorization, and Storage migrations are applied and verified on the hosted development project. T-02, the responsive app shell, is complete. T-03 is complete: the hosted project is linked, bucket configuration passed migration preflight, all three foundation migrations are applied with matching local and remote history, and RLS is enabled on every public table and `storage.objects`. T-04 is in progress: account screens, Google OAuth, email verification by one-time code, and password recovery are implemented; the profile trigger migration is applied and local/remote migration history matches. Google OAuth and Brevo delivery are configured, and the user confirmed six-digit signup verification and password recovery/sign-in work. Verify sign-out and finish the final auth check. T-05 through T-19 have not started. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
 
 ## Documentation
 
@@ -58,6 +58,10 @@ npm run supabase:push
 
 The link command asks for the database password. Never put it in source control. Get the project URL and publishable key from the Supabase Dashboard and add them to an untracked `.env.local` file using the names in `.env.example`. The app only creates its Supabase client when both values are present. No seed data is configured.
 
+## Authentication provider setup
+
+For T-04, add `http://localhost:5173/**` and `http://127.0.0.1:5173/**` to Supabase Auth's Redirect URLs. Enable the Google provider with its OAuth client credentials in the Dashboard. Keep the Google client secret and Brevo SMTP credentials in provider settings; never add them to `.env.local` or browser code. Configure Supabase Auth custom SMTP with Brevo. In **Authentication → Email Templates → Confirm signup**, use `{{ .Token }}` in the message body so new email/password users receive a 6-digit code; password-reset emails remain links. The password-update screen requires a password-recovery session, clears that recovery permission after the password changes, and keeps the user signed in. Add the deployed site's callback and update-password paths when a frontend host is selected.
+
 The Supabase CLI and client library are project dependencies. CLI configuration is in `supabase/config.toml`, and schema changes belong in timestamped files under `supabase/migrations/`. Hosted Auth, Storage, and redirect settings are managed in the Supabase Dashboard. Never use a service-role key in the browser. Use a development project for migration work; do not link or push to production during setup.
 
 Available quality and build commands:
@@ -71,7 +75,7 @@ npm run build
 npm run preview
 ```
 
-`npm test` runs Vitest with jsdom and React Testing Library. `npm run test:e2e` runs Playwright in Chromium; install its browser once with `npx playwright install chromium`. The test commands succeed when no test files exist and will run matching tests when added. `.env.example` lists the public Supabase client variables; client setup is in place, but the hosted project is not linked or configured yet. Never place service-role keys or email credentials in browser environment variables. The T-01 schema, access, and Storage migrations are in `supabase/migrations/`; hosted project linking and migration application are tracked in T-03. No fictional records or reset jobs are planned; reviewers can create persistent records through the product. See [Implementation tasks](docs/TASKS.md) for the sequence.
+`npm test` runs Vitest with jsdom and React Testing Library. `npm run test:e2e` runs Playwright in Chromium; install its browser once with `npx playwright install chromium`. The test commands succeed when no test files exist and will run matching tests when added. `.env.example` lists the public Supabase client variables; the hosted project is linked and configured. Never place service-role keys or email credentials in browser environment variables. Database changes belong in timestamped files under `supabase/migrations/`. No fictional records or reset jobs are planned; reviewers can create persistent records through the product. See [Implementation tasks](docs/TASKS.md) for the sequence.
 
 ## Deployment
 

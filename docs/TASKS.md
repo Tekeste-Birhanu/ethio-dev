@@ -79,12 +79,12 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Included module: Implement verification and password recovery**
 
-- Configure verification and password-reset email delivery through Brevo as agreed.
+- Verify email/password registration with a 6-digit one-time code delivered through Brevo; password reset remains an email link.
 - Require verified email for publishing opportunities and sending join requests; trust Google’s verified email.
 - Preserve the intended destination through verification and password-reset flows.
 - **Done when:** verification and recovery work end to end, and verification gates are enforced by trusted policies/functions.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-18). Email/password, Google OAuth, profile completion, OTP verification and resend, and password-reset UI flows are implemented. The profile-creation migration is applied and local/remote migration history matches. Google OAuth and Brevo delivery are configured; the user confirmed six-digit signup verification and password recovery/sign-in work. The password-update screen requires a recovery session and clears that one-time permission after changing the password while keeping the user signed in. Recheck reset-link reuse and sign-out before completion.
 
 ### T-05 — Build developer profiles and profile discovery pages
 

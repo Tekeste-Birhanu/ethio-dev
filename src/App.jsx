@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import AuthPage from "./features/auth/AuthPage.jsx";
+import { isSupabaseConfigured, supabase } from "./lib/supabaseClient.js";
+
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
   { label: "Developers", href: "/developers", icon: "users" },
@@ -109,6 +113,31 @@ function NavItems({ mobile = false }) {
 }
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return undefined;
+
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active) setUser(data.session?.user ?? null);
+    });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  if (window.location.pathname.startsWith("/auth/")) {
+    return <AuthPage user={user} />;
+  }
+
   return (
     <div className="app-frame">
       <a className="skip-link" href="#main-content">
@@ -118,14 +147,32 @@ function App() {
         <Brand />
         <NavItems />
         <div className="sidebar-bottom">
-          <a className="profile-link" href="/sign-in">
-            <span className="avatar-placeholder">G</span>
-            <span className="profile-copy">
-              <strong>Guest</strong>
-              <small>Sign in</small>
-            </span>
-            <Icon name="arrow" size={16} />
-          </a>
+          {user ? (
+            <div className="profile-link">
+              <span className="avatar-placeholder" aria-hidden="true">
+                {(user.email?.[0] ?? "D").toUpperCase()}
+              </span>
+              <span className="profile-copy">
+                <strong>{user.email}</strong>
+                <button
+                  className="sign-out-button"
+                  type="button"
+                  onClick={() => supabase.auth.signOut()}
+                >
+                  Sign out
+                </button>
+              </span>
+            </div>
+          ) : (
+            <a className="profile-link" href="/auth/sign-in">
+              <span className="avatar-placeholder">G</span>
+              <span className="profile-copy">
+                <strong>Guest</strong>
+                <small>Sign in</small>
+              </span>
+              <Icon name="arrow" size={16} />
+            </a>
+          )}
         </div>
       </aside>
 
@@ -152,7 +199,7 @@ function App() {
               <p>
                 Find projects, meet collaborators, and share what you build.
               </p>
-              <a className="button button-light" href="/sign-in">
+              <a className="button button-light" href="/auth/sign-in">
                 Get started <Icon name="arrow" size={17} />
               </a>
             </div>
