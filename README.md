@@ -12,7 +12,7 @@ EthioDev is a mobile-friendly collaboration platform for beginner and junior dev
 
 ## Status
 
-T-01, the product foundation, is in progress: the React/Vite scaffold and JavaScript quality toolchain are complete; core schema and authorization migrations are drafted; Storage setup has not started. T-02 through T-19 have not started. Lint, formatting checks, and production build pass on Node.js 24.20.0 and npm 11.19.0. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
+T-01, the product foundation, is in progress: the React/Vite scaffold and JavaScript quality toolchain are complete; core schema and authorization migrations are drafted; Storage setup has not started. T-02, the responsive app shell, is complete. T-03 through T-19 have not started. Lint, formatting checks, and production build pass on Node.js 24.20.0 and npm 11.19.0. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
 
 ## Documentation
 

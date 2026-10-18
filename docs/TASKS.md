@@ -58,7 +58,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Implement the approved light visual system, shared tokens, accessible form and button styles, and outline icon treatment.
 - Add desktop left navigation and mobile bottom tabs, with responsive page containers and loading/empty/error patterns.
 - **Done when:** all main MVP areas have a consistent responsive shell following `DESIGN.md`.
-- **Status:** Not started.
+- **Status:** Complete (2026-10-18). Added the responsive desktop/mobile navigation shell, shared visual tokens and accessible controls, and discovery empty state. Verified with `npm run lint`, `npm run format:check`, and `npm run build`.
 
 ### T-03 — Establish Supabase database baseline
 
