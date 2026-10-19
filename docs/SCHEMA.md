@@ -17,16 +17,16 @@ The following is a logical schema. Migration SQL may use equivalent types or nor
 - **Purpose:** Public developer profile linked one-to-one to a Supabase Auth user.
 - **Fields:**
 
-| Field | Type | Required | Rules / notes |
-|---|---|---:|---|
-| `user_id` | `uuid` | Yes | Primary key and FK to `auth.users.id`. Self-service account deletion is outside MVP scope. |
-| `username` | `text` | Yes | Unique, case-sensitive; validate allowed characters and length at the database boundary. |
-| `display_name` | `text` | Yes | Public name; validate length and trim surrounding whitespace. |
-| `bio` | `text` | No | Public; bounded length. |
-| `city_id` | `uuid` | No | FK to predefined `cities`; mutually exclusive with `city_other`. |
-| `city_other` | `text` | No | User-entered city when the `Other` option is selected; mutually exclusive with `city_id`. |
-| `avatar_path` | `text` | No | Storage object reference; public exposure requires an intentional public avatar policy. |
-| `created_at`, `updated_at` | `timestamptz` | Yes | Database-generated timestamps. |
+| Field                      | Type          | Required | Rules / notes                                                                              |
+| -------------------------- | ------------- | -------: | ------------------------------------------------------------------------------------------ |
+| `user_id`                  | `uuid`        |      Yes | Primary key and FK to `auth.users.id`. Self-service account deletion is outside MVP scope. |
+| `username`                 | `text`        |      Yes | Unique, case-sensitive; validate allowed characters and length at the database boundary.   |
+| `display_name`             | `text`        |      Yes | Public name; validate length and trim surrounding whitespace.                              |
+| `bio`                      | `text`        |       No | Public; bounded length.                                                                    |
+| `city_id`                  | `uuid`        |       No | FK to predefined `cities`; mutually exclusive with `city_other`.                           |
+| `city_other`               | `text`        |       No | User-entered city when the `Other` option is selected; mutually exclusive with `city_id`.  |
+| `avatar_path`              | `text`        |       No | Storage object reference; public exposure requires an intentional public avatar policy.    |
+| `created_at`, `updated_at` | `timestamptz` |      Yes | Database-generated timestamps.                                                             |
 
 Profile skills and external links use separate tables below. Email, provider tokens, and verification state are not duplicated into the public profile.
 
@@ -35,13 +35,13 @@ Profile skills and external links use separate tables below. Email, provider tok
 - **Purpose:** Maintain a growing shared skill catalog and connect skills to developer profiles and opportunities.
 - **Fields (`skills`):**
 
-| Field | Type | Required | Rules / notes |
-|---|---|---:|---|
-| `id` | `uuid` | Yes | Primary key. |
-| `name` | `text` | Yes | Display form of the skill. |
-| `normalized_name` | `text` | Yes | Case-folded, trimmed key with a unique constraint; `React` and `react` resolve to one skill. |
-| `created_by` | `uuid` | No | Auth user that first added it. |
-| `created_at` | `timestamptz` | Yes | Database-generated timestamp. |
+| Field             | Type          | Required | Rules / notes                                                                                |
+| ----------------- | ------------- | -------: | -------------------------------------------------------------------------------------------- |
+| `id`              | `uuid`        |      Yes | Primary key.                                                                                 |
+| `name`            | `text`        |      Yes | Display form of the skill.                                                                   |
+| `normalized_name` | `text`        |      Yes | Case-folded, trimmed key with a unique constraint; `React` and `react` resolve to one skill. |
+| `created_by`      | `uuid`        |       No | Auth user that first added it.                                                               |
+| `created_at`      | `timestamptz` |      Yes | Database-generated timestamp.                                                                |
 
 - **Fields (`profile_skills`):** `user_id uuid` FK to `profiles`; `skill_id uuid` FK to `skills`; composite primary key `(user_id, skill_id)`.
 - **Rules:** A user-entered unknown skill is added to the shared catalog automatically through a normalized, race-safe database operation. Catalog entries remain in the shared catalog.
@@ -63,22 +63,22 @@ Profile skills and external links use separate tables below. Email, provider tok
 - **Purpose:** Public project listings that recruit collaborators and may later be retained privately with accepted collaboration history.
 - **Fields:**
 
-| Field | Type | Required | Rules / notes |
-|---|---|---:|---|
-| `id` | `uuid` | Yes | Primary key. |
-| `creator_id` | `uuid` | Yes | FK to `profiles`; creator manages the listing while it is public. |
-| `title` | `text` | Yes | Bounded length. |
-| `description` | `text` | Yes | Project idea and collaboration context. |
-| `project_type` | `text` | Yes | One of `web`, `mobile`, `desktop`, `game`, `developer_tool`, `data_ai`, `hardware_iot`, `other`. |
-| `project_type_other` | `text` | Conditional | Required only when `project_type = other`; otherwise null. |
-| `experience_levels` | `text[]` | Yes | One or more of `beginner_friendly`, `junior`, `intermediate`, `experienced_mentor`, `any_level`; selection is multi-valued. |
-| `commitment` | `text` | No | Optional free text; it is not a discovery filter. |
-| `city_id` | `uuid` | No | FK to `cities`; mutually exclusive with `city_other`. |
-| `city_other` | `text` | No | Text for the `Other` location option. |
-| `cover_path` | `text` | No | Optional cover image object reference. |
-| `status` | `text` | Yes | Listing state: `open` or `closed`; default `open`. Deletion changes visibility/state while preserving accepted collaboration data. |
-| `deleted_at` | `timestamptz` | No | Soft deletion marker used to remove public listing and retain private project context when accepted collaborators/workspace exist. |
-| `created_at`, `updated_at` | `timestamptz` | Yes | Database-generated timestamps. |
+| Field                      | Type          |    Required | Rules / notes                                                                                                                      |
+| -------------------------- | ------------- | ----------: | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                       | `uuid`        |         Yes | Primary key.                                                                                                                       |
+| `creator_id`               | `uuid`        |         Yes | FK to `profiles`; creator manages the listing while it is public.                                                                  |
+| `title`                    | `text`        |         Yes | Bounded length.                                                                                                                    |
+| `description`              | `text`        |         Yes | Project idea and collaboration context.                                                                                            |
+| `project_type`             | `text`        |         Yes | One of `web`, `mobile`, `desktop`, `game`, `developer_tool`, `data_ai`, `hardware_iot`, `other`.                                   |
+| `project_type_other`       | `text`        | Conditional | Required only when `project_type = other`; otherwise null.                                                                         |
+| `experience_levels`        | `text[]`      |         Yes | One or more of `beginner_friendly`, `junior`, `intermediate`, `experienced_mentor`, `any_level`; selection is multi-valued.        |
+| `commitment`               | `text`        |          No | Optional free text; it is not a discovery filter.                                                                                  |
+| `city_id`                  | `uuid`        |          No | FK to `cities`; mutually exclusive with `city_other`.                                                                              |
+| `city_other`               | `text`        |          No | Text for the `Other` location option.                                                                                              |
+| `cover_path`               | `text`        |          No | Optional cover image object reference.                                                                                             |
+| `status`                   | `text`        |         Yes | Listing state: `open` or `closed`; default `open`. Deletion changes visibility/state while preserving accepted collaboration data. |
+| `deleted_at`               | `timestamptz` |          No | Soft deletion marker used to remove public listing and retain private project context when accepted collaborators/workspace exist. |
+| `created_at`, `updated_at` | `timestamptz` |         Yes | Database-generated timestamps.                                                                                                     |
 
 - **Constraints:** `project_type_other` is present iff type is `other`; `city_id` and `city_other` are mutually exclusive; experience list is nonempty and contains no duplicates. `any_level` is exclusive and cannot appear with specific experience levels. Opportunity listing state (`open` / `closed`) is separate from workspace project state (`active` / `paused` / `completed` / `abandoned`).
 - **Deletion behavior:** If accepted collaboration or a workspace exists, soft-delete the opportunity (`deleted_at`), revoke public access, delete likes/comments and all non-accepted requests, and retain the opportunity details plus accepted collaboration/chat/workspace context for authorized participants. Keep its cover object private. If no accepted collaboration or workspace exists, hard-delete the opportunity and its dependent records and cover object. In both cases, remove the listing from public discovery.
@@ -113,19 +113,19 @@ Profile skills and external links use separate tables below. Email, provider tok
 
 - **Purpose:** One-to-one pre-workspace collaboration chat created when a request is accepted through the private-chat path.
 - **Conversation fields:** `id uuid`; `request_id uuid` unique FK to an accepted request whose path is `private_chat`; `participant_a uuid` (opportunity creator); `participant_b uuid` (applicant); `status text` (`active` / `ended`); `created_at`; `ended_at` nullable. The participants must be distinct.
-- **Message fields:** `id uuid`; `conversation_id uuid`; `sender_id uuid`; `body text`; `created_at timestamptz`; optional client idempotency key unique per conversation/sender.
+- **Message fields:** `id uuid`; `conversation_id uuid`; `sender_id uuid`; `body text`; `message_type text` (`user` / `system`, default `user`); nullable `workspace_id uuid` for workspace transition notices; `created_at timestamptz`; optional client idempotency key unique per conversation/sender.
 - **Attachment fields:** `id uuid`; `message_id uuid`; `storage_path text` unique; `original_name text`; `media_type text`; `size_bytes bigint`; `uploaded_by uuid`; `created_at timestamptz`.
-- **Rules:** Exactly the two request participants may access an active conversation. Ending it removes access and deletes messages and attachment objects; keep only the minimum tombstone/request state needed to prevent reapplication. Files are in private Storage and must pass the approved allowlist and 10 MB limit. Treat files as downloads unless they are safely previewable.
+- **Rules:** Exactly the two request participants may access an active conversation. Ending it removes access and deletes messages and attachment objects; keep only the minimum tombstone/request state needed to prevent reapplication. Trusted workspace transitions may add a system message with a link to the resulting workspace. Clients can send user messages but cannot create system messages. Files are in private Storage and must pass the approved allowlist and 10 MB limit. Treat files as downloads unless they are safely previewable.
 
 ### Attachment allowlist
 
 Use this allowlist for chat attachments, validating both extension and declared media type at upload. The per-file application limit is 10 MB. Do not allow archives, executables, audio, or video.
 
-| Category | Extensions | MIME types |
-|---|---|---|
-| Images | `.jpg`, `.jpeg`, `.png`, `.webp` | `image/jpeg`, `image/png`, `image/webp` |
-| PDF and text | `.pdf`, `.txt`, `.csv` | `application/pdf`, `text/plain`, `text/csv` |
-| Microsoft Word | `.docx` | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+| Category       | Extensions                       | MIME types                                                                |
+| -------------- | -------------------------------- | ------------------------------------------------------------------------- |
+| Images         | `.jpg`, `.jpeg`, `.png`, `.webp` | `image/jpeg`, `image/png`, `image/webp`                                   |
+| PDF and text   | `.pdf`, `.txt`, `.csv`           | `application/pdf`, `text/plain`, `text/csv`                               |
+| Microsoft Word | `.docx`                          | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
 
 ### `workspaces` and `workspace_memberships`
 
@@ -170,21 +170,21 @@ Use this allowlist for chat attachments, validating both extension and declared 
 
 ## 3. Relationships
 
-| Entity A | Relationship | Entity B | Rules |
-|---|---|---|---|
-| Auth user | One-to-one | Profile | Profile keyed by Auth user ID; no public email copy. |
-| Profile | Many-to-many | Skill | Through `profile_skills`; skills are shared and case-insensitive. |
-| Opportunity | Many-to-many | Skill | Through `opportunity_skills`. |
-| City | One-to-many | Profile / opportunity | Optional predefined city; `Other` text is stored separately. |
-| Opportunity | One-to-many | Like / comment / request | Deleted opportunity removes public engagement; accepted requests preserve collaboration history. |
-| Comment | One-to-many | Reply comments | Self-reference; every reply must use the same opportunity. |
-| Accepted request | Zero-or-one | Private conversation | Conversation exists only for private-chat acceptance. |
-| Opportunity | Zero-or-one | Workspace | Unique `workspaces.opportunity_id`. |
-| Workspace | One-to-many | Membership / message / milestone / task | Access depends on current active membership. |
-| Task | Many-to-many | Profile assignees | Through `task_assignees`; assignees update shared status. |
-| Milestone | One-to-many | Task | Task has at most one milestone. |
-| Workspace | Zero-or-one | Showcase | A workspace has one showcase record, which may be draft/unpublished/published. |
-| User | One-to-many | Notification | A notification has one recipient and optional actor. |
+| Entity A         | Relationship | Entity B                                | Rules                                                                                            |
+| ---------------- | ------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Auth user        | One-to-one   | Profile                                 | Profile keyed by Auth user ID; no public email copy.                                             |
+| Profile          | Many-to-many | Skill                                   | Through `profile_skills`; skills are shared and case-insensitive.                                |
+| Opportunity      | Many-to-many | Skill                                   | Through `opportunity_skills`.                                                                    |
+| City             | One-to-many  | Profile / opportunity                   | Optional predefined city; `Other` text is stored separately.                                     |
+| Opportunity      | One-to-many  | Like / comment / request                | Deleted opportunity removes public engagement; accepted requests preserve collaboration history. |
+| Comment          | One-to-many  | Reply comments                          | Self-reference; every reply must use the same opportunity.                                       |
+| Accepted request | Zero-or-one  | Private conversation                    | Conversation exists only for private-chat acceptance.                                            |
+| Opportunity      | Zero-or-one  | Workspace                               | Unique `workspaces.opportunity_id`.                                                              |
+| Workspace        | One-to-many  | Membership / message / milestone / task | Access depends on current active membership.                                                     |
+| Task             | Many-to-many | Profile assignees                       | Through `task_assignees`; assignees update shared status.                                        |
+| Milestone        | One-to-many  | Task                                    | Task has at most one milestone.                                                                  |
+| Workspace        | Zero-or-one  | Showcase                                | A workspace has one showcase record, which may be draft/unpublished/published.                   |
+| User             | One-to-many  | Notification                            | A notification has one recipient and optional actor.                                             |
 
 ## 4. Integrity and business invariants
 
@@ -209,21 +209,21 @@ Use this allowlist for chat attachments, validating both extension and declared 
 
 ## 5. Indexes and query needs
 
-| Data / query pattern | Index or optimization | Reason |
-|---|---|---|
-| Case-sensitive username lookup | Unique B-tree on `profiles.username` | Profile route and uniqueness. |
-| Skill lookup and relationships | Unique B-tree on `skills.normalized_name`; indexes on both join-table foreign keys | Autocomplete, deduplication, directory and opportunity filtering. |
-| City directory/opportunity filters | Index `city_id`; index active city names by `normalized_name` | Search and location filters. |
-| Public opportunity feed | Partial index on `(created_at desc)` for undeleted listings; index `status` as needed | Feed ordering and open/closed state. |
-| Opportunity keyword search | PostgreSQL full-text GIN index over title and description for undeleted public opportunities | Keyword discovery. |
-| Opportunity skill filters | Index `opportunity_skills.skill_id` and `(opportunity_id, skill_id)` | Filter and detail load. |
-| User's likes and like counts | Index `(user_id, created_at desc)` plus primary key `(opportunity_id, user_id)` | Profile/account views and duplicate prevention. |
-| Comment threads | Index `(opportunity_id, created_at)` and `parent_comment_id` | Load top-level comments and nested replies. |
-| Request inbox/history | Unique `(opportunity_id, applicant_id)` plus `(opportunity_id, status, created_at)` and `(applicant_id, created_at desc)` | Duplicate prevention, creator inbox, and applicant history; deleting pending rows on close permits retry after reopen. |
-| Chat timeline | `(conversation_id, created_at)` / `(workspace_id, created_at)` | Chronological history and catch-up after reconnect. |
-| Current workspace membership | Partial unique index on `(workspace_id, user_id)` where `ended_at is null`; lookup index on `(user_id, workspace_id)` | Immediate access/revocation and role checks. |
-| Tasks and milestones | `(workspace_id, status)`; `(milestone_id)`; task-assignee index `(user_id, task_id)` | Workspace board, milestone progress, and assignee views. |
-| Notifications | `(recipient_id, created_at desc)` and partial unread index where `read_at is null` | Notification feed and unread count. |
+| Data / query pattern               | Index or optimization                                                                                                     | Reason                                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Case-sensitive username lookup     | Unique B-tree on `profiles.username`                                                                                      | Profile route and uniqueness.                                                                                          |
+| Skill lookup and relationships     | Unique B-tree on `skills.normalized_name`; indexes on both join-table foreign keys                                        | Autocomplete, deduplication, directory and opportunity filtering.                                                      |
+| City directory/opportunity filters | Index `city_id`; index active city names by `normalized_name`                                                             | Search and location filters.                                                                                           |
+| Public opportunity feed            | Partial index on `(created_at desc)` for undeleted listings; index `status` as needed                                     | Feed ordering and open/closed state.                                                                                   |
+| Opportunity keyword search         | PostgreSQL full-text GIN index over title and description for undeleted public opportunities                              | Keyword discovery.                                                                                                     |
+| Opportunity skill filters          | Index `opportunity_skills.skill_id` and `(opportunity_id, skill_id)`                                                      | Filter and detail load.                                                                                                |
+| User's likes and like counts       | Index `(user_id, created_at desc)` plus primary key `(opportunity_id, user_id)`                                           | Profile/account views and duplicate prevention.                                                                        |
+| Comment threads                    | Index `(opportunity_id, created_at)` and `parent_comment_id`                                                              | Load top-level comments and nested replies.                                                                            |
+| Request inbox/history              | Unique `(opportunity_id, applicant_id)` plus `(opportunity_id, status, created_at)` and `(applicant_id, created_at desc)` | Duplicate prevention, creator inbox, and applicant history; deleting pending rows on close permits retry after reopen. |
+| Chat timeline                      | `(conversation_id, created_at)` / `(workspace_id, created_at)`                                                            | Chronological history and catch-up after reconnect.                                                                    |
+| Current workspace membership       | Partial unique index on `(workspace_id, user_id)` where `ended_at is null`; lookup index on `(user_id, workspace_id)`     | Immediate access/revocation and role checks.                                                                           |
+| Tasks and milestones               | `(workspace_id, status)`; `(milestone_id)`; task-assignee index `(user_id, task_id)`                                      | Workspace board, milestone progress, and assignee views.                                                               |
+| Notifications                      | `(recipient_id, created_at desc)` and partial unread index where `read_at is null`                                        | Notification feed and unread count.                                                                                    |
 
 ## 6. Access and data lifecycle
 

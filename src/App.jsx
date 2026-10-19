@@ -24,6 +24,9 @@ const PrivateMessagesPage = lazy(() =>
     default: module.PrivateMessagesPage,
   })),
 );
+const WorkspacePage = lazy(
+  () => import("./features/workspaces/WorkspacePage.jsx"),
+);
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
@@ -31,7 +34,7 @@ const navigation = [
   { label: "Profile", href: "/settings/profile", icon: "users" },
   { label: "Showcases", href: "/showcases", icon: "grid" },
   { label: "Messages", href: "/messages", icon: "message" },
-  { label: "Workspace", href: "/workspace", icon: "briefcase" },
+  { label: "Workspace", href: "/workspaces", icon: "briefcase" },
 ];
 
 function Icon({ name, size = 20 }) {
@@ -148,12 +151,14 @@ function NavItems({ mobile = false, profileHref }) {
           (label === "Profile" &&
             (pathname === "/my-profile" || pathname === "/settings/profile")) ||
           (label === "Messages" && pathname === "/messages");
+        const workspaceCurrent =
+          label === "Workspace" && pathname.startsWith("/workspaces");
         return (
           <a
             key={label}
-            className={`nav-link${current ? " is-current" : ""}`}
+            className={`nav-link${current || workspaceCurrent ? " is-current" : ""}`}
             href={label === "Profile" ? profileHref : href}
-            aria-current={current ? "page" : undefined}
+            aria-current={current || workspaceCurrent ? "page" : undefined}
           >
             <Icon name={icon} />
             <span>{label}</span>
@@ -251,6 +256,14 @@ function App() {
           ) : window.location.pathname === "/messages" ? (
             <Suspense fallback={<p role="status">Loading messages…</p>}>
               <PrivateMessagesPage user={user} />
+            </Suspense>
+          ) : window.location.pathname === "/workspaces" ||
+            window.location.pathname.match(/^\/workspaces\/[^/]+$/) ? (
+            <Suspense fallback={<p role="status">Loading workspace…</p>}>
+              <WorkspacePage
+                user={user}
+                workspaceId={window.location.pathname.split("/")[2] ?? null}
+              />
             </Suspense>
           ) : window.location.pathname === "/my-opportunities" ? (
             <Suspense fallback={<p role="status">Loading opportunities…</p>}>

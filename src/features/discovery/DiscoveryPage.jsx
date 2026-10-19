@@ -160,6 +160,7 @@ function DiscoveryFilters({
   skills,
   values,
   onChange,
+  action,
   showOpportunityFilters = false,
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -187,7 +188,7 @@ function DiscoveryFilters({
   }
   return (
     <section
-      className="discovery-filters"
+      className={`discovery-filters${showOpportunityFilters ? " opportunity-search-filters" : ""}`}
       aria-label="Search and filters"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -210,6 +211,7 @@ function DiscoveryFilters({
           }
         />
       </label>
+      {action}
       <div
         className="discovery-filter-options"
         id="discovery-filter-options"
@@ -455,27 +457,6 @@ function FilteredListing({ mode, user, showComposer = false }) {
 
   return (
     <>
-      {!directory && (
-        <div className="opportunity-heading-actions discovery-page-actions">
-          <button
-            className="button button-primary"
-            type="button"
-            onClick={() => {
-              if (!user) {
-                window.location.assign(
-                  "/auth/sign-in?next=%2Fopportunities%2Fnew",
-                );
-                return;
-              }
-              setComposerOpen((open) => !open);
-            }}
-            aria-expanded={composerOpen}
-            aria-controls="opportunity-composer"
-          >
-            Post an opportunity
-          </button>
-        </div>
-      )}
       <nav className="explore-tabs" aria-label="Explore">
         <a
           href="/opportunities"
@@ -522,6 +503,27 @@ function FilteredListing({ mode, user, showComposer = false }) {
         skills={skills}
         values={filters}
         onChange={updateFilter}
+        action={
+          !directory && (
+            <button
+              className="button button-primary discovery-post-action"
+              type="button"
+              onClick={() => {
+                if (!user) {
+                  window.location.assign(
+                    "/auth/sign-in?next=%2Fopportunities%2Fnew",
+                  );
+                  return;
+                }
+                setComposerOpen((open) => !open);
+              }}
+              aria-expanded={composerOpen}
+              aria-controls="opportunity-composer"
+            >
+              Post an opportunity
+            </button>
+          )
+        }
         showOpportunityFilters={!directory}
       />
       {error && rows.length > 0 && (
@@ -1090,16 +1092,31 @@ function OpportunityEngagement({
         active = false;
       };
     }
-    supabase
-      .from("collaboration_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("opportunity_id", opportunityId)
-      .eq("status", "pending")
-      .then(({ count }) => {
-        if (active) setRequestCount(count ?? 0);
-      });
+    async function refreshRequestCount() {
+      const { count } = await supabase
+        .from("collaboration_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("opportunity_id", opportunityId)
+        .eq("status", "pending");
+      if (active) setRequestCount(count ?? 0);
+    }
+    refreshRequestCount();
+    const channel = supabase
+      .channel(`opportunity-requests-${opportunityId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "collaboration_requests",
+          filter: `opportunity_id=eq.${opportunityId}`,
+        },
+        refreshRequestCount,
+      )
+      .subscribe();
     return () => {
       active = false;
+      supabase.removeChannel(channel);
     };
   }, [opportunityId, opportunityOwnerId, user]);
 

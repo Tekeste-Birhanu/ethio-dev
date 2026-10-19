@@ -218,7 +218,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Revoke chat access and delete its messages and attachments as specified by the PRD.
 - **Done when:** the operation cannot leave downloadable orphaned files or accessible message history.
 
-**Status:** In progress (2026-10-19). Added the private messages page, active-conversation list, participant-only message workflow, Realtime updates with database history recovery, older-message pagination, allowlisted private attachments, and end-collaboration cleanup. Added a migration for trusted send/end operations and Realtime publication. The migration still needs to be applied to Supabase, and live two-participant, attachment, reconnect, and end-access flows remain to be verified.
+**Status:** Complete (2026-10-19). Added the private messages page, active-conversation list, participant-only message workflow, Realtime updates with database history recovery, older-message pagination, allowlisted private attachments, and end-collaboration cleanup. The trusted send/end and conversation-status migrations are applied to Supabase, and the live chat, attachment, and ended-collaboration flows were verified. Conversation action menus also let either participant end a collaboration from the list without opening the chat.
 
 ## M5 — Team workspaces
 
@@ -242,7 +242,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Unassign unfinished tasks when a member leaves or is removed while retaining completed task history.
 - **Done when:** removal and departure update all relevant access and assignments consistently; the creator remains owner because ownership transfer is out of scope.
 
-**Status:** Not started.
+**Status:** Complete (2026-10-19; user confirmed). Added the workspace list and membership page, workspace creation after accepted collaboration, invitations, creator/admin/member controls, and access revocation backed by trusted database functions. Creators can add accepted private-chat collaborators from the chat header or conversation-list action menu; the chat records a system notice with a link to the workspace. Workspace member actions are available from each member's three-dot menu.
 
 ### T-12 — Build workspace chat and attachments
 

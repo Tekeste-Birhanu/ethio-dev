@@ -12,7 +12,7 @@ EthioDev is a mobile-friendly collaboration platform for beginner and junior dev
 
 ## Status
 
-T-01 through T-05 are complete. T-06 is in progress: public developer discovery, opportunity search, and opportunity detail pages are implemented against Supabase. Manual data, filter, and signed-out access checks remain. T-07 is in progress: likes and threaded comments are implemented; live Supabase interaction and permission checks remain. T-08 is in progress: opportunity publishing and creator lifecycle management are implemented locally; the new database migration and live flows still need verification. T-09 through T-19 have not started. Unit and browser test files have not been added yet. The specification files define the intended behavior; `docs/TASKS.md` tracks the implementation work.
+Implementation progress is tracked in `docs/TASKS.md`. T-10 private collaboration chat is complete. T-11 workspace creation and membership is in progress; its latest migration and live membership flows still need verification. The specification files define the intended behavior. Unit and browser test files have not been added yet.
 
 ## Documentation
 

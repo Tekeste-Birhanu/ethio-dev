@@ -74,7 +74,7 @@ async function loadMessage(messageId) {
   const { data, error } = await supabase
     .from("private_messages")
     .select(
-      "id, conversation_id, sender_id, body, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
+      "id, conversation_id, sender_id, body, message_type, workspace_id, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
     )
     .eq("id", messageId)
     .maybeSingle();
@@ -100,6 +100,8 @@ export function PrivateMessagesPage({ user }) {
   const [conversations, setConversations] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState("");
+  const [listActionError, setListActionError] = useState("");
+  const [listActionBusyId, setListActionBusyId] = useState("");
   const [listRetry, setListRetry] = useState(0);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -110,6 +112,7 @@ export function PrivateMessagesPage({ user }) {
   const [body, setBody] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [workspaceBusy, setWorkspaceBusy] = useState(false);
   const [busyLabel, setBusyLabel] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -277,7 +280,7 @@ export function PrivateMessagesPage({ user }) {
         supabase
           .from("private_messages")
           .select(
-            "id, conversation_id, sender_id, body, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
+            "id, conversation_id, sender_id, body, message_type, workspace_id, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
           )
           .eq("conversation_id", conversationId)
           .order("created_at", { ascending: false })
@@ -335,7 +338,7 @@ export function PrivateMessagesPage({ user }) {
           void supabase
             .from("private_messages")
             .select(
-              "id, conversation_id, sender_id, body, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
+              "id, conversation_id, sender_id, body, message_type, workspace_id, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
             )
             .eq("conversation_id", detail.id)
             .order("created_at", { ascending: false })
@@ -373,7 +376,7 @@ export function PrivateMessagesPage({ user }) {
     const { data, error: queryError } = await supabase
       .from("private_messages")
       .select(
-        "id, conversation_id, sender_id, body, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
+        "id, conversation_id, sender_id, body, message_type, workspace_id, created_at, private_attachments(id, storage_path, original_name, media_type, size_bytes, uploaded_by)",
       )
       .eq("conversation_id", detail.id)
       .or(
@@ -488,6 +491,89 @@ export function PrivateMessagesPage({ user }) {
     setBusy(false);
   }
 
+  async function addCollaboratorToWorkspace() {
+    if (!detail || user?.id !== detail.participant_a || workspaceBusy) return;
+    setWorkspaceBusy(true);
+    setError("");
+    const { data: workspaceId, error: workspaceError } = await supabase.rpc(
+      "add_private_collaborator_to_workspace",
+      { p_request_id: detail.request_id },
+    );
+    if (workspaceError || !workspaceId) {
+      const rpcIsMissing =
+        workspaceError?.code === "PGRST202" ||
+        /could not find the function|schema cache/i.test(
+          workspaceError?.message ?? "",
+        );
+      const collaborationIsUnavailable =
+        /accepted private collaboration not found/i.test(
+          workspaceError?.message ?? "",
+        );
+      setError(
+        rpcIsMissing
+          ? "Workspace setup is not applied to Supabase yet. Run npm run supabase:push, confirm the migrations with npm run supabase:migrations, then try again."
+          : collaborationIsUnavailable
+            ? "This accepted private collaboration could not be found. Refresh the chat and try again."
+            : `The collaborator could not be added to a workspace. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
+      );
+      setWorkspaceBusy(false);
+      return;
+    }
+    window.location.assign(`/workspaces/${encodeURIComponent(workspaceId)}`);
+  }
+
+  async function addConversationToWorkspace(conversation) {
+    if (user?.id !== conversation.participant_a || listActionBusyId) return;
+    setListActionBusyId(conversation.id);
+    setListActionError("");
+    const { data: workspaceId, error: workspaceError } = await supabase.rpc(
+      "add_private_collaborator_to_workspace",
+      { p_request_id: conversation.request_id },
+    );
+    if (workspaceError || !workspaceId) {
+      setListActionError(
+        `The collaborator could not be added to a workspace. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
+      );
+      setListActionBusyId("");
+      return;
+    }
+    window.location.assign(`/workspaces/${encodeURIComponent(workspaceId)}`);
+  }
+
+  async function endConversationFromList(conversation) {
+    if (listActionBusyId) return;
+    if (
+      !window.confirm(
+        "End this private collaboration? Both participants will lose access to the chat and its messages and attachments will be deleted.",
+      )
+    ) {
+      return;
+    }
+    setListActionBusyId(conversation.id);
+    setListActionError("");
+    const { error: endError } = await supabase.rpc("end_private_conversation", {
+      p_conversation_id: conversation.id,
+    });
+    if (endError) {
+      setListActionError(
+        `The collaboration could not be ended. Try again. (Error code: ${endError.code ?? "unknown"})`,
+      );
+    } else {
+      setConversations((current) =>
+        current.filter((item) => item.id !== conversation.id),
+      );
+      if (detail?.id === conversation.id) {
+        setDetail((current) => ({ ...current, status: "ended" }));
+        setMessages([]);
+        setBody("");
+        setAttachment(null);
+      }
+      setListRetry((value) => value + 1);
+      void processStorageCleanup();
+    }
+    setListActionBusyId("");
+  }
+
   if (!isSupabaseConfigured) {
     return (
       <section className="discovery-status">
@@ -541,7 +627,7 @@ export function PrivateMessagesPage({ user }) {
           ) : conversations.length ? (
             <ul>
               {conversations.map((conversation) => (
-                <li key={conversation.id}>
+                <li className="conversation-list-item" key={conversation.id}>
                   <a
                     className={
                       conversationId === conversation.id
@@ -568,12 +654,56 @@ export function PrivateMessagesPage({ user }) {
                       <small>{conversation.opportunityTitle}</small>
                     </span>
                   </a>
+                  <details className="three-dot-menu">
+                    <summary
+                      aria-label={`Actions for ${conversation.profile?.display_name ?? "this conversation"}`}
+                      title="Conversation actions"
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24">
+                        <circle cx="12" cy="5" r="1" />
+                        <circle cx="12" cy="12" r="1" />
+                        <circle cx="12" cy="19" r="1" />
+                      </svg>
+                    </summary>
+                    <div className="three-dot-menu-items">
+                      {user.id === conversation.participant_a && (
+                        <button
+                          type="button"
+                          disabled={Boolean(listActionBusyId)}
+                          onClick={(event) => {
+                            event.currentTarget.closest("details").open = false;
+                            void addConversationToWorkspace(conversation);
+                          }}
+                        >
+                          {listActionBusyId === conversation.id
+                            ? "Adding…"
+                            : "Add to workspace"}
+                        </button>
+                      )}
+                      <button
+                        className="end-collaboration"
+                        type="button"
+                        disabled={Boolean(listActionBusyId)}
+                        onClick={(event) => {
+                          event.currentTarget.closest("details").open = false;
+                          void endConversationFromList(conversation);
+                        }}
+                      >
+                        End collaboration
+                      </button>
+                    </div>
+                  </details>
                 </li>
               ))}
             </ul>
           ) : (
             <p className="muted-small">
               Accepted private chats will appear here.
+            </p>
+          )}
+          {listActionError && (
+            <p className="feedback feedback-error" role="alert">
+              {listActionError}
             </p>
           )}
         </aside>
@@ -616,7 +746,7 @@ export function PrivateMessagesPage({ user }) {
                 <a className="private-chat-back" href="/messages">
                   <span aria-hidden="true">←</span> Back to conversations
                 </a>
-                <div>
+                <div className="private-chat-identity">
                   <a
                     className="text-link"
                     href={
@@ -629,16 +759,48 @@ export function PrivateMessagesPage({ user }) {
                   </a>
                   <p>{detail.opportunityTitle}</p>
                 </div>
-                {detail.status === "active" && (
-                  <button
-                    className="text-button end-collaboration"
-                    type="button"
-                    disabled={busy}
-                    onClick={endConversation}
-                  >
-                    End collaboration
-                  </button>
-                )}
+                <div className="private-chat-header-actions">
+                  {detail.status === "active" && (
+                    <details className="three-dot-menu">
+                      <summary
+                        aria-label="Conversation actions"
+                        title="Conversation actions"
+                      >
+                        <svg aria-hidden="true" viewBox="0 0 24 24">
+                          <circle cx="12" cy="5" r="1" />
+                          <circle cx="12" cy="12" r="1" />
+                          <circle cx="12" cy="19" r="1" />
+                        </svg>
+                      </summary>
+                      <div className="three-dot-menu-items">
+                        {user?.id === detail.participant_a && (
+                          <button
+                            type="button"
+                            disabled={busy || workspaceBusy}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details").open =
+                                false;
+                              void addCollaboratorToWorkspace();
+                            }}
+                          >
+                            {workspaceBusy ? "Adding?" : "Add to workspace"}
+                          </button>
+                        )}
+                        <button
+                          className="end-collaboration"
+                          type="button"
+                          disabled={busy || workspaceBusy}
+                          onClick={(event) => {
+                            event.currentTarget.closest("details").open = false;
+                            void endConversation();
+                          }}
+                        >
+                          End collaboration
+                        </button>
+                      </div>
+                    </details>
+                  )}
+                </div>
               </header>
               {notice && (
                 <p className="feedback request-feedback" role="status">
@@ -688,13 +850,32 @@ export function PrivateMessagesPage({ user }) {
                       messages.map((message) => (
                         <article
                           className={
-                            message.sender_id === user.id
-                              ? "private-message is-own-message"
-                              : "private-message"
+                            message.message_type === "system"
+                              ? "private-message-system-notice"
+                              : message.sender_id === user.id
+                                ? "private-message is-own-message"
+                                : "private-message"
                           }
                           key={message.id}
                         >
-                          <p className="private-message-body">{message.body}</p>
+                          <p
+                            className={
+                              message.message_type === "system"
+                                ? "private-message-system-copy"
+                                : "private-message-body"
+                            }
+                          >
+                            {message.body}
+                          </p>
+                          {message.message_type === "system" &&
+                            message.workspace_id && (
+                              <a
+                                className="private-message-workspace-link"
+                                href={`/workspaces/${encodeURIComponent(message.workspace_id)}`}
+                              >
+                                Open workspace
+                              </a>
+                            )}
                           {(message.private_attachments ?? []).map((file) => (
                             <a
                               className="private-attachment-link"
