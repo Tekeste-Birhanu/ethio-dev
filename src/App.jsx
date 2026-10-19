@@ -19,6 +19,11 @@ const OpportunityRequestsPage = lazy(() =>
     default: module.OpportunityRequestsPage,
   })),
 );
+const PrivateMessagesPage = lazy(() =>
+  import("./features/messages/PrivateMessagesPage.jsx").then((module) => ({
+    default: module.PrivateMessagesPage,
+  })),
+);
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
@@ -141,7 +146,8 @@ function NavItems({ mobile = false, profileHref }) {
           (label === "Developers" &&
             (pathname === "/developers" || pathname.startsWith("/u/"))) ||
           (label === "Profile" &&
-            (pathname === "/my-profile" || pathname === "/settings/profile"));
+            (pathname === "/my-profile" || pathname === "/settings/profile")) ||
+          (label === "Messages" && pathname === "/messages");
         return (
           <a
             key={label}
@@ -241,6 +247,10 @@ function App() {
                 user={user}
                 opportunityId={window.location.pathname.split("/")[2]}
               />
+            </Suspense>
+          ) : window.location.pathname === "/messages" ? (
+            <Suspense fallback={<p role="status">Loading messages…</p>}>
+              <PrivateMessagesPage user={user} />
             </Suspense>
           ) : window.location.pathname === "/my-opportunities" ? (
             <Suspense fallback={<p role="status">Loading opportunities…</p>}>

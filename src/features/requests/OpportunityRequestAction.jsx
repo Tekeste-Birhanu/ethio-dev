@@ -28,6 +28,7 @@ export function OpportunityRequestAction({ opportunity, user }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [destinationId, setDestinationId] = useState("");
+  const [conversationEnded, setConversationEnded] = useState(false);
   const isOwner = user?.id === opportunity.creator?.user_id;
   const lookupIsCurrent = Boolean(
     user?.id &&
@@ -66,18 +67,24 @@ export function OpportunityRequestAction({ opportunity, user }) {
     let active = true;
     const destinationQuery =
       request.acceptance_path === "private_chat"
-        ? supabase
-            .from("private_conversations")
-            .select("id")
-            .eq("request_id", request.id)
-            .maybeSingle()
+        ? supabase.rpc("get_private_conversation_state", {
+            p_request_id: request.id,
+          })
         : supabase
             .from("workspaces")
             .select("id")
             .eq("opportunity_id", opportunity.id)
             .maybeSingle();
     destinationQuery.then(({ data }) => {
-      if (active) setDestinationId(data?.id ?? "");
+      if (!active) return;
+      if (request.acceptance_path === "private_chat") {
+        const conversation = Array.isArray(data) ? data[0] : data;
+        setConversationEnded(conversation?.status === "ended");
+        if (conversation?.status === "active")
+          setDestinationId(conversation.conversation_id);
+      } else {
+        setDestinationId(data?.id ?? "");
+      }
     });
     return () => {
       active = false;
@@ -165,9 +172,11 @@ export function OpportunityRequestAction({ opportunity, user }) {
     action = (
       <>
         <span className="request-status">
-          Accepted · {isChat ? "Private chat" : "Workspace"}
+          {conversationEnded
+            ? "Collaboration ended"
+            : `Accepted · ${isChat ? "Private chat" : "Workspace"}`}
         </span>
-        {destinationId && (
+        {destinationId && !conversationEnded && (
           <a
             className="button button-secondary request-destination"
             href={

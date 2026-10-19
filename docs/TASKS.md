@@ -218,7 +218,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Revoke chat access and delete its messages and attachments as specified by the PRD.
 - **Done when:** the operation cannot leave downloadable orphaned files or accessible message history.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-19). Added the private messages page, active-conversation list, participant-only message workflow, Realtime updates with database history recovery, older-message pagination, allowlisted private attachments, and end-collaboration cleanup. Added a migration for trusted send/end operations and Realtime publication. The migration still needs to be applied to Supabase, and live two-participant, attachment, reconnect, and end-access flows remain to be verified.
 
 ## M5 — Team workspaces
 

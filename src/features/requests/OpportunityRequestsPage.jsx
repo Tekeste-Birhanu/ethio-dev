@@ -48,7 +48,32 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
       if (requestsError) {
         setError("Requests could not be loaded. Try again.");
       } else {
-        const rows = data ?? [];
+        const rows = await Promise.all(
+          (data ?? []).map(async (row) => {
+            if (
+              row.status !== "accepted" ||
+              row.acceptance_path !== "private_chat"
+            ) {
+              return row;
+            }
+            const { data: conversationData } = await supabase.rpc(
+              "get_private_conversation_state",
+              { p_request_id: row.id },
+            );
+            const conversation = Array.isArray(conversationData)
+              ? conversationData[0]
+              : conversationData;
+            return {
+              ...row,
+              conversation_status: conversation?.status ?? null,
+              destination_id:
+                conversation?.status === "active"
+                  ? conversation.conversation_id
+                  : null,
+            };
+          }),
+        );
+        if (!active) return;
         setRequests(rows);
         const paths = [
           ...new Set(
@@ -101,6 +126,8 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
               status: accept ? "accepted" : "rejected",
               acceptance_path: accept ? path : null,
               destination_id: accept ? data : null,
+              conversation_status:
+                accept && path === "private_chat" ? "active" : null,
             }
           : item,
       ),
@@ -177,6 +204,10 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
       ) : (
         <div className="request-list">
           {requests.map((row) => {
+            const collaborationEnded =
+              row.status === "accepted" &&
+              row.acceptance_path === "private_chat" &&
+              row.conversation_status === "ended";
             const applicant = row.applicant;
             const skills = (applicant?.profile_skills ?? [])
               .map((item) => item.skills?.name)
@@ -216,23 +247,27 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
                       {row.message}
                     </blockquote>
                   )}
-                  <span className={`status-chip request-${row.status}`}>
-                    {row.status}
+                  <span
+                    className={`status-chip ${collaborationEnded ? "status-closed" : `request-${row.status}`}`}
+                  >
+                    {collaborationEnded ? "Collaboration ended" : row.status}
                   </span>
-                  {row.status === "accepted" && row.destination_id && (
-                    <a
-                      className="button button-secondary request-destination"
-                      href={
-                        row.acceptance_path === "private_chat"
-                          ? `/messages?conversation=${encodeURIComponent(row.destination_id)}`
-                          : `/workspaces/${encodeURIComponent(row.destination_id)}`
-                      }
-                    >
-                      {row.acceptance_path === "private_chat"
-                        ? "Open private chat"
-                        : "Open workspace"}
-                    </a>
-                  )}
+                  {row.status === "accepted" &&
+                    row.destination_id &&
+                    !collaborationEnded && (
+                      <a
+                        className="button button-secondary request-destination"
+                        href={
+                          row.acceptance_path === "private_chat"
+                            ? `/messages?conversation=${encodeURIComponent(row.destination_id)}`
+                            : `/workspaces/${encodeURIComponent(row.destination_id)}`
+                        }
+                      >
+                        {row.acceptance_path === "private_chat"
+                          ? "Open private chat"
+                          : "Open workspace"}
+                      </a>
+                    )}
                 </div>
                 {row.status === "pending" && (
                   <div className="request-decision-actions">
