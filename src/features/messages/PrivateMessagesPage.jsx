@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
+import {
+  formatChatDate,
+  formatChatTime,
+  localChatDateKey,
+} from "../../lib/chatDateTime.js";
 
 const PAGE_SIZE = 30;
 const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024;
@@ -847,56 +852,73 @@ export function PrivateMessagesPage({ user }) {
                         Loading messages…
                       </p>
                     ) : messages.length ? (
-                      messages.map((message) => (
-                        <article
-                          className={
-                            message.message_type === "system"
-                              ? "private-message-system-notice"
-                              : message.sender_id === user.id
-                                ? "private-message is-own-message"
-                                : "private-message"
-                          }
-                          key={message.id}
-                        >
-                          <p
-                            className={
-                              message.message_type === "system"
-                                ? "private-message-system-copy"
-                                : "private-message-body"
-                            }
-                          >
-                            {message.body}
-                          </p>
-                          {message.message_type === "system" &&
-                            message.workspace_id && (
-                              <a
-                                className="private-message-workspace-link"
-                                href={`/workspaces/${encodeURIComponent(message.workspace_id)}`}
-                              >
-                                Open workspace
-                              </a>
+                      messages.map((message, index) => {
+                        const dateKey = localChatDateKey(message.created_at);
+                        const previousDateKey =
+                          index > 0
+                            ? localChatDateKey(messages[index - 1].created_at)
+                            : null;
+                        return (
+                          <Fragment key={message.id}>
+                            {dateKey !== previousDateKey && (
+                              <div className="chat-date-divider">
+                                <span>
+                                  {formatChatDate(message.created_at)}
+                                </span>
+                              </div>
                             )}
-                          {(message.private_attachments ?? []).map((file) => (
-                            <a
-                              className="private-attachment-link"
-                              href={file.signed_url || undefined}
-                              key={file.id}
-                              download={file.original_name}
-                              target="_blank"
-                              rel="noreferrer"
+                            <article
+                              className={
+                                message.message_type === "system"
+                                  ? "private-message-system-notice"
+                                  : message.sender_id === user.id
+                                    ? "private-message is-own-message"
+                                    : "private-message"
+                              }
                             >
-                              <span aria-hidden="true">↧</span>
-                              <span>{file.original_name}</span>
-                              <small>
-                                {Math.ceil(file.size_bytes / 1024)} KB
-                              </small>
-                            </a>
-                          ))}
-                          <time dateTime={message.created_at}>
-                            {new Date(message.created_at).toLocaleString()}
-                          </time>
-                        </article>
-                      ))
+                              <p
+                                className={
+                                  message.message_type === "system"
+                                    ? "private-message-system-copy"
+                                    : "private-message-body"
+                                }
+                              >
+                                {message.body}
+                              </p>
+                              {message.message_type === "system" &&
+                                message.workspace_id && (
+                                  <a
+                                    className="private-message-workspace-link"
+                                    href={`/workspaces/${encodeURIComponent(message.workspace_id)}`}
+                                  >
+                                    Open workspace
+                                  </a>
+                                )}
+                              {(message.private_attachments ?? []).map(
+                                (file) => (
+                                  <a
+                                    className="private-attachment-link"
+                                    href={file.signed_url || undefined}
+                                    key={file.id}
+                                    download={file.original_name}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    <span aria-hidden="true">↧</span>
+                                    <span>{file.original_name}</span>
+                                    <small>
+                                      {Math.ceil(file.size_bytes / 1024)} KB
+                                    </small>
+                                  </a>
+                                ),
+                              )}
+                              <time dateTime={message.created_at}>
+                                {formatChatTime(message.created_at)}
+                              </time>
+                            </article>
+                          </Fragment>
+                        );
+                      })
                     ) : (
                       <p className="muted-small">
                         No messages yet. Start the conversation.

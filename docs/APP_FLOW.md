@@ -117,7 +117,7 @@ Workspace member
   1. Creator creates the workspace or accepts a request directly into it. A new workspace starts Active.
   2. Creator appoints admins. Creator and admins can invite or remove non-owner members; non-owner members can leave.
   3. On removal or departure, unfinished tasks assigned to that member are unassigned. Completed task history remains.
-  4. Members open workspace chat and project tools. Deleting the opportunity does not remove the workspace.
+  4. Members land in workspace chat. They open the workspace header’s three-dot menu and choose Members to view the member list and available membership actions. The owner may permanently delete the workspace from this menu after reviewing the effects and entering its name; admins cannot delete it. Deleting the opportunity does not remove the workspace.
 - **Success outcome:** Authorized members enter the workspace and can work according to their role.
 - **Failure and recovery:** Invalid, expired, or revoked invitations do not grant access. If membership changes during an action, refresh authorization and show the current workspace state.
 - **Related requirements:** F-07, F-08, F-09, F-10, F-11.
@@ -127,10 +127,10 @@ Direct invitations remain available to the creator and admins for an existing wo
 ### J-08 — Coordinate work with chat, tasks, and milestones
 
 - **Actor / role:** Workspace creator, admin, or member/assignee.
-- **Entry point:** Workspace overview.
+- **Entry point:** Workspace chat; members and membership actions are reached through the workspace header menu.
 - **Preconditions / access:** Workspace membership required. Creator/admin manage task details, assignees, and milestones; any assignee can update the shared task status.
 - **Steps:**
-  1. Members exchange messages and supported attachments in workspace chat.
+  1. Members open the workspace and exchange messages and supported attachments in the main chat view. They can open Members from the workspace header menu when needed.
   2. Creator/admin create tasks, assign one or more members, and optionally group each task under at most one milestone.
   3. Assignees update a task’s shared status: To do, In progress, or Done.
   4. A milestone with linked tasks auto-completes when all are Done. An empty milestone stays incomplete until manually marked. A manual completion state remains until a creator/admin changes it.
@@ -179,7 +179,7 @@ Route shapes are illustrative; implementations may choose equivalent URLs while 
 | `/opportunities/new`, `/my-opportunities`, `/opportunities/:id/edit` | Open feed composer or manage own opportunities | Signed-in; verified to publish; owner for management | J-03 |
 | `/opportunities/:id/requests` | Review requests | Opportunity creator | J-05 |
 | `/messages` | Private conversations | Signed-in; only active participants see each conversation | J-06 |
-| `/workspaces/:id` | Team overview, chat, tasks, milestones | Workspace members | J-07, J-08 |
+| `/workspaces/:id` | Workspace chat; Members and membership actions from the header menu | Workspace members | J-07, J-08 |
 | `/workspaces/:id/settings` | Membership, roles, lifecycle, showcase settings | Workspace creator/admin by action; owner for status changes | J-07, J-09 |
 | `/notifications` | In-app notification center | Signed-in user | J-10 |
 

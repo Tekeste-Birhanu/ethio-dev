@@ -242,7 +242,9 @@ This task groups the initial technical foundation into modules so each part keep
 - Unassign unfinished tasks when a member leaves or is removed while retaining completed task history.
 - **Done when:** removal and departure update all relevant access and assignments consistently; the creator remains owner because ownership transfer is out of scope.
 
-**Status:** Complete (2026-10-19; user confirmed). Added the workspace list and membership page, workspace creation after accepted collaboration, invitations, creator/admin/member controls, and access revocation backed by trusted database functions. Creators can add accepted private-chat collaborators from the chat header or conversation-list action menu; the chat records a system notice with a link to the workspace. Workspace member actions are available from each member's three-dot menu.
+- The permanent owner can delete the workspace from the header menu after reviewing the effects and typing the workspace name. This removes workspace data and related notifications, and queues private attachment cleanup; the opportunity and accepted collaboration history remain, allowing the owner to create a replacement workspace.
+
+**Status:** In progress (2026-10-19). Added owner-only workspace deletion with a confirmation, trusted RPC authorization, cascading workspace-data removal, and queued Storage cleanup. The deletion migration and owner/non-owner deletion behavior still need live Supabase verification. Existing creation, membership, and chat-to-workspace flows were previously confirmed by the user.
 
 ### T-12 — Build workspace chat and attachments
 
@@ -258,7 +260,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Enforce current membership on upload, preview, and download, including access revocation after removal.
 - **Done when:** files follow the workspace’s private access and deletion rules.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-19). Added the workspace chat panel with persistent message history, older-message pagination, Realtime updates, and private file attachments using the T-10 allowlist and 10 MB limit. Message sends go through a trusted RPC; workspace membership RLS and Storage policies gate reads, subscriptions, uploads, and downloads. The new migration and live member-removal/access-revocation flows still need to be applied and verified in Supabase.
 
 ### T-13 — Implement workspace tasks and milestones
 

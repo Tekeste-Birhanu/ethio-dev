@@ -22,16 +22,16 @@
 - **Typography:** Use a neutral, familiar sans-serif system stack (`Inter` when available, then system UI fallbacks). Use clear heading hierarchy, readable body text, and concise labels. Do not require a remote font service.
 - **Color:** Use the following palette as design tokens:
 
-  | Token / role | Color | Usage |
-  |---|---|---|
-  | Warm canvas | `#FAF8F5` | Main page background |
-  | Surface | `#FFFFFF` | Cards, panels, dialogs, and navigation surfaces |
-  | Primary text | `#24201D` | Headings and main content |
-  | Muted text | `#746B65` | Supporting copy and metadata |
-  | Primary action and link | `#176B9B` | Primary buttons with white labels, links, selected navigation, and focused controls |
-  | Sky-blue accent | `#229ED9` | Small brand marks and decorative highlights; do not use for small text or as a button fill with a dark label |
-  | Terracotta accent | `#A9472A` | Likes and occasional emphasis |
-  | Border | `#E8E1DB` | Card and control outlines |
+  | Token / role            | Color     | Usage                                                                                                        |
+  | ----------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+  | Warm canvas             | `#FAF8F5` | Main page background                                                                                         |
+  | Surface                 | `#FFFFFF` | Cards, panels, dialogs, and navigation surfaces                                                              |
+  | Primary text            | `#24201D` | Headings and main content                                                                                    |
+  | Muted text              | `#746B65` | Supporting copy and metadata                                                                                 |
+  | Primary action and link | `#176B9B` | Primary buttons with white labels, links, selected navigation, and focused controls                          |
+  | Sky-blue accent         | `#229ED9` | Small brand marks and decorative highlights; do not use for small text or as a button fill with a dark label |
+  | Terracotta accent       | `#A9472A` | Likes and occasional emphasis                                                                                |
+  | Border                  | `#E8E1DB` | Card and control outlines                                                                                    |
 
   Use semantic success, warning, and error colors consistently, with text or icons in addition to color. Maintain WCAG AA contrast for text and controls. The primary blue with white text and terracotta on white both provide approximately 5.8:1 contrast. Sky blue is too light for small text on white.
 
@@ -43,20 +43,20 @@
 
 ## 4. Components and patterns
 
-| Component / pattern | Purpose | Required behavior / variants |
-|---|---|---|
-| Primary button | Main page action, such as posting an idea or submitting a request | Deep blue fill with white label; visible hover, focus, pressed, disabled, and loading states. Keep the label verb-led and specific. |
-| Secondary button | Supporting or lower-priority action | Neutral surface with clear border or text treatment. Destructive actions use an explicit destructive style and confirmation when required. |
-| Form field | Account, profile, opportunity, and workspace data entry | Persistent label, optional hint, field-level validation, visible required state, and preserved safe input after recoverable errors. |
-| Search and filters | Find opportunities, skills, cities, and developers | Keep the search field visible and reveal staged filter controls while search is active; apply selections with an explicit action, provide a clear reset, and show a helpful empty state. |
-| Opportunity post | Read and engage with a public project in the social feed | Show creator, title, description, skills, city when present, plus visible like and comment icon counts. Expand long descriptions inline and open comments in a popup; closed status remains visible without hiding engagement. |
-| Avatar and profile identity | Recognize contributors and creators | Use a profile photo when available; otherwise show a generic person icon. Provide a text name alongside the avatar. |
-| Skill and status chip | Summarize skills and project state | Use concise text and sufficient contrast. Never use color as the only status indicator. |
-| Comments and likes | Engage with opportunities | Show nested replies with clear author and reply context. Label like controls with their current state for assistive technology. |
-| Chat message and attachment | Private and workspace conversations | Distinguish sender and timestamp; show sending, sent, failed, and retry states. Make attachment type and download action clear. |
-| Task and milestone row | Review and update workspace progress | Make status, assignees, due date, milestone, and permitted actions scannable. Clearly indicate read-only project states. |
-| Dialog and feedback message | Confirm destructive actions and report results | Move focus into dialogs, support keyboard dismissal where safe, describe consequences, and return focus to the invoking control. Use concise success and error feedback. |
-| Empty state | Explain an empty feed, inbox, search, or workspace section | Use a simple icon and helpful text. Include a relevant next action when one exists. |
+| Component / pattern         | Purpose                                                           | Required behavior / variants                                                                                                                                                                                                   |
+| --------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Primary button              | Main page action, such as posting an idea or submitting a request | Deep blue fill with white label; visible hover, focus, pressed, disabled, and loading states. Keep the label verb-led and specific.                                                                                            |
+| Secondary button            | Supporting or lower-priority action                               | Neutral surface with clear border or text treatment. Destructive actions use an explicit destructive style and confirmation when required.                                                                                     |
+| Form field                  | Account, profile, opportunity, and workspace data entry           | Persistent label, optional hint, field-level validation, visible required state, and preserved safe input after recoverable errors.                                                                                            |
+| Search and filters          | Find opportunities, skills, cities, and developers                | Keep the search field visible and reveal staged filter controls while search is active; apply selections with an explicit action, provide a clear reset, and show a helpful empty state.                                       |
+| Opportunity post            | Read and engage with a public project in the social feed          | Show creator, title, description, skills, city when present, plus visible like and comment icon counts. Expand long descriptions inline and open comments in a popup; closed status remains visible without hiding engagement. |
+| Avatar and profile identity | Recognize contributors and creators                               | Use a profile photo when available; otherwise show a generic person icon. Provide a text name alongside the avatar.                                                                                                            |
+| Skill and status chip       | Summarize skills and project state                                | Use concise text and sufficient contrast. Never use color as the only status indicator.                                                                                                                                        |
+| Comments and likes          | Engage with opportunities                                         | Show nested replies with clear author and reply context. Label like controls with their current state for assistive technology.                                                                                                |
+| Chat message and attachment | Private and workspace conversations                               | Distinguish sender and timestamp; show sending, sent, failed, and retry states. Make attachment type and download action clear.                                                                                                |
+| Task and milestone row      | Review and update workspace progress                              | Make status, assignees, due date, milestone, and permitted actions scannable. Clearly indicate read-only project states.                                                                                                       |
+| Dialog and feedback message | Confirm destructive actions and report results                    | Move focus into dialogs, support keyboard dismissal where safe, describe consequences, and return focus to the invoking control. Use concise success and error feedback.                                                       |
+| Empty state                 | Explain an empty feed, inbox, search, or workspace section        | Use a simple icon and helpful text. Include a relevant next action when one exists.                                                                                                                                            |
 
 ## 5. Screen-specific guidance
 
@@ -94,7 +94,7 @@
 - **Purpose:** Support one-to-one coordination and team collaboration.
 - **Layout:** Keep conversation or workspace identity visible, with a distinct message area and composer. Workspace sections provide clear access to chat, tasks, milestones, members, and project status.
 - **Primary action:** Send a message in chat; create or update work items in a workspace.
-- **Content and behavior:** Distinguish private chat from workspace chat. Show attachment progress and failure recovery. Clearly communicate membership and read-only status. Confirm ending a private collaboration or removing a member when the action has consequential effects.
+- **Content and behavior:** Distinguish private chat from workspace chat. In workspace chat, show the sender’s display name above each message. Group messages by day with a centered date pill and show each message’s local time without seconds. Show attachment progress and failure recovery. Clearly communicate membership and read-only status. Confirm ending a private collaboration or removing a member when the action has consequential effects.
 - **Responsive changes:** Use a single-pane navigation pattern on mobile and make the composer reachable above the mobile keyboard.
 - **Related flow:** J-06 through J-08 in `APP_FLOW.md`.
 

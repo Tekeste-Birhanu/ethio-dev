@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
+import WorkspaceChat from "./WorkspaceChat.jsx";
 
 function WorkspaceStatus({ title, children }) {
   return (
@@ -8,6 +9,20 @@ function WorkspaceStatus({ title, children }) {
       {children}
     </section>
   );
+}
+
+async function processStorageCleanup() {
+  const { data: jobs } = await supabase.rpc("claim_storage_cleanup_jobs");
+  for (const job of jobs ?? []) {
+    const { error } = await supabase.storage
+      .from(job.bucket_id)
+      .remove([job.object_path]);
+    if (!error) {
+      await supabase.rpc("acknowledge_storage_cleanup_job", {
+        p_job_id: job.job_id,
+      });
+    }
+  }
 }
 
 export default function WorkspacePage({ user, workspaceId = null }) {
@@ -23,6 +38,17 @@ export default function WorkspacePage({ user, workspaceId = null }) {
   const [inviteBusyUserId, setInviteBusyUserId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showMembers, setShowMembers] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [deleteDialogError, setDeleteDialogError] = useState("");
+  const deleteDialogRef = useRef(null);
+
+  useEffect(() => {
+    const dialog = deleteDialogRef.current;
+    if (deleteDialogOpen && dialog && !dialog.open) dialog.showModal();
+    else if (!deleteDialogOpen && dialog?.open) dialog.close();
+  }, [deleteDialogOpen]);
 
   const load = useCallback(async () => {
     if (!user || !isSupabaseConfigured) return;
@@ -257,6 +283,42 @@ export default function WorkspacePage({ user, workspaceId = null }) {
     }
   }
 
+  async function deleteWorkspace() {
+    if (
+      role !== "owner" ||
+      busy ||
+      deleteConfirmName.trim() !== workspace?.title
+    )
+      return;
+
+    setBusy(true);
+    setDeleteDialogError("");
+    const { error: deleteError } = await supabase.rpc("delete_workspace", {
+      p_workspace_id: workspaceId,
+    });
+    if (deleteError) {
+      const functionMissing =
+        deleteError.code === "PGRST202" ||
+        /could not find the function|schema cache/i.test(
+          deleteError.message ?? "",
+        );
+      setDeleteDialogError(
+        functionMissing
+          ? "Workspace deletion setup is not applied to Supabase yet. Apply the latest migration, then try again."
+          : `The workspace could not be deleted. Try again. (Error code: ${deleteError.code ?? "unknown"})`,
+      );
+      setBusy(false);
+      return;
+    }
+
+    try {
+      await processStorageCleanup();
+    } catch {
+      // The storage cleanup job remains queued for another authorized attempt.
+    }
+    window.location.assign("/workspaces");
+  }
+
   if (!isSupabaseConfigured) {
     return (
       <WorkspaceStatus title="Connect Supabase">
@@ -354,11 +416,50 @@ export default function WorkspacePage({ user, workspaceId = null }) {
       <div className="page-heading">
         <div>
           <h1>{workspace?.title ?? "Workspace"}</h1>
-          <p className="page-description">Project workspace</p>
+          <p className="page-description">
+            Project workspace · {workspace?.project_status}
+          </p>
         </div>
-        <a className="button button-secondary" href="/workspaces">
-          All workspaces
-        </a>
+        <div className="workspace-page-actions">
+          <a className="button button-secondary" href="/workspaces">
+            All workspaces
+          </a>
+          <details className="three-dot-menu">
+            <summary aria-label="Workspace settings" title="Workspace settings">
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="19" r="1" />
+              </svg>
+            </summary>
+            <div className="three-dot-menu-items">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.currentTarget.closest("details").open = false;
+                  setShowMembers(true);
+                }}
+              >
+                Members ({members.length})
+              </button>
+              {role === "owner" && (
+                <button
+                  className="workspace-delete-action"
+                  type="button"
+                  disabled={busy}
+                  onClick={(event) => {
+                    event.currentTarget.closest("details").open = false;
+                    setDeleteConfirmName("");
+                    setDeleteDialogError("");
+                    setDeleteDialogOpen(true);
+                  }}
+                >
+                  Delete workspace
+                </button>
+              )}
+            </div>
+          </details>
+        </div>
       </div>
       {error && (
         <p className="feedback feedback-error" role="alert">
@@ -370,133 +471,215 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           {notice}
         </p>
       )}
-      <section className="workspace-members-panel">
-        <div className="section-heading">
-          <h2>Members</h2>
-          <span className="status-chip status-closed">
-            {workspace?.project_status}
-          </span>
-        </div>
-        <ul className="workspace-member-list">
-          {members.map((member) => {
-            const canChangeRole = role === "owner" && member.role !== "owner";
-            const canRemove =
-              canManage &&
-              member.role !== "owner" &&
-              member.user_id !== user.id;
-            return (
-              <li key={member.user_id}>
-                <a
-                  href={`/u/${encodeURIComponent(member.profiles?.username ?? "")}`}
-                >
-                  <strong>
-                    {member.profiles?.display_name ?? "Developer"}
-                  </strong>
-                  <small>@{member.profiles?.username ?? "developer"}</small>
-                </a>
-                <span className="workspace-member-role">{member.role}</span>
-                {(canChangeRole || canRemove) && (
-                  <details className="three-dot-menu workspace-member-actions">
-                    <summary
-                      aria-label={`Actions for ${member.profiles?.display_name ?? "this member"}`}
-                      title="Member actions"
-                    >
-                      <svg aria-hidden="true" viewBox="0 0 24 24">
-                        <circle cx="12" cy="5" r="1" />
-                        <circle cx="12" cy="12" r="1" />
-                        <circle cx="12" cy="19" r="1" />
-                      </svg>
-                    </summary>
-                    <div className="three-dot-menu-items">
-                      {canChangeRole && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={(event) => {
-                            event.currentTarget.closest("details").open = false;
-                            void mutateMembership(
-                              "set_workspace_admin",
-                              member.user_id,
-                              member.role !== "admin",
-                            );
-                          }}
-                        >
-                          {member.role === "admin"
-                            ? "Make member"
-                            : "Make admin"}
-                        </button>
-                      )}
-                      {canRemove && (
-                        <button
-                          className="workspace-member-remove"
-                          type="button"
-                          disabled={busy}
-                          onClick={(event) => {
-                            event.currentTarget.closest("details").open = false;
-                            void mutateMembership(
-                              "end_workspace_membership",
-                              member.user_id,
-                            );
-                          }}
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </details>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {role !== "owner" && (
+      {showMembers ? (
+        <>
           <button
-            className="button button-secondary"
+            className="button button-secondary workspace-back-to-chat"
             type="button"
-            disabled={busy}
-            onClick={() => mutateMembership("end_workspace_membership")}
+            onClick={() => setShowMembers(false)}
           >
-            Leave workspace
+            <span aria-hidden="true">←</span> Back to chat
           </button>
-        )}
-        {canManage && (
-          <form className="workspace-invite-form" onSubmit={findDevelopers}>
-            <label className="field-label" htmlFor="workspace-invite-search">
-              Invite a developer
-            </label>
-            <div className="workspace-invite-search">
-              <input
-                id="workspace-invite-search"
-                className="field-control"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search by username"
-              />
-              <button className="button button-secondary" type="submit">
-                Search
-              </button>
+          <section className="workspace-members-panel">
+            <div className="section-heading">
+              <h2>Members</h2>
+              <span className="status-chip status-closed">
+                {workspace?.project_status}
+              </span>
             </div>
-            {matches.map((person) => (
-              <div className="workspace-list-item" key={person.user_id}>
-                <span>
-                  <strong>{person.display_name}</strong>
-                  <small>@{person.username}</small>
-                </span>
-                <button
-                  className="button button-primary"
-                  type="button"
-                  disabled={busy}
-                  onClick={() =>
-                    mutateMembership("invite_workspace_member", person.user_id)
-                  }
+            <ul className="workspace-member-list">
+              {members.map((member) => {
+                const canChangeRole =
+                  role === "owner" && member.role !== "owner";
+                const canRemove =
+                  canManage &&
+                  member.role !== "owner" &&
+                  member.user_id !== user.id;
+                return (
+                  <li key={member.user_id}>
+                    <a
+                      href={`/u/${encodeURIComponent(member.profiles?.username ?? "")}`}
+                    >
+                      <strong>
+                        {member.profiles?.display_name ?? "Developer"}
+                      </strong>
+                      <small>@{member.profiles?.username ?? "developer"}</small>
+                    </a>
+                    <span className="workspace-member-role">{member.role}</span>
+                    {(canChangeRole || canRemove) && (
+                      <details className="three-dot-menu workspace-member-actions">
+                        <summary
+                          aria-label={`Actions for ${member.profiles?.display_name ?? "this member"}`}
+                          title="Member actions"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1" />
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="12" cy="19" r="1" />
+                          </svg>
+                        </summary>
+                        <div className="three-dot-menu-items">
+                          {canChangeRole && (
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={(event) => {
+                                event.currentTarget.closest("details").open =
+                                  false;
+                                void mutateMembership(
+                                  "set_workspace_admin",
+                                  member.user_id,
+                                  member.role !== "admin",
+                                );
+                              }}
+                            >
+                              {member.role === "admin"
+                                ? "Make member"
+                                : "Make admin"}
+                            </button>
+                          )}
+                          {canRemove && (
+                            <button
+                              className="workspace-member-remove"
+                              type="button"
+                              disabled={busy}
+                              onClick={(event) => {
+                                event.currentTarget.closest("details").open =
+                                  false;
+                                void mutateMembership(
+                                  "end_workspace_membership",
+                                  member.user_id,
+                                );
+                              }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </details>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {role !== "owner" && (
+              <button
+                className="button button-secondary"
+                type="button"
+                disabled={busy}
+                onClick={() => mutateMembership("end_workspace_membership")}
+              >
+                Leave workspace
+              </button>
+            )}
+            {canManage && (
+              <form className="workspace-invite-form" onSubmit={findDevelopers}>
+                <label
+                  className="field-label"
+                  htmlFor="workspace-invite-search"
                 >
-                  {inviteBusyUserId === person.user_id ? "Adding…" : "Add"}
-                </button>
-              </div>
-            ))}
-          </form>
-        )}
-      </section>
+                  Invite a developer
+                </label>
+                <div className="workspace-invite-search">
+                  <input
+                    id="workspace-invite-search"
+                    className="field-control"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search by username"
+                  />
+                  <button className="button button-secondary" type="submit">
+                    Search
+                  </button>
+                </div>
+                {matches.map((person) => (
+                  <div className="workspace-list-item" key={person.user_id}>
+                    <span>
+                      <strong>{person.display_name}</strong>
+                      <small>@{person.username}</small>
+                    </span>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      disabled={busy}
+                      onClick={() =>
+                        mutateMembership(
+                          "invite_workspace_member",
+                          person.user_id,
+                        )
+                      }
+                    >
+                      {inviteBusyUserId === person.user_id ? "Adding…" : "Add"}
+                    </button>
+                  </div>
+                ))}
+              </form>
+            )}
+          </section>
+        </>
+      ) : (
+        <WorkspaceChat workspaceId={workspaceId} user={user} />
+      )}
+      <dialog
+        className="workspace-delete-dialog"
+        ref={deleteDialogRef}
+        aria-labelledby="workspace-delete-title"
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setDeleteConfirmName("");
+          setDeleteDialogError("");
+        }}
+      >
+        <form
+          className="workspace-delete-content"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void deleteWorkspace();
+          }}
+        >
+          <h2 id="workspace-delete-title">Delete workspace?</h2>
+          <p>
+            This permanently deletes the workspace, its members, chat history
+            and attachments, tasks, milestones, showcase, and related
+            notifications. The opportunity and accepted collaboration history
+            remain, and you can create a new workspace later.
+          </p>
+          <label className="field-label" htmlFor="workspace-delete-name">
+            Type <strong>{workspace?.title}</strong> to confirm
+          </label>
+          <input
+            id="workspace-delete-name"
+            className="field-control"
+            value={deleteConfirmName}
+            autoComplete="off"
+            autoFocus
+            onChange={(event) => setDeleteConfirmName(event.target.value)}
+            disabled={busy}
+          />
+          {deleteDialogError && (
+            <p className="feedback feedback-error" role="alert">
+              {deleteDialogError}
+            </p>
+          )}
+          <div className="workspace-delete-actions">
+            <button
+              className="button button-secondary"
+              type="button"
+              disabled={busy}
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="button button-primary workspace-delete-confirm"
+              type="submit"
+              disabled={busy || deleteConfirmName.trim() !== workspace?.title}
+            >
+              {busy ? "Deleting…" : "Delete workspace"}
+            </button>
+          </div>
+        </form>
+      </dialog>
     </section>
   );
 }
