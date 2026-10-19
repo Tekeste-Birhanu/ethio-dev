@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
+import { OpportunityCard } from "../discovery/DiscoveryPage.jsx";
 
 const usernamePattern = /^[A-Za-z0-9_]{3,30}$/;
 const imageExtensions = {
@@ -55,6 +56,10 @@ function ProfilePage({ user, username, viewOwn = false }) {
   const [skillDraft, setSkillDraft] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [opportunities, setOpportunities] = useState([]);
+  const [opportunityCoverUrls, setOpportunityCoverUrls] = useState({});
+  const [opportunitiesLoading, setOpportunitiesLoading] = useState(false);
+  const [opportunitiesError, setOpportunitiesError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -122,6 +127,43 @@ function ProfilePage({ user, username, viewOwn = false }) {
         );
       }
       setLoading(false);
+      if (!editing) {
+        setOpportunitiesLoading(true);
+        const opportunitiesResult = await supabase
+          .from("opportunities")
+          .select(
+            "id, title, description, project_type, project_type_other, experience_levels, commitment, city_id, city_other, cover_path, status, created_at, creator:profiles!opportunities_creator_id_fkey(user_id, username, display_name, avatar_path), city:cities!opportunities_city_id_fkey(name), opportunity_skills(skills(name))",
+          )
+          .eq("creator_id", record.user_id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+        if (!active) return;
+        if (opportunitiesResult.error) {
+          setOpportunitiesError(
+            "Couldn’t load this developer’s opportunities.",
+          );
+        } else {
+          const posts = opportunitiesResult.data ?? [];
+          setOpportunities(posts);
+          const coverPaths = posts
+            .map((post) => post.cover_path)
+            .filter(Boolean);
+          if (coverPaths.length) {
+            const { data: signedImages } = await supabase.storage
+              .from("opportunity-media")
+              .createSignedUrls(coverPaths, 3600);
+            if (!active) return;
+            setOpportunityCoverUrls(
+              Object.fromEntries(
+                (signedImages ?? [])
+                  .filter((image) => image.signedUrl)
+                  .map((image) => [image.path, image.signedUrl]),
+              ),
+            );
+          }
+        }
+        if (active) setOpportunitiesLoading(false);
+      }
       if (record.avatar_path) {
         const { data: signedImage } = await supabase.storage
           .from("profile-media")
@@ -437,18 +479,6 @@ function ProfilePage({ user, username, viewOwn = false }) {
   if (!editing) {
     return (
       <>
-        <div className="page-heading">
-          <div>
-            <p className="eyebrow">DEVELOPER PROFILE</p>
-            <h1>{profile.display_name}</h1>
-            <p className="page-description">@{profile.username}</p>
-          </div>
-          {user?.id === profile.user_id && (
-            <a className="button button-secondary" href="/settings/profile">
-              Edit profile
-            </a>
-          )}
-        </div>
         <section className="public-profile-card">
           <div className="public-profile-top">
             <Avatar name={profile.display_name} src={avatarUrl} large />
@@ -459,6 +489,11 @@ function ProfilePage({ user, username, viewOwn = false }) {
                 <p className="profile-location">{displayedCity}</p>
               )}
             </div>
+            {user?.id === profile.user_id && (
+              <a className="button button-secondary" href="/settings/profile">
+                Edit profile
+              </a>
+            )}
           </div>
           {profile.bio && (
             <section className="profile-section">
@@ -501,6 +536,47 @@ function ProfilePage({ user, username, viewOwn = false }) {
                 This developer hasn’t added profile details yet.
               </p>
             )}
+        </section>
+        <section
+          className="profile-section profile-opportunities"
+          id="opportunities"
+          aria-labelledby="profile-posts-title"
+        >
+          <div className="section-heading">
+            <div>
+              <h2 id="profile-posts-title">Posts</h2>
+            </div>
+          </div>
+          {opportunitiesLoading ? (
+            <p className="muted-small" role="status">
+              Loading posts...
+            </p>
+          ) : opportunitiesError ? (
+            <p className="feedback feedback-error" role="alert">
+              {opportunitiesError}
+            </p>
+          ) : opportunities.length ? (
+            <div className="opportunity-grid profile-opportunity-grid">
+              {opportunities.map((opportunity) => (
+                <OpportunityCard
+                  key={opportunity.id}
+                  opportunity={opportunity}
+                  avatarUrl={avatarUrl}
+                  coverUrl={opportunityCoverUrls[opportunity.cover_path]}
+                  user={user}
+                />
+              ))}
+            </div>
+          ) : user?.id === profile.user_id ? (
+            <div className="profile-opportunities-empty">
+              <p>You haven&apos;t posted yet.</p>
+              <a className="text-link" href="/opportunities/new">
+                Post an opportunity
+              </a>
+            </div>
+          ) : (
+            <p className="profile-empty">No posts yet.</p>
+          )}
         </section>
       </>
     );

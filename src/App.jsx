@@ -1,8 +1,19 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import AuthPage from "./features/auth/AuthPage.jsx";
 import DiscoveryPage from "./features/discovery/DiscoveryPage.jsx";
 import ProfilePage from "./features/profiles/ProfilePage.jsx";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient.js";
+
+const MyOpportunities = lazy(() =>
+  import("./features/opportunities/OpportunityManagement.jsx").then(
+    (module) => ({ default: module.MyOpportunities }),
+  ),
+);
+const OpportunityForm = lazy(() =>
+  import("./features/opportunities/OpportunityManagement.jsx").then(
+    (module) => ({ default: module.OpportunityForm }),
+  ),
+);
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
@@ -96,18 +107,36 @@ function Brand() {
 
 function NavItems({ mobile = false, profileHref }) {
   const pathname = window.location.pathname;
+  const items = mobile
+    ? [
+        {
+          label: "Explore",
+          href: pathname === "/developers" ? "/developers" : "/opportunities",
+          icon: "compass",
+        },
+        ...navigation.filter(
+          ({ label }) => label !== "Discover" && label !== "Developers",
+        ),
+      ]
+    : navigation;
   return (
     <nav
       aria-label={mobile ? "Mobile navigation" : "Main navigation"}
       className={mobile ? "mobile-nav-list" : "sidebar-nav-list"}
     >
-      {navigation.map(({ label, href, icon }) => {
+      {items.map(({ label, href, icon }) => {
         const current =
+          (label === "Explore" &&
+            (pathname === "/" ||
+              pathname === "/developers" ||
+              pathname.startsWith("/opportunities") ||
+              pathname.startsWith("/u/"))) ||
           (label === "Discover" &&
             (pathname === "/" || pathname.startsWith("/opportunities"))) ||
-          (label === "Developers" && pathname === "/developers") ||
+          (label === "Developers" &&
+            (pathname === "/developers" || pathname.startsWith("/u/"))) ||
           (label === "Profile" &&
-            (pathname === "/my-profile" || pathname.startsWith("/u/")));
+            (pathname === "/my-profile" || pathname === "/settings/profile"));
         return (
           <a
             key={label}
@@ -199,16 +228,30 @@ function App() {
 
       <div className="app-main-column">
         <main className="main-content" id="main-content">
-          {window.location.pathname === "/developers" ? (
-            <DiscoveryPage mode="developers" />
+          {window.location.pathname === "/my-opportunities" ? (
+            <Suspense fallback={<p role="status">Loading opportunities…</p>}>
+              <MyOpportunities user={user} />
+            </Suspense>
+          ) : window.location.pathname === "/opportunities/new" ? (
+            <Suspense fallback={<p role="status">Loading opportunity form…</p>}>
+              <DiscoveryPage mode="opportunities" user={user} showComposer />
+            </Suspense>
+          ) : window.location.pathname.match(
+              /^\/opportunities\/[^/]+\/edit$/,
+            ) ? (
+            <Suspense fallback={<p role="status">Loading opportunity form…</p>}>
+              <OpportunityForm
+                user={user}
+                opportunityId={window.location.pathname.split("/")[2]}
+              />
+            </Suspense>
+          ) : window.location.pathname === "/developers" ? (
+            <DiscoveryPage mode="developers" user={user} />
           ) : window.location.pathname === "/" ||
             window.location.pathname === "/opportunities" ? (
-            <DiscoveryPage mode="opportunities" />
+            <DiscoveryPage mode="opportunities" user={user} />
           ) : window.location.pathname.match(/^\/opportunities\/[^/]+$/) ? (
-            <DiscoveryPage
-              mode="opportunities"
-              opportunityId={window.location.pathname.split("/")[2]}
-            />
+            <DiscoveryPage mode="opportunities" user={user} />
           ) : window.location.pathname === "/settings/profile" ? (
             <ProfilePage user={user} />
           ) : window.location.pathname === "/my-profile" ? (

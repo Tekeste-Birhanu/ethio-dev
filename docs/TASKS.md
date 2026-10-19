@@ -124,11 +124,11 @@ This task groups the initial technical foundation into modules so each part keep
 - Make directory access public while keeping protected actions behind sign-in.
 - **Done when:** a visitor can find and open a developer profile on desktop and mobile.
 
-**Included module: Build opportunity feed and detail pages**
+**Included module: Build opportunity feed posts**
 
 - Present public opportunities as a visual feed with cover image first when available and clear project information.
-- Add public detail pages backed by Supabase, with loading, empty, and error states.
-- **Done when:** visitors can browse opportunity details without an account and private/deleted content is not leaked.
+- Show public opportunity details and engagement in the feed; let readers expand long descriptions inline.
+- **Done when:** visitors can read complete opportunities in the feed without navigating to a separate detail page, and private/deleted content is not leaked.
 
 **Included module: Add opportunity search and filters**
 
@@ -136,7 +136,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Use predefined choices plus “Other” for categorical opportunity fields; omit commitment filtering.
 - **Done when:** filters compose correctly and are usable on mobile.
 
-**Status:** In progress (2026-10-18). Added the public developer directory and searchable opportunity feed/detail pages. Search and filters cover skills, city, project type, and experience; commitment is shown on detail pages but is not a filter. Lists are paginated and public images are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Lint, formatting, and production build pass; manual Supabase data/filter and signed-out access checks remain.
+**Status:** In progress (2026-10-19). Added the public developer directory and searchable opportunity feed. Search and filters cover skills, city, project type, and experience. Lists are paginated and public images are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Full post reading and engagement now stay in the feed; manual Supabase data/filter and signed-out access checks remain.
 
 ### T-07 — Add opportunity likes and threaded comments
 
@@ -152,7 +152,12 @@ This task groups the initial technical foundation into modules so each part keep
 - Allow authors to edit/delete their comments and the opportunity owner to delete any comment.
 - **Done when:** thread ordering, permissions, deleted-comment behavior, and empty/error states are handled.
 
-**Status:** Not started.
+**Included module: Keep reading and engagement in the feed**
+
+- Expand long opportunity descriptions inline and show likes and threaded comments on the feed post.
+- **Done when:** reading a full post or joining its discussion does not navigate to a separate opportunity detail page.
+
+**Status:** In progress (2026-10-19). Added opportunity likes with private per-user state and public aggregate counts, plus comment creation/editing, nested replies, and author/owner deletion through the existing tombstone function. Feed posts now show activity counts and open the discussion in a popup; live Supabase interaction and permission checks remain.
 
 ## M4 — Opportunities and private collaboration
 
@@ -161,6 +166,7 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Create and publish opportunities**
 
 - Build the opportunity form with the agreed project types, experience choices, skills, city, optional commitment text, and cover image.
+- Open the creation form as an inline composer in the opportunity feed; keep editing on a dedicated form.
 - Require verified email to publish and start new opportunities as open. Workspace projects start as Active when their workspace is created.
 - **Done when:** valid opportunities publish publicly and invalid or unverified submissions are rejected safely.
 
@@ -172,7 +178,7 @@ This task groups the initial technical foundation into modules so each part keep
 - On close, silently delete pending join requests so applicants can request again if reopened. On delete, remove non-accepted requests; retain deleted details privately for existing collaborators and remove likes/comments.
 - **Done when:** lifecycle transitions and public/private visibility follow the same rules in UI and database permissions.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-19). Added the verified opportunity form, shared-skill association, optional private-bucket cover upload, creator management page, editing, close/reopen, and deletion. Added trusted RPCs for create/edit/delete and applied the migration to the hosted project. Opportunity creation now opens as a feed composer; publish, image, lifecycle, and permission flows need live verification.
 
 ### T-09 — Handle collaboration requests and acceptance
 

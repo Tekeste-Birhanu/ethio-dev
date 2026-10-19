@@ -38,7 +38,7 @@
 - **Spacing:** Use a consistent 4 px base scale (4, 8, 12, 16, 24, 32 px). Give feed cards and forms enough space to remain easy to scan on mobile.
 - **Shape and elevation:** Prefer softly rounded corners: about 10–12 px for controls and 16–18 px for cards. Use thin warm-neutral borders and subtle shadows only to separate layers.
 - **Icons and imagery:** Use clean outline icons with accessible names for icon-only controls. Lead opportunity cards with a project cover image when available. Use local project imagery and content where possible. Fall back to a simple, calm illustration or neutral placeholder when no image is available. Use a generic person icon for profiles without a photo.
-- **Responsive behavior:** On desktop, use a left navigation sidebar, a central feed, and an optional supporting rail. On mobile, replace the sidebar with a bottom tab bar, collapse supporting rails, and keep feed cards full width. Preserve readable text, touch-friendly controls, and the same task hierarchy at every width.
+- **Responsive behavior:** On desktop, use a left navigation sidebar, a central feed, and an optional supporting rail. On mobile, replace the sidebar with a bottom tab bar and combine discovery and the developer directory under one Explore item. Provide Discover and Developers tabs at the top of both screens, collapse supporting rails, and keep feed cards full width. Preserve readable text, touch-friendly controls, and the same task hierarchy at every width.
 - **Motion:** Use brief, subtle transitions for hover, focus, selection, and action feedback. Respect `prefers-reduced-motion` and do not use motion to communicate state by itself.
 
 ## 4. Components and patterns
@@ -48,8 +48,8 @@
 | Primary button | Main page action, such as posting an idea or submitting a request | Deep blue fill with white label; visible hover, focus, pressed, disabled, and loading states. Keep the label verb-led and specific. |
 | Secondary button | Supporting or lower-priority action | Neutral surface with clear border or text treatment. Destructive actions use an explicit destructive style and confirmation when required. |
 | Form field | Account, profile, opportunity, and workspace data entry | Persistent label, optional hint, field-level validation, visible required state, and preserved safe input after recoverable errors. |
-| Search and filters | Find opportunities, skills, cities, and developers | Keep the current query and filters visible; provide a clear reset and a helpful empty state. |
-| Opportunity card | Scan a public project opportunity in the social feed | Image-led when a cover exists; show creator, title, summary, skills, city when present, likes, comments, and a clear detail link. Closed status remains visible without hiding engagement. |
+| Search and filters | Find opportunities, skills, cities, and developers | Keep the search field visible and reveal staged filter controls while search is active; apply selections with an explicit action, provide a clear reset, and show a helpful empty state. |
+| Opportunity post | Read and engage with a public project in the social feed | Show creator, title, description, skills, city when present, plus visible like and comment icon counts. Expand long descriptions inline and open comments in a popup; closed status remains visible without hiding engagement. |
 | Avatar and profile identity | Recognize contributors and creators | Use a profile photo when available; otherwise show a generic person icon. Provide a text name alongside the avatar. |
 | Skill and status chip | Summarize skills and project state | Use concise text and sufficient contrast. Never use color as the only status indicator. |
 | Comments and likes | Engage with opportunities | Show nested replies with clear author and reply context. Label like controls with their current state for assistive technology. |
@@ -64,16 +64,16 @@
 
 - **Purpose:** Help visitors discover projects and understand how EthioDev collaboration works.
 - **Layout:** Desktop uses sidebar navigation, a central image-led feed, and optional supporting content such as popular skills or developers to meet. Mobile uses a compact header, search, feed cards, and bottom tabs.
-- **Primary action:** Open an opportunity; signed-in creators also have a clear action to post an idea.
+- **Primary action:** Engage with an opportunity in the feed; signed-in creators can expand the inline composer to post an idea.
 - **Secondary actions:** Search, filter, like, comment, and open a creator profile.
-- **Content and behavior:** Keep title, short summary, skills, location when provided, and engagement counts visible. A closed opportunity remains discoverable and interactive, while making its closed state clear.
+- **Content and behavior:** Keep title, description, skills, location when provided, and like/comment icon counts with each post. Expand a long description in place and open the comment thread in a popup. A closed opportunity remains discoverable and interactive, while making its closed state clear.
 - **Responsive changes:** Collapse supporting content below the feed and keep the opportunity card full width.
 - **Related flow:** J-01, J-02, J-04 in `APP_FLOW.md`.
 
-### Opportunity detail and creation
+### Opportunity composer and management
 
-- **Purpose:** Let users evaluate an opportunity and let its creator publish or manage it.
-- **Layout:** Present the opportunity title and status before the full description, skills, commitment, experience, and location details. Keep engagement and join actions near the relevant content.
+- **Purpose:** Let users publish and manage opportunity posts from the feed.
+- **Layout:** Expand the composer in the feed for creating a post. Keep edit controls on a dedicated management form; display the full description and engagement in the feed post.
 - **Primary action:** Like or comment for signed-in users; request to join for eligible verified users; edit/manage for the creator.
 - **Secondary actions:** View the creator profile and read or reply in the comment thread.
 - **Content and behavior:** Explain verification requirements at the point a user tries to publish or request to join. Closing or deleting an opportunity must explain what happens to pending requests and existing collaborations before confirmation.
@@ -83,7 +83,7 @@
 ### Developer directory and profile
 
 - **Purpose:** Help developers find potential collaborators and understand their skills and interests.
-- **Layout:** Searchable directory cards link to public profiles. Profiles prioritize display name, username, bio, skills, city, and project contributions when available.
+- **Layout:** Searchable directory cards link to public profiles. Profiles prioritize display name, username, bio, skills, city, and the developer’s opportunity posts.
 - **Primary action:** Open a profile or begin an allowed collaboration path.
 - **Content and behavior:** Optional profile fields may be absent; render incomplete profiles cleanly without placeholder-heavy layouts.
 - **Responsive changes:** Use a single-column result list on small screens.

@@ -7,14 +7,15 @@ Describe how developers move from public discovery to collaboration, shared proj
 ## 2. Navigation map
 
 ```text
-Public home / opportunities / developers
-  ├── Opportunity detail ── sign in / register ── like or comment
+Explore (mobile bottom navigation; separate desktop links)
+  ├── Discover tab ── opportunity feed post ── expand description / like / comment
   │        └── verified account ── request to join
-  ├── Developer directory ── public profile
-  └── Sign in / register ── profile and notifications
+  └── Developers tab ── public directory ── profile
+
+Sign in / register ── profile and notifications
 
 Creator
-  └── My opportunities ── opportunity detail/manage ── requests
+  └── My opportunities ── edit / close / reopen / delete
            ├── Accept → private chat ── end collaboration
            │                         └── later workspace invitation
            └── Accept → create or enter workspace
@@ -33,8 +34,8 @@ Workspace member
 - **Preconditions / access:** Public browsing requires no account.
 - **Steps:**
   1. Browse opportunities or developers; search and apply the relevant filters.
-  2. Open an opportunity or public developer profile.
-  3. From an opportunity, sign in or register to like, comment, or request to join.
+  2. Expand a long opportunity description inline or open a developer profile to see their posts.
+  3. Sign in or register to like, comment, or request to join from the feed post.
 - **Success outcome:** User finds a relevant opportunity or developer and can continue to an appropriate interaction.
 - **Failure and recovery:** Empty results preserve the search and filters so the user can adjust them. If a listing is unavailable, return to discovery with a clear message.
 - **Related requirements:** F-02, F-04, F-05.
@@ -56,10 +57,10 @@ Workspace member
 ### J-03 — Publish and manage an opportunity
 
 - **Actor / role:** Signed-in, verified opportunity creator.
-- **Entry point:** Create opportunity or the creator’s opportunity list.
+- **Entry point:** Expand the feed composer or open the creator’s profile.
 - **Preconditions / access:** Publishing requires verified email. Only the creator manages the opportunity.
 - **Steps:**
-  1. Enter the opportunity description and project details, then publish.
+  1. Expand the composer in the opportunity feed, enter the project details, and publish. Long descriptions expand inline in the feed.
   2. Review and edit the public listing, or close, reopen, or delete it.
   3. When closing, pending join request rows are deleted silently. Reopening allows those applicants to submit a fresh request; rejected or withdrawn requests remain terminal.
   4. When deleting, confirm the destructive action; the public listing, likes, comments, and non-accepted requests are removed. Accepted collaborations, chats, and workspace remain private to authorized participants. Without accepted collaboration/workspace context, the opportunity and cover are deleted.
@@ -70,11 +71,11 @@ Workspace member
 ### J-04 — Engage with an opportunity
 
 - **Actor / role:** Signed-in developer.
-- **Entry point:** Public opportunity detail.
+- **Entry point:** Opportunity feed post.
 - **Preconditions / access:** Sign-in required; email verification is not required. Closed opportunities remain visible and allow likes and comments.
 - **Steps:**
   1. Like or unlike the opportunity.
-  2. Add a comment or reply to any comment, including nested replies.
+  2. Open the comments popup and add a comment or reply to any comment, including nested replies.
   3. Edit or delete one’s own comment; the opportunity owner may delete any comment on their opportunity. Deleting a comment with replies leaves a deleted-comment placeholder so the replies and thread position remain.
 - **Success outcome:** The engagement change is saved and relevant in-app notifications are created.
 - **Failure and recovery:** If the session expires, ask the user to sign in and return them to the opportunity. On save failure, preserve the comment text for retry. If content was concurrently removed, refresh the thread and explain the changed state.
@@ -170,13 +171,12 @@ Route shapes are illustrative; implementations may choose equivalent URLs while 
 | --- | --- | --- | --- |
 | `/` | Public landing and entry to discovery | Everyone | J-01 |
 | `/opportunities` | Browse, search, and filter opportunities | Everyone | J-01 |
-| `/opportunities/:id` | Public detail and engagement; request action when open | Everyone; sign-in for engagement; verified sign-in for request | J-01, J-04, J-05 |
 | `/developers` | Public developer directory | Everyone | J-01 |
 | `/u/:username` | Public developer profile | Everyone | J-01 |
 | `/showcases/:id` | Public completed-project showcase | Everyone | J-09 |
 | `/auth/sign-up`, `/auth/sign-in`, `/auth/reset-password` | Account access and recovery | Everyone | J-02 |
 | `/settings/profile` | Edit profile | Signed-in user | J-02 |
-| `/opportunities/new`, `/me/opportunities`, `/opportunities/:id/edit` | Create and manage own opportunities | Signed-in; verified to publish; owner for management | J-03 |
+| `/opportunities/new`, `/my-opportunities`, `/opportunities/:id/edit` | Open feed composer or manage own opportunities | Signed-in; verified to publish; owner for management | J-03 |
 | `/opportunities/:id/requests` | Review requests | Opportunity creator | J-05 |
 | `/messages` | Private conversations | Signed-in; only active participants see each conversation | J-06 |
 | `/workspaces/:id` | Team overview, chat, tasks, milestones | Workspace members | J-07, J-08 |
