@@ -196,7 +196,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Support multiple accepted collaborators and maintain the creator’s ability to close the opportunity.
 - **Done when:** every decision is recorded once and sends the user into the selected collaboration path.
 
-**Status:** Not started.
+**Status:** Complete (2026-10-19). Implemented applicant request submission with an optional message, request status and withdrawal, and a creator inbox with applicant profile context. Creators can open requests from the request icon beside post comments; the icon shows the pending request count. Trusted request RPCs enforce verification, open-listing state, terminal rejected/withdrawn states, and atomic acceptance into private chat or workspace. The applicant-to-creator request and decision flow was verified live.
 
 ### T-10 — Build private collaboration chat and attachments
 

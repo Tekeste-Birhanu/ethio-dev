@@ -14,6 +14,11 @@ const OpportunityForm = lazy(() =>
     (module) => ({ default: module.OpportunityForm }),
   ),
 );
+const OpportunityRequestsPage = lazy(() =>
+  import("./features/requests/OpportunityRequestsPage.jsx").then((module) => ({
+    default: module.OpportunityRequestsPage,
+  })),
+);
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
@@ -228,7 +233,16 @@ function App() {
 
       <div className="app-main-column">
         <main className="main-content" id="main-content">
-          {window.location.pathname === "/my-opportunities" ? (
+          {window.location.pathname.match(
+            /^\/opportunities\/[^/]+\/requests$/,
+          ) ? (
+            <Suspense fallback={<p role="status">Loading requests…</p>}>
+              <OpportunityRequestsPage
+                user={user}
+                opportunityId={window.location.pathname.split("/")[2]}
+              />
+            </Suspense>
+          ) : window.location.pathname === "/my-opportunities" ? (
             <Suspense fallback={<p role="status">Loading opportunities…</p>}>
               <MyOpportunities user={user} />
             </Suspense>

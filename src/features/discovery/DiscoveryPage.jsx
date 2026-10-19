@@ -1,6 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 
+const OpportunityRequestAction = lazy(() =>
+  import("../requests/OpportunityRequestAction.jsx").then((module) => ({
+    default: module.OpportunityRequestAction,
+  })),
+);
+
 const OpportunityForm = lazy(() =>
   import("../opportunities/OpportunityManagement.jsx").then((module) => ({
     default: module.OpportunityForm,
@@ -656,6 +662,8 @@ async function processOpportunityStorageCleanup() {
 export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
   const [expanded, setExpanded] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const [status, setStatus] = useState(opportunity.status);
+  const [statusBusy, setStatusBusy] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleting, setDeleting] = useState(false);
   const menuRef = useRef(null);
@@ -678,6 +686,30 @@ export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
       ? `${opportunity.description.slice(0, 320).trimEnd()}…`
       : opportunity.description;
   const isOwner = user?.id === opportunity.creator?.user_id;
+
+  async function toggleOpportunityStatus() {
+    const nextStatus = status === "open" ? "closed" : "open";
+    if (
+      nextStatus === "closed" &&
+      !window.confirm(
+        "Close this opportunity? New join requests will stop. Pending requests will be removed without notifying applicants. You can reopen it later, and applicants can request again.",
+      )
+    ) {
+      return;
+    }
+    setStatusBusy(true);
+    setDeleteError("");
+    const { error } = await supabase.rpc("set_opportunity_status", {
+      p_opportunity_id: opportunity.id,
+      p_status: nextStatus,
+    });
+    if (error) {
+      setDeleteError("The opportunity status couldn’t be changed. Try again.");
+    } else {
+      setStatus(nextStatus);
+    }
+    setStatusBusy(false);
+  }
 
   async function deleteOpportunity() {
     if (
@@ -712,9 +744,7 @@ export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
       <div className="opportunity-card-content">
         <div className="opportunity-card-topline">
           <div className="opportunity-card-meta">
-            <span className={`status-chip status-${opportunity.status}`}>
-              {opportunity.status}
-            </span>
+            <span className={`status-chip status-${status}`}>{status}</span>
             {projectType && <span>{projectType}</span>}
             {city && <span>{city}</span>}
             {experiences.length > 0 && <span>{experiences.join(", ")}</span>}
@@ -729,11 +759,25 @@ export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
                 </svg>
               </summary>
               <div className="post-menu-panel">
+                <button
+                  type="button"
+                  disabled={statusBusy || deleting}
+                  onClick={() => {
+                    menuRef.current.open = false;
+                    void toggleOpportunityStatus();
+                  }}
+                >
+                  {statusBusy
+                    ? "Saving…"
+                    : status === "open"
+                      ? "Close post"
+                      : "Reopen post"}
+                </button>
                 <a href={`/opportunities/${opportunity.id}/edit`}>Edit post</a>
                 <button
                   type="button"
                   className="post-menu-delete"
-                  disabled={deleting}
+                  disabled={statusBusy || deleting}
                   onClick={() => {
                     menuRef.current.open = false;
                     void deleteOpportunity();
@@ -790,12 +834,20 @@ export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
             {deleteError}
           </p>
         )}
-        <OpportunityEngagement
-          opportunityId={opportunity.id}
-          opportunityOwnerId={opportunity.creator?.user_id}
-          title={opportunity.title}
-          user={user}
-        />
+        <div className="opportunity-action-area">
+          <OpportunityEngagement
+            opportunityId={opportunity.id}
+            opportunityOwnerId={opportunity.creator?.user_id}
+            title={opportunity.title}
+            user={user}
+          />
+          <Suspense fallback={null}>
+            <OpportunityRequestAction
+              opportunity={{ ...opportunity, status }}
+              user={user}
+            />
+          </Suspense>
+        </div>
       </div>
     </article>
   );
@@ -1016,6 +1068,7 @@ function OpportunityEngagement({
 }) {
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
+  const [requestCount, setRequestCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [comments, setComments] = useState([]);
   const [countsLoading, setCountsLoading] = useState(true);
@@ -1029,6 +1082,26 @@ function OpportunityEngagement({
   const [editing, setEditing] = useState(null);
   const [editorKey, setEditorKey] = useState(0);
   const dialogRef = useRef(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!user || user.id !== opportunityOwnerId) {
+      return () => {
+        active = false;
+      };
+    }
+    supabase
+      .from("collaboration_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("opportunity_id", opportunityId)
+      .eq("status", "pending")
+      .then(({ count }) => {
+        if (active) setRequestCount(count ?? 0);
+      });
+    return () => {
+      active = false;
+    };
+  }, [opportunityId, opportunityOwnerId, user]);
 
   useEffect(() => {
     let active = true;
@@ -1236,6 +1309,21 @@ function OpportunityEngagement({
           </svg>
           <span>{commentCount}</span>
         </button>
+        {user?.id === opportunityOwnerId && (
+          <a
+            className="post-action-button request-action"
+            href={`/opportunities/${opportunityId}/requests`}
+            aria-label={`View join requests. ${requestCount} pending`}
+            title="View join requests"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="10" cy="7" r="4" />
+              <path d="M20 8v6m3-3h-6" />
+            </svg>
+            <span>{requestCount}</span>
+          </a>
+        )}
       </div>
       {error && !commentsOpen && (
         <p className="feedback feedback-error post-activity-error" role="alert">
