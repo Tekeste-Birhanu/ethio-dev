@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 import WorkspaceChat from "./WorkspaceChat.jsx";
+import WorkspaceWork from "./WorkspaceWork.jsx";
 
 function WorkspaceStatus({ title, children }) {
   return (
@@ -38,7 +39,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
   const [inviteBusyUserId, setInviteBusyUserId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [showMembers, setShowMembers] = useState(false);
+  const [activeView, setActiveView] = useState("chat");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteDialogError, setDeleteDialogError] = useState("");
@@ -57,7 +58,9 @@ export default function WorkspacePage({ user, workspaceId = null }) {
     if (workspaceId) {
       const { data: workspaceData, error: workspaceError } = await supabase
         .from("workspaces")
-        .select("id, opportunity_id, owner_id, project_status")
+        .select(
+          "id, opportunity_id, owner_id, project_status, inactive_work_editable",
+        )
         .eq("id", workspaceId)
         .maybeSingle();
       if (workspaceError || !workspaceData) {
@@ -437,7 +440,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
                 type="button"
                 onClick={(event) => {
                   event.currentTarget.closest("details").open = false;
-                  setShowMembers(true);
+                  setActiveView("members");
                 }}
               >
                 Members ({members.length})
@@ -461,6 +464,22 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           </details>
         </div>
       </div>
+      <nav className="workspace-view-nav" aria-label="Workspace views">
+        <button
+          type="button"
+          aria-current={activeView === "chat" ? "page" : undefined}
+          onClick={() => setActiveView("chat")}
+        >
+          Chat
+        </button>
+        <button
+          type="button"
+          aria-current={activeView === "work" ? "page" : undefined}
+          onClick={() => setActiveView("work")}
+        >
+          Tasks &amp; milestones
+        </button>
+      </nav>
       {error && (
         <p className="feedback feedback-error" role="alert">
           {error}
@@ -471,12 +490,12 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           {notice}
         </p>
       )}
-      {showMembers ? (
+      {activeView === "members" ? (
         <>
           <button
             className="button button-secondary workspace-back-to-chat"
             type="button"
-            onClick={() => setShowMembers(false)}
+            onClick={() => setActiveView("chat")}
           >
             <span aria-hidden="true">←</span> Back to chat
           </button>
@@ -617,6 +636,15 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             )}
           </section>
         </>
+      ) : activeView === "work" ? (
+        <WorkspaceWork
+          workspaceId={workspaceId}
+          user={user}
+          role={role}
+          members={members}
+          projectStatus={workspace?.project_status}
+          inactiveWorkEditable={workspace?.inactive_work_editable}
+        />
       ) : (
         <WorkspaceChat workspaceId={workspaceId} user={user} />
       )}

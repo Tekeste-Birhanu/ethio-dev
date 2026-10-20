@@ -277,7 +277,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Preserve manual completion overrides until changed manually again.
 - **Done when:** milestone status behaves consistently as tasks and manual overrides change.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-20). Added the workspace tasks and milestones view, task creation/editing/deletion, multi-member assignment, due dates, shared status updates, milestone completion modes, and trusted database functions for all writes. The migration is local and still needs to be applied to Supabase; live permissions and progress flows remain to be verified.
 
 ### T-14 — Enforce project lifecycle and inactive editing
 
