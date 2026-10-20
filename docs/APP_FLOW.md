@@ -7,7 +7,11 @@ Describe how developers move from public discovery to collaboration, shared proj
 ## 2. Navigation map
 
 ```text
-Explore (mobile bottom navigation; separate desktop links)
+Desktop sidebar: Discover → Developers → Projects → Messages → Showcases → Profile
+Mobile bottom navigation: Explore → Projects → Messages → Showcases → Profile
+Explore contains the Discover and Developers tabs.
+
+Explore
   ├── Discover tab ── opportunity feed post ── expand description / like / comment
   │        └── verified account ── request to join
   └── Developers tab ── public directory ── profile
@@ -146,7 +150,7 @@ Direct invitations remain available to the creator and admins for an existing pr
 - **Steps:**
   1. Owner changes status among Active, Paused, and Completed. Paused can return to Active; Completed is final and requires clear confirmation.
   2. Tasks and milestones can be changed only while the project is Active. Reactivating a Paused project restores editing; Completed projects remain read-only.
-  3. For a Completed project, creator/admin adds an overview and links, reviews the automatically included contributor names (accepted applicants and all current or former project members), and publishes, edits, or unpublishes the showcase.
+  3. For a Completed project, creator/admin adds an overview and links, reviews the automatically included contributor names (accepted applicants and all current or former project members), and publishes, edits, or unpublishes the showcase. Owners and admins can open the editor from Project settings or from the public showcase list/detail page.
   4. Visitors open the public showcase and see the project's automatically attributed contributors.
 - **Success outcome:** Project status and public presentation reflect authorized changes.
 - **Failure and recovery:** Reject stale or unauthorized status changes and explain the current status. If the project is not Completed, keep showcase publishing unavailable and direct the user to project status.
@@ -173,13 +177,14 @@ Route shapes are illustrative; implementations may choose equivalent URLs while 
 | `/opportunities`                                                     | Browse, search, and filter opportunities                                                            | Everyone                                                  | J-01             |
 | `/developers`                                                        | Public developer directory                                                                          | Everyone                                                  | J-01             |
 | `/u/:username`                                                       | Public developer profile                                                                            | Everyone                                                  | J-01             |
-| `/showcases/:id`                                                     | Public completed-project showcase                                                                   | Everyone                                                  | J-09             |
+| `/showcases`                                                        | Public list of published project showcases                                                         | Everyone                                                  | J-09             |
+| `/showcases/:id`                                                     | Public completed-project showcase; owner/admin can open its editor                                 | Everyone                                                  | J-09             |
 | `/auth/sign-up`, `/auth/sign-in`, `/auth/reset-password`             | Account access and recovery                                                                         | Everyone                                                  | J-02             |
 | `/settings/profile`                                                  | Edit profile                                                                                        | Signed-in user                                            | J-02             |
 | `/opportunities/new`, `/my-opportunities`, `/opportunities/:id/edit` | Open feed composer or manage own opportunities                                                      | Signed-in; verified to publish; owner for management      | J-03             |
 | `/opportunities/:id/requests`                                        | Review requests                                                                                     | Opportunity creator                                       | J-05             |
 | `/messages`                                                          | Private conversations                                                                               | Signed-in; only active participants see each conversation | J-06             |
-| `/projects/:id`                                                      | Project chat and task board; Members, project settings, and membership actions from the header menu | Project members                                           | J-07, J-08, J-09 |
+| `/projects/:id`                                                      | Project chat and task board; Members, project settings, showcase editor, and membership actions from the header menu | Project members                                           | J-07, J-08, J-09 |
 | `/notifications`                                                     | In-app notification center                                                                          | Signed-in user                                            | J-10             |
 
 ## 5. Shared states and edge cases

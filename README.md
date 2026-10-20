@@ -12,7 +12,7 @@ EthioDev is a mobile-friendly collaboration platform for beginner and junior dev
 
 ## Status
 
-Implementation progress is tracked in `docs/TASKS.md`. T-07 through T-14 are complete. T-06 discovery remains in progress; T-15 onward has not started. The specification files define the intended behavior. Unit and browser test files have not been added yet.
+Implementation progress is tracked in `docs/TASKS.md`. T-06 through T-15 are complete; T-16 onward has not started. The specification files define the intended behavior. Unit and browser test files have not been added yet.
 
 ## Documentation
 
@@ -75,7 +75,7 @@ npm run build
 npm run preview
 ```
 
-`npm test` runs Vitest with jsdom and React Testing Library. `npm run test:e2e` runs Playwright in Chromium; install its browser once with `npx playwright install chromium`. The test commands succeed when no test files exist and will run matching tests when added. `.env.example` lists the public Supabase client variables; the hosted project is linked and configured. Never place service-role keys or email credentials in browser environment variables. Database changes belong in timestamped files under `supabase/migrations/`. No fictional records or reset jobs are planned; reviewers can create persistent records through the product. See [Implementation tasks](docs/TASKS.md) for the sequence.
+`npm test` runs Vitest with jsdom and React Testing Library. `npm run test:e2e` runs Playwright in Chromium; install its browser once with `npx playwright install chromium`. The test commands succeed when no test files exist and will run matching tests when added. `.env.example` lists the public Supabase client variables; the hosted project is linked and configured. Never place service-role keys or email credentials in browser environment variables. Database changes belong in timestamped files under `supabase/migrations/`. No fictional records or reset jobs are planned; reviewers can create persistent records through the product. Apply pending migrations before using newly added database-backed features. See [Implementation tasks](docs/TASKS.md) for the sequence.
 
 ## Deployment
 

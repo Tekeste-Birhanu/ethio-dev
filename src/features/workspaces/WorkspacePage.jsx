@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 import WorkspaceChat from "./WorkspaceChat.jsx";
 import WorkspaceWork from "./WorkspaceWork.jsx";
+import { ShowcaseEditor } from "../showcases/ShowcasesPage.jsx";
 
 function WorkspaceStatus({ title, children }) {
   return (
@@ -43,7 +44,11 @@ export default function WorkspacePage({ user, workspaceId = null }) {
   const [inviteBusyUserId, setInviteBusyUserId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [activeView, setActiveView] = useState("chat");
+  const [activeView, setActiveView] = useState(() =>
+    new URLSearchParams(window.location.search).get("view") === "showcase"
+      ? "showcase"
+      : "chat",
+  );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteDialogError, setDeleteDialogError] = useState("");
@@ -475,6 +480,17 @@ export default function WorkspacePage({ user, workspaceId = null }) {
               >
                 Project settings
               </button>
+              {canManage && workspace?.project_status === "completed" && (
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.currentTarget.closest("details").open = false;
+                    setActiveView("showcase");
+                  }}
+                >
+                  Project showcase
+                </button>
+              )}
               <button
                 type="button"
                 onClick={(event) => {
@@ -732,6 +748,13 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             )}
           </section>
         </>
+      ) : activeView === "showcase" ? (
+        <ShowcaseEditor
+          workspaceId={workspaceId}
+          projectTitle={workspace?.title}
+          projectStatus={workspace?.project_status}
+          onBack={() => setActiveView("chat")}
+        />
       ) : activeView === "work" ? (
         <WorkspaceWork
           workspaceId={workspaceId}

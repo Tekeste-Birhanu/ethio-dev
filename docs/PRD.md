@@ -52,7 +52,7 @@
 - **J-03 - Join an opportunity:** A developer submits one collaboration request with an optional message. The creator accepts or rejects it; the applicant can withdraw while it is pending.
 - **J-04 - Choose how collaboration starts:** When accepting a request, the creator chooses to start a private one-to-one chat or add the developer directly to a project. The direct project path creates the project if one does not exist.
 - **J-05 - Coordinate privately and as a team:** Collaborators use real-time private chat before a project is created when that path is chosen. In a project, members use team chat, tasks, and milestones. A creator can also invite any developer directly to a project.
-- **J-06 - Complete and showcase a project:** The creator marks the project Completed. The creator or a project admin may publish, edit, or unpublish a public showcase. Completed projects may be showcased even when some tasks remain unfinished.
+- **J-06 - Complete and showcase a project:** The creator marks the project Completed. The creator or a project admin may publish, edit, or unpublish a public showcase from Project settings or the public showcase page. Completed projects may be showcased even when some tasks remain unfinished.
 - **J-07 - Manage an account:** A user registers or signs in, maintains their profile, and uses password recovery when needed.
 
 ## 4. Functional requirements

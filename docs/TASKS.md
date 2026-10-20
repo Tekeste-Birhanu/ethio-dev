@@ -136,7 +136,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Use predefined choices plus “Other” for categorical opportunity fields; omit commitment filtering.
 - **Done when:** filters compose correctly and are usable on mobile.
 
-**Status:** In progress (2026-10-19). Added the public developer directory and searchable opportunity feed. Search and filters cover skills, city, project type, and experience. Lists are paginated and public images are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Full post reading and engagement now stay in the feed; manual Supabase data/filter and signed-out access checks remain.
+**Status:** Complete (2026-10-20). Added the public developer directory and searchable opportunity feed. Search and filters cover skills, city, project type, and experience. Lists are paginated and public images are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Full post reading and engagement stay in the feed. The user confirmed the Supabase data, filter, and signed-out access checks.
 
 ### T-07 — Add opportunity likes and threaded comments
 
@@ -298,10 +298,11 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Publish project showcases**
 
 - Allow creator/project admins to publish a showcase only for a Completed project.
+- Let owners/admins open the editor from Project settings or the public showcase list/detail page to publish, edit, or unpublish.
 - Show contributor names automatically with no opt-out.
 - **Done when:** showcase visibility and attribution follow the approved lifecycle and deletion rules.
 
-**Status:** Not started.
+**Status:** Complete (2026-10-20). Added the public showcase list/detail view and a project editor for completed projects. Owner/admin publishing, editing, unpublishing, public contributor attribution, and link management are backed by `20261020000600_project_showcases.sql`. The user confirmed the migration was applied and live authorization, publication, editing, and unpublishing checks passed.
 
 ### T-16 — Add in-app notifications
 

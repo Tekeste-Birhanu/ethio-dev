@@ -38,7 +38,7 @@
 - **Spacing:** Use a consistent 4 px base scale (4, 8, 12, 16, 24, 32 px). Give feed cards and forms enough space to remain easy to scan on mobile.
 - **Shape and elevation:** Prefer softly rounded corners: about 10–12 px for controls and 16–18 px for cards. Use thin warm-neutral borders and subtle shadows only to separate layers.
 - **Icons and imagery:** Use clean outline icons with accessible names for icon-only controls. Lead opportunity cards with a project cover image when available. Use local project imagery and content where possible. Fall back to a simple, calm illustration or neutral placeholder when no image is available. Use a generic person icon for profiles without a photo.
-- **Responsive behavior:** On desktop, use a left navigation sidebar, a central feed, and an optional supporting rail. On mobile, replace the sidebar with a bottom tab bar and combine discovery and the developer directory under one Explore item. Provide Discover and Developers tabs at the top of both screens, collapse supporting rails, and keep feed cards full width. Preserve readable text, touch-friendly controls, and the same task hierarchy at every width.
+- **Responsive behavior:** On desktop, use a left navigation sidebar in this order: Discover, Developers, Projects, Messages, Showcases, Profile. On mobile, replace it with Explore, Projects, Messages, Showcases, Profile; Explore contains the Discover and Developers tabs. Keep the central feed readable, collapse supporting rails, and preserve touch-friendly controls and the same task hierarchy at every width.
 - **Motion:** Use brief, subtle transitions for hover, focus, selection, and action feedback. Respect `prefers-reduced-motion` and do not use motion to communicate state by itself.
 
 ## 4. Components and patterns
@@ -101,9 +101,9 @@
 ### Showcase
 
 - **Purpose:** Present a completed collaboration publicly.
-- **Layout:** Use a clear project title, overview, links, project status, and contributor list. Use project imagery when available.
+- **Layout:** Use a clear showcase title, project status, overview, relevant links, and contributor list. The showcase editor is available from the completed project’s settings menu and from Edit showcase actions on the public showcase list/detail page for owners and admins.
 - **Primary action:** Open project links; authorized creators and admins can publish, edit, or unpublish.
-- **Content and behavior:** Explain that contributor names are attributed automatically.
+- **Content and behavior:** Explain that contributor names are attributed automatically. Public pages list only published showcases for completed projects; unpublishing removes the showcase from public browsing while retaining its draft content for the project team.
 - **Responsive changes:** Stack project details and links in a single column on mobile.
 - **Related flow:** J-06 in `APP_FLOW.md`.
 

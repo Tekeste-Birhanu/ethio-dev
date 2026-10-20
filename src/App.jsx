@@ -27,14 +27,17 @@ const PrivateMessagesPage = lazy(() =>
 const WorkspacePage = lazy(
   () => import("./features/workspaces/WorkspacePage.jsx"),
 );
+const ShowcasesPage = lazy(
+  () => import("./features/showcases/ShowcasesPage.jsx"),
+);
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
   { label: "Developers", href: "/developers", icon: "users" },
-  { label: "Profile", href: "/settings/profile", icon: "users" },
-  { label: "Showcases", href: "/showcases", icon: "grid" },
-  { label: "Messages", href: "/messages", icon: "message" },
   { label: "Projects", href: "/projects", icon: "briefcase" },
+  { label: "Messages", href: "/messages", icon: "message" },
+  { label: "Showcases", href: "/showcases", icon: "grid" },
+  { label: "Profile", href: "/settings/profile", icon: "users" },
 ];
 
 function Icon({ name, size = 20 }) {
@@ -151,6 +154,8 @@ function NavItems({ mobile = false, profileHref }) {
           (label === "Profile" &&
             (pathname === "/my-profile" || pathname === "/settings/profile")) ||
           (label === "Messages" && pathname === "/messages");
+        const showcaseCurrent =
+          label === "Showcases" && pathname.startsWith("/showcases");
         const workspaceCurrent =
           label === "Projects" &&
           (pathname.startsWith("/workspaces") ||
@@ -158,9 +163,13 @@ function NavItems({ mobile = false, profileHref }) {
         return (
           <a
             key={label}
-            className={`nav-link${current || workspaceCurrent ? " is-current" : ""}`}
+            className={`nav-link${current || showcaseCurrent || workspaceCurrent ? " is-current" : ""}`}
             href={label === "Profile" ? profileHref : href}
-            aria-current={current || workspaceCurrent ? "page" : undefined}
+            aria-current={
+              current || showcaseCurrent || workspaceCurrent
+                ? "page"
+                : undefined
+            }
           >
             <Icon name={icon} />
             <span>{label}</span>
@@ -220,9 +229,6 @@ function App() {
                 </span>
                 <Icon name="arrow" size={16} />
               </a>
-              <a className="sign-out-button" href="/settings/profile">
-                Edit profile
-              </a>
               <button
                 className="sign-out-button"
                 type="button"
@@ -258,6 +264,14 @@ function App() {
           ) : window.location.pathname === "/messages" ? (
             <Suspense fallback={<p role="status">Loading messages…</p>}>
               <PrivateMessagesPage user={user} />
+            </Suspense>
+          ) : window.location.pathname === "/showcases" ||
+            window.location.pathname.match(/^\/showcases\/[^/]+$/) ? (
+            <Suspense fallback={<p role="status">Loading showcases…</p>}>
+              <ShowcasesPage
+                user={user}
+                showcaseId={window.location.pathname.split("/")[2] ?? null}
+              />
             </Suspense>
           ) : window.location.pathname === "/projects" ||
             window.location.pathname.match(/^\/projects\/[^/]+$/) ||

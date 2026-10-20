@@ -3552,3 +3552,120 @@ h1 {
     justify-self: start;
   }
 }
+.showcase-editor,
+.public-showcase,
+.showcases-page {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 980px);
+  margin-inline: auto;
+}
+
+.showcase-editor .field-label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.showcase-links-editor,
+.showcase-contributors,
+.showcase-card,
+.public-showcase {
+  border: 1px solid var(--border, #e8ddd5);
+  border-radius: 1rem;
+  background: var(--surface, #fff);
+  padding: 1.25rem;
+}
+
+.showcase-links-editor {
+  display: grid;
+  gap: 1rem;
+}
+
+.showcase-links-editor legend {
+  font-weight: 700;
+}
+
+.showcase-link-fields {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.35fr) minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.showcase-contributors h3,
+.showcase-contributors p {
+  margin-top: 0;
+}
+
+.showcase-contributors ul,
+.public-showcase ul,
+.showcase-card-contributors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.showcase-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.showcases-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 1rem;
+}
+
+.showcase-card h2 {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.showcase-card h2 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.showcase-card > p:not(.page-description) {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.public-showcase h1 {
+  margin: 0;
+}
+
+.public-showcase-overview {
+  white-space: pre-wrap;
+}
+
+.public-showcase-contributors {
+  display: grid !important;
+  gap: 0.65rem !important;
+  list-style: none;
+  padding: 0 !important;
+}
+
+.public-showcase-contributors li {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.public-showcase-contributors span {
+  color: var(--text-muted, #75665d);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .showcase-link-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .showcase-editor-actions {
+    flex-direction: column-reverse;
+  }
+}
