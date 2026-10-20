@@ -716,7 +716,7 @@ export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
   async function deleteOpportunity() {
     if (
       !window.confirm(
-        "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any workspace will remain private to their participants.",
+        "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any related project will remain private to their participants.",
       )
     ) {
       return;

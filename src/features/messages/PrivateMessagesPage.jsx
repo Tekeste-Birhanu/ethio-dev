@@ -516,15 +516,15 @@ export function PrivateMessagesPage({ user }) {
         );
       setError(
         rpcIsMissing
-          ? "Workspace setup is not applied to Supabase yet. Run npm run supabase:push, confirm the migrations with npm run supabase:migrations, then try again."
+          ? "Project setup is not applied to Supabase yet. Run npm run supabase:push, confirm the migrations with npm run supabase:migrations, then try again."
           : collaborationIsUnavailable
             ? "This accepted private collaboration could not be found. Refresh the chat and try again."
-            : `The collaborator could not be added to a workspace. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
+            : `The collaborator could not be added to the project. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
       );
       setWorkspaceBusy(false);
       return;
     }
-    window.location.assign(`/workspaces/${encodeURIComponent(workspaceId)}`);
+    window.location.assign(`/projects/${encodeURIComponent(workspaceId)}`);
   }
 
   async function addConversationToWorkspace(conversation) {
@@ -537,12 +537,12 @@ export function PrivateMessagesPage({ user }) {
     );
     if (workspaceError || !workspaceId) {
       setListActionError(
-        `The collaborator could not be added to a workspace. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
+        `The collaborator could not be added to the project. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
       );
       setListActionBusyId("");
       return;
     }
-    window.location.assign(`/workspaces/${encodeURIComponent(workspaceId)}`);
+    window.location.assign(`/projects/${encodeURIComponent(workspaceId)}`);
   }
 
   async function endConversationFromList(conversation) {
@@ -682,7 +682,7 @@ export function PrivateMessagesPage({ user }) {
                         >
                           {listActionBusyId === conversation.id
                             ? "Adding…"
-                            : "Add to workspace"}
+                            : "Add to project"}
                         </button>
                       )}
                       <button
@@ -788,7 +788,7 @@ export function PrivateMessagesPage({ user }) {
                               void addCollaboratorToWorkspace();
                             }}
                           >
-                            {workspaceBusy ? "Adding?" : "Add to workspace"}
+                            {workspaceBusy ? "Adding…" : "Add to project"}
                           </button>
                         )}
                         <button
@@ -883,15 +883,20 @@ export function PrivateMessagesPage({ user }) {
                                     : "private-message-body"
                                 }
                               >
-                                {message.body}
+                                {message.message_type === "system"
+                                  ? message.body.replace(
+                                      /the workspace/gi,
+                                      "the project",
+                                    )
+                                  : message.body}
                               </p>
                               {message.message_type === "system" &&
                                 message.workspace_id && (
                                   <a
                                     className="private-message-workspace-link"
-                                    href={`/workspaces/${encodeURIComponent(message.workspace_id)}`}
+                                    href={`/projects/${encodeURIComponent(message.workspace_id)}`}
                                   >
-                                    Open workspace
+                                    Open project
                                   </a>
                                 )}
                               {(message.private_attachments ?? []).map(

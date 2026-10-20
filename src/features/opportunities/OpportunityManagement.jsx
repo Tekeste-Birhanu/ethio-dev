@@ -783,7 +783,7 @@ function MyOpportunities({ user }) {
 
   async function deleteOpportunity(row) {
     const message =
-      "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any workspace will remain private to their participants.";
+      "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any related project will remain private to their participants.";
     if (!window.confirm(message)) return;
     setBusyId(row.id);
     setError("");

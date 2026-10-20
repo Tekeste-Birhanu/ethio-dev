@@ -8,7 +8,7 @@ This backlog breaks the MVP into reviewable implementation steps. Complete tasks
 - **M2 — Accounts and profiles:** authentication, verification, password recovery, profiles, skills, locations, and public profile pages (T-04–T-05). **Outcome:** developers can sign in and maintain public profiles.
 - **M3 — Discovery and engagement:** developer directory, opportunity feed/search, likes, and threaded comments (T-06–T-07). **Outcome:** visitors can find developers and opportunities; signed-in users can engage.
 - **M4 — Opportunities and private collaboration:** opportunity lifecycle, join requests, acceptance, and private chat (T-08–T-10). **Outcome:** creators can recruit collaborators and work together privately.
-- **M5 — Team workspaces:** workspace membership, chat, tasks, milestones, and project lifecycle (T-11–T-14). **Outcome:** teams can coordinate and manage project work.
+- **M5 — Projects:** project membership, chat, tasks, milestones, and project lifecycle (T-11–T-14). **Outcome:** teams can coordinate and manage project work.
 - **M6 — Showcases and notifications:** public showcases and in-app notifications (T-15–T-16). **Outcome:** teams can present completed projects and users can follow important activity.
 - **M7 — Reviewer readiness and release:** reviewer access, hardening, deployment, and end-to-end verification (T-17–T-19). **Outcome:** the deployed MVP is ready for review.
 
@@ -28,12 +28,12 @@ This task groups the initial technical foundation into modules so each part keep
 
 - Implement agreed entities, relationships, indexes, constraints, triggers, and lifecycle invariants from `SCHEMA.md` in versioned SQL migrations.
 - Include the agreed city catalog, exclusive “Any level” experience rule, and attachment metadata constraints.
-- **Status:** In progress (2026-10-18). Core schema migration drafted; clean database application and verification remain for T-03.
+- **Status:** Complete (2026-10-18). The core schema migration was applied and verified with the hosted baseline in T-03.
 
 **Module: Enforce data access and trusted operations**
 
 - Implement deny-by-default RLS policies and trusted PostgreSQL functions using `SCHEMA.md` and `ARCHITECTURE.md`.
-- Enforce public-read boundaries, ownership, verified-email gates, request/collaboration transitions, workspace roles/membership, assignee actions, private-data access, and Realtime authorization.
+- Enforce public-read boundaries, ownership, verified-email gates, request/collaboration transitions, project roles/membership, assignee actions, private-data access, and Realtime authorization.
 - **Status:** Complete (2026-10-18). RLS policies and trusted workflows are applied. The three local and remote migration versions match, and the database check found RLS enabled on every public table and `storage.objects`.
 
 **Module: Set up the JavaScript quality toolchain**
@@ -157,7 +157,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Expand long opportunity descriptions inline and show likes and threaded comments on the feed post.
 - **Done when:** reading a full post or joining its discussion does not navigate to a separate opportunity detail page.
 
-**Status:** In progress (2026-10-19). Added opportunity likes with private per-user state and public aggregate counts, plus comment creation/editing, nested replies, and author/owner deletion through the existing tombstone function. Feed posts now show activity counts and open the discussion in a popup; live Supabase interaction and permission checks remain.
+**Status:** Complete (2026-10-19). Added opportunity likes with private per-user state and public aggregate counts, plus comment creation/editing, nested replies, and author/owner deletion through the existing tombstone function. Feed posts show activity counts and open the discussion in a popup. The user confirmed T-07 and T-08 and committed them together.
 
 ## M4 — Opportunities and private collaboration
 
@@ -167,18 +167,18 @@ This task groups the initial technical foundation into modules so each part keep
 
 - Build the opportunity form with the agreed project types, experience choices, skills, city, optional commitment text, and cover image.
 - Open the creation form as an inline composer in the opportunity feed; keep editing on a dedicated form.
-- Require verified email to publish and start new opportunities as open. Workspace projects start as Active when their workspace is created.
+- Require verified email to publish and start new opportunities as open. Projects start as Active when created.
 - **Done when:** valid opportunities publish publicly and invalid or unverified submissions are rejected safely.
 
 **Included module: Edit and manage opportunity lifecycle**
 
 - Let the creator edit, close/reopen, or delete their opportunity according to the PRD.
-- On deletion, keep the cover image private when accepted collaboration/workspace context remains; otherwise delete it. Revoke public access in either case.
+- On deletion, keep the cover image private when accepted collaboration/project context remains; otherwise delete it. Revoke public access in either case.
 - Keep closed opportunities visible and engagement open; stop new join requests when closed.
 - On close, silently delete pending join requests so applicants can request again if reopened. On delete, remove non-accepted requests; retain deleted details privately for existing collaborators and remove likes/comments.
 - **Done when:** lifecycle transitions and public/private visibility follow the same rules in UI and database permissions.
 
-**Status:** In progress (2026-10-19). Added the verified opportunity form, shared-skill association, optional private-bucket cover upload, creator management page, editing, close/reopen, and deletion. Added trusted RPCs for create/edit/delete and applied the migration to the hosted project. Opportunity creation now opens as a feed composer; publish, image, lifecycle, and permission flows need live verification.
+**Status:** Complete (2026-10-19). Added the verified opportunity form, shared-skill association, optional private-bucket cover upload, creator management page, editing, close/reopen, and deletion. Added trusted RPCs for create/edit/delete and applied the migration to the hosted project. Opportunity creation opens as a feed composer; the user confirmed T-08 was complete.
 
 ### T-09 — Handle collaboration requests and acceptance
 
@@ -192,11 +192,11 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Review join requests**
 
 - Give opportunity creators a request inbox and applicant profile context.
-- Allow accept or reject; on acceptance require the creator to choose Private chat or direct Workspace access.
+- Allow accept or reject; on acceptance require the creator to choose Private chat or direct Project access.
 - Support multiple accepted collaborators and maintain the creator’s ability to close the opportunity.
 - **Done when:** every decision is recorded once and sends the user into the selected collaboration path.
 
-**Status:** Complete (2026-10-19). Implemented applicant request submission with an optional message, request status and withdrawal, and a creator inbox with applicant profile context. Creators can open requests from the request icon beside post comments; the icon shows the pending request count. Trusted request RPCs enforce verification, open-listing state, terminal rejected/withdrawn states, and atomic acceptance into private chat or workspace. The applicant-to-creator request and decision flow was verified live.
+**Status:** Complete (2026-10-19). Implemented applicant request submission with an optional message, request status and withdrawal, and a creator inbox with applicant profile context. Creators can open requests from the request icon beside post comments; the icon shows the pending request count. Trusted request RPCs enforce verification, open-listing state, terminal rejected/withdrawn states, and atomic acceptance into private chat or project. The applicant-to-creator request and decision flow was verified live.
 
 ### T-10 — Build private collaboration chat and attachments
 
@@ -218,77 +218,78 @@ This task groups the initial technical foundation into modules so each part keep
 - Revoke chat access and delete its messages and attachments as specified by the PRD.
 - **Done when:** the operation cannot leave downloadable orphaned files or accessible message history.
 
-**Status:** Complete (2026-10-19). Added the private messages page, active-conversation list, participant-only message workflow, Realtime updates with database history recovery, older-message pagination, allowlisted private attachments, and end-collaboration cleanup. The trusted send/end and conversation-status migrations are applied to Supabase, and the live chat, attachment, and ended-collaboration flows were verified. Conversation action menus also let either participant end a collaboration from the list without opening the chat.
+**Status:** Complete (2026-10-19). Added the private messages page, active-conversation list, participant-only message workflow, Realtime updates with database history recovery, older-message pagination, allowlisted private attachments, and end-collaboration cleanup. Messages are grouped by date with a centered date pill and local time without seconds. The trusted send/end and conversation-status migrations are applied to Supabase, and the live chat, attachment, and ended-collaboration flows were verified. Conversation action menus also let either participant end a collaboration from the list without opening the chat.
 
-## M5 — Team workspaces
+## M5 — Projects
 
-### T-11 — Create workspaces and manage membership
+### T-11 — Create projects and manage membership
 
-**Included module: Create a workspace from accepted collaboration**
+**Included module: Create a project from accepted collaboration**
 
-- Let the opportunity creator manually create at most one workspace for an opportunity after acceptance.
-- Support the direct Workspace acceptance route and grant invited users access immediately.
-- **Done when:** duplicate workspaces are prevented and workspace membership starts with the intended participants.
+- Let the opportunity creator manually create at most one project for an opportunity after acceptance.
+- Support the direct Project acceptance route and grant invited users access immediately.
+- **Done when:** duplicate projects are prevented and project membership starts with the intended participants.
 
-**Included module: Invite members and manage workspace roles**
+**Included module: Invite members and manage project roles**
 
 - Let the creator appoint admins; creators and admins can invite/remove non-owner developers, and non-owner members can leave. The creator remains owner and cannot leave because ownership transfer is out of scope.
-- Allow invites whenever a workspace exists, including after the opportunity is closed or deleted.
+- Allow invites whenever a project exists, including after the opportunity is closed or deleted.
 - **Done when:** membership changes are recorded and unauthorized invitations/removals are rejected.
 
 **Included module: Enforce membership access and departure rules**
 
-- Revoke a removed or departed member’s access to all workspace chat history and files, including prior content.
+- Revoke a removed or departed member’s access to all project chat history and files, including prior content.
 - Unassign unfinished tasks when a member leaves or is removed while retaining completed task history.
 - **Done when:** removal and departure update all relevant access and assignments consistently; the creator remains owner because ownership transfer is out of scope.
 
-- The permanent owner can delete the workspace from the header menu after reviewing the effects and typing the workspace name. This removes workspace data and related notifications, and queues private attachment cleanup; the opportunity and accepted collaboration history remain, allowing the owner to create a replacement workspace.
+**Status:** Complete (2026-10-20). Project creation from accepted collaboration, immediate direct invitations, creator/admin/member actions, role changes, and membership access revocation were implemented and confirmed by the user. Project deletion is tracked under T-14.
 
-**Status:** In progress (2026-10-19). Added owner-only workspace deletion with a confirmation, trusted RPC authorization, cascading workspace-data removal, and queued Storage cleanup. The deletion migration and owner/non-owner deletion behavior still need live Supabase verification. Existing creation, membership, and chat-to-workspace flows were previously confirmed by the user.
+### T-12 — Build project chat and attachments
 
-### T-12 — Build workspace chat and attachments
+**Included module: Build project chat**
 
-**Included module: Build workspace chat**
-
-- Add persistent real-time text conversations for current workspace members.
+- Add persistent real-time text conversations for current project members.
 - Enforce membership on history, subscriptions, and message writes.
 - **Done when:** removed members lose realtime and historical access immediately.
 
-**Included module: Add workspace chat attachments**
+**Included module: Add project chat attachments**
 
 - Use the same approved attachment allowlist and 10 MB limit as private chat.
 - Enforce current membership on upload, preview, and download, including access revocation after removal.
-- **Done when:** files follow the workspace’s private access and deletion rules.
+- **Done when:** files follow the project’s private access and deletion rules.
 
-**Status:** In progress (2026-10-19). Added the workspace chat panel with persistent message history, older-message pagination, Realtime updates, and private file attachments using the T-10 allowlist and 10 MB limit. Message sends go through a trusted RPC; workspace membership RLS and Storage policies gate reads, subscriptions, uploads, and downloads. The new migration and live member-removal/access-revocation flows still need to be applied and verified in Supabase.
+**Status:** Complete (2026-10-20). Added project chat with persistent history, older-message pagination, Realtime updates, private attachments using the T-10 allowlist and 10 MB limit, and member-only access. Messages show the sender’s display name, a centered date pill between days, and local time without seconds. The project menu provides member access and project actions. The user confirmed the project chat and attachment flows and closed T-12.
 
-### T-13 — Implement workspace tasks and milestones
+### T-13 — Implement the project task board and milestones
 
 **Included module: Implement tasks and assignments**
 
-- Let creators/admins create and manage tasks; support multiple assignees and one shared status per task: To do, In progress, or Done.
-- Let any assignee update the shared task status; unassign unfinished work on member removal/departure.
+- Use a Trello-style board with To do, In progress, and Completed columns.
+- Let creators/admins create, edit, and assign tasks, then move any task between columns using its drag handle. Put task edit/delete actions in the card’s three-dot menu. Assignees can move only tasks assigned to them using the handle; keyboard users can focus it and use left/right arrows. Other members can view the board.
+- Support multiple assignees and one shared status per task; unassign unfinished work on member removal/departure.
+- Show task status through its board column. Keep due date on the card; put a View details disclosure at the bottom for description and assignees.
 - **Done when:** task permissions and assignment changes match the approved rules.
 
 **Included module: Implement milestones**
 
-- Let creators/admins group tasks under at most one milestone per task.
-- Auto-complete a milestone when it has tasks and all are Done; empty milestones remain incomplete until manually marked.
+- Put milestone selection beside the board and place Add milestone below its list. Do not repeat the selected milestone name above the board. Require at least one milestone before creating tasks; new tasks join the selected milestone automatically, and editing can move a task. Do not allow deleting a milestone while it has tasks.
+- Auto-complete a milestone when it has tasks and all are Completed; empty milestones remain incomplete until manually marked.
 - Preserve manual completion overrides until changed manually again.
 - **Done when:** milestone status behaves consistently as tasks and manual overrides change.
 
-**Status:** In progress (2026-10-20). Added the workspace tasks and milestones view, task creation/editing/deletion, multi-member assignment, due dates, shared status updates, milestone completion modes, and trusted database functions for all writes. The migration is local and still needs to be applied to Supabase; live permissions and progress flows remain to be verified.
+**Status:** Complete (2026-10-20). Added the three-column project task board, drag-handle status changes for creators/admins and assigned users, keyboard status changes from the handle, compact task details, and milestone selection beside the board. Tasks require exactly one milestone; new tasks use the selected milestone. Migrations `20261020000400_project_lifecycle_and_task_board.sql` and `20261020000500_required_task_milestones.sql` update task permissions, remove the Abandoned status, backfill ungrouped tasks into General milestones, and enforce required milestone assignment. The user confirmed T-13 is complete.
 
-### T-14 — Enforce project lifecycle and inactive editing
+### T-14 — Enforce project lifecycle and read-only rules
 
-**Included module: Implement project lifecycle and inactive editing**
+**Included module: Implement project lifecycle and read-only rules**
 
-- Support Active, Paused, Completed, and Abandoned project states; creator alone changes project status.
-- Allow Paused to reactivate; treat Completed and Abandoned as final. Start projects Active.
-- Default inactive workspaces to read-only, with the agreed creator/admin project setting controlling editability.
+- Support Active, Paused, and Completed project states; owner alone changes project status.
+- Allow Paused to reactivate; Completed is final and requires clear confirmation. Start projects Active.
+- Allow task and milestone changes only while the project is Active. Paused and Completed projects are read-only; reactivating a Paused project restores editing.
+- Let the owner permanently delete a project after typing its name. Deletion removes project data and its showcase while retaining the opportunity and accepted collaboration history.
 - **Done when:** status transitions, edit permissions, and final-state behavior are enforced in UI and data policies.
 
-**Status:** Not started.
+**Status:** Complete (2026-10-20). Added owner-only Active/Paused/Completed controls, a clear final-completion confirmation, and typed-name project deletion. Migration `20261020000400_project_lifecycle_and_task_board.sql` converts former Abandoned projects to Paused, makes Completed final, and updates task status permissions. The user confirmed T-14 is complete.
 
 ## M6 — Showcases and notifications
 
@@ -296,7 +297,7 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Included module: Publish project showcases**
 
-- Allow creator/workspace admins to publish a showcase only for a Completed project.
+- Allow creator/project admins to publish a showcase only for a Completed project.
 - Show contributor names automatically with no opt-out.
 - **Done when:** showcase visibility and attribution follow the approved lifecycle and deletion rules.
 
@@ -312,13 +313,13 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Included module: Add collaboration notifications**
 
-- Create in-app notifications for join-request decisions, workspace invitations, and relevant membership changes.
-- Let users navigate to the correct request, chat, or workspace destination.
+- Create in-app notifications for join-request decisions, project invitations, and relevant membership changes.
+- Let users navigate to the correct request, chat, or project destination.
 - **Done when:** notification recipients and destinations match each event’s authorization rules.
 
 **Included module: Add work notifications**
 
-- Add useful in-app notifications for task assignment and important project/workspace lifecycle changes.
+- Add useful in-app notifications for task assignment and important project lifecycle changes.
 - Avoid sending notifications for silent join-request cancellation on opportunity close/delete.
 - **Done when:** supported events notify the right current users and silent events remain silent.
 
@@ -352,7 +353,7 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Deploy and verify the reviewer journey**
 
 - Deploy the frontend and configure the selected Supabase project, auth redirects, Brevo email, and reviewer access.
-- Verify registration/sign-in, discovery, likes/comments, join request, chosen acceptance route, private/workspace collaboration, task/milestone use, and showcase publication using the deployed app.
+- Verify registration/sign-in, discovery, likes/comments, join request, chosen acceptance route, private/project collaboration, task/milestone use, and showcase publication using the deployed app.
 - **Done when:** the deployed reviewer journey is usable on mobile and desktop and setup/known limitations are documented in `README.md`.
 
 **Status:** Not started.

@@ -174,7 +174,7 @@ export function OpportunityRequestAction({ opportunity, user }) {
         <span className="request-status">
           {conversationEnded
             ? "Collaboration ended"
-            : `Accepted · ${isChat ? "Private chat" : "Workspace"}`}
+            : `Accepted · ${isChat ? "Private chat" : "Project"}`}
         </span>
         {destinationId && !conversationEnded && (
           <a
@@ -182,10 +182,10 @@ export function OpportunityRequestAction({ opportunity, user }) {
             href={
               isChat
                 ? `/messages?conversation=${encodeURIComponent(destinationId)}`
-                : `/workspaces/${encodeURIComponent(destinationId)}`
+                : `/projects/${encodeURIComponent(destinationId)}`
             }
           >
-            {isChat ? "Open private chat" : "Open workspace"}
+            {isChat ? "Open private chat" : "Open project"}
           </a>
         )}
       </>

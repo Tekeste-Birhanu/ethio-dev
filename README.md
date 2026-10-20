@@ -1,18 +1,18 @@
 # EthioDev
 
-EthioDev is a mobile-friendly collaboration platform for beginner and junior developers across Ethiopia. Developers can discover project opportunities, find collaborators, coordinate through chat and shared workspaces, and showcase completed projects.
+EthioDev is a mobile-friendly collaboration platform for beginner and junior developers across Ethiopia. Developers can discover project opportunities, find collaborators, coordinate through project chat and a shared task board, and showcase completed projects.
 
 ## MVP features
 
 - Public developer profiles, directory, and project opportunity discovery.
 - Opportunity publishing, likes, threaded comments, and collaboration requests.
-- Private chat, team workspaces, tasks, and milestones.
+- Private chat, collaborative projects, tasks, and milestones.
 - Public showcases for completed projects.
 - Email/password and Google sign-in, with in-app notifications.
 
 ## Status
 
-Implementation progress is tracked in `docs/TASKS.md`. T-10 private collaboration chat is complete. T-11 workspace creation and membership is in progress; its latest migration and live membership flows still need verification. The specification files define the intended behavior. Unit and browser test files have not been added yet.
+Implementation progress is tracked in `docs/TASKS.md`. T-07 through T-14 are complete. T-06 discovery remains in progress; T-15 onward has not started. The specification files define the intended behavior. Unit and browser test files have not been added yet.
 
 ## Documentation
 

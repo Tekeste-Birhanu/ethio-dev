@@ -34,7 +34,7 @@ const navigation = [
   { label: "Profile", href: "/settings/profile", icon: "users" },
   { label: "Showcases", href: "/showcases", icon: "grid" },
   { label: "Messages", href: "/messages", icon: "message" },
-  { label: "Workspace", href: "/workspaces", icon: "briefcase" },
+  { label: "Projects", href: "/projects", icon: "briefcase" },
 ];
 
 function Icon({ name, size = 20 }) {
@@ -152,7 +152,9 @@ function NavItems({ mobile = false, profileHref }) {
             (pathname === "/my-profile" || pathname === "/settings/profile")) ||
           (label === "Messages" && pathname === "/messages");
         const workspaceCurrent =
-          label === "Workspace" && pathname.startsWith("/workspaces");
+          label === "Projects" &&
+          (pathname.startsWith("/workspaces") ||
+            pathname.startsWith("/projects"));
         return (
           <a
             key={label}
@@ -257,9 +259,11 @@ function App() {
             <Suspense fallback={<p role="status">Loading messages…</p>}>
               <PrivateMessagesPage user={user} />
             </Suspense>
-          ) : window.location.pathname === "/workspaces" ||
+          ) : window.location.pathname === "/projects" ||
+            window.location.pathname.match(/^\/projects\/[^/]+$/) ||
+            window.location.pathname === "/workspaces" ||
             window.location.pathname.match(/^\/workspaces\/[^/]+$/) ? (
-            <Suspense fallback={<p role="status">Loading workspace…</p>}>
+            <Suspense fallback={<p role="status">Loading project…</p>}>
               <WorkspacePage
                 user={user}
                 workspaceId={window.location.pathname.split("/")[2] ?? null}

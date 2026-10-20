@@ -260,12 +260,12 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
                         href={
                           row.acceptance_path === "private_chat"
                             ? `/messages?conversation=${encodeURIComponent(row.destination_id)}`
-                            : `/workspaces/${encodeURIComponent(row.destination_id)}`
+                            : `/projects/${encodeURIComponent(row.destination_id)}`
                         }
                       >
                         {row.acceptance_path === "private_chat"
                           ? "Open private chat"
-                          : "Open workspace"}
+                          : "Open project"}
                       </a>
                     )}
                 </div>
@@ -285,7 +285,7 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
                       disabled={Boolean(busyId)}
                       onClick={() => decide(row, true, "workspace")}
                     >
-                      Accept to workspace
+                      Accept to project
                     </button>
                     <button
                       className="button button-danger"

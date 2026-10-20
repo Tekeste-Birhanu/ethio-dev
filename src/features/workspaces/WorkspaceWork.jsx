@@ -17,12 +17,12 @@ function toLocalDate(value) {
     : "No due date";
 }
 
-function emptyTask() {
+function emptyTask(milestoneId) {
   return {
     id: null,
     title: "",
     description: "",
-    milestone_id: "",
+    milestone_id: milestoneId,
     due_at: "",
     assignee_ids: [],
   };
@@ -40,7 +40,7 @@ function emptyMilestone() {
 
 function describeRpcError(error, operation) {
   if (error?.code === "P0001" && error.message)
-    return `${error.message} (Error code: ${error.code})`;
+    return `${error.message.replace(/workspace/gi, "project")} (Error code: ${error.code})`;
   if (error?.code === "PGRST202")
     return `${operation} is not available yet. Apply the latest Supabase migration, then try again.`;
   return `${operation} could not be saved. Try again. (Error code: ${error?.code ?? "unknown"})`;
@@ -82,23 +82,32 @@ function TaskEditor({ task, members, milestones, busy, onCancel, onSave }) {
         />
       </label>
       <div className="workspace-work-form-grid">
-        <label className="field-label">
-          Milestone
-          <select
-            className="field-control"
-            value={form.milestone_id}
-            onChange={(event) =>
-              setForm({ ...form, milestone_id: event.target.value })
-            }
-          >
-            <option value="">No milestone</option>
-            {milestones.map((milestone) => (
-              <option key={milestone.id} value={milestone.id}>
-                {milestone.title}
-              </option>
-            ))}
-          </select>
-        </label>
+        {task.id ? (
+          <label className="field-label">
+            Milestone
+            <select
+              className="field-control"
+              required
+              value={form.milestone_id}
+              onChange={(event) =>
+                setForm({ ...form, milestone_id: event.target.value })
+              }
+            >
+              {milestones.map((milestone) => (
+                <option key={milestone.id} value={milestone.id}>
+                  {milestone.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <p className="field-label">
+            Milestone
+            <span className="workspace-task-active-milestone">
+              {milestones.find((item) => item.id === form.milestone_id)?.title}
+            </span>
+          </p>
+        )}
         <label className="field-label">
           Due
           <input
@@ -202,7 +211,7 @@ function MilestoneEditor({ milestone, busy, onCancel, onSave }) {
             })
           }
         >
-          <option value="automatic">Automatic (all tasks done)</option>
+          <option value="automatic">Automatic (all tasks completed)</option>
           <option value="manual">Manual</option>
         </select>
       </label>
@@ -249,7 +258,6 @@ export default function WorkspaceWork({
   role,
   members,
   projectStatus,
-  inactiveWorkEditable,
 }) {
   const [tasks, setTasks] = useState([]);
   const [milestones, setMilestones] = useState([]);
@@ -259,8 +267,9 @@ export default function WorkspaceWork({
   const [notice, setNotice] = useState("");
   const [taskEditor, setTaskEditor] = useState(null);
   const [milestoneEditor, setMilestoneEditor] = useState(null);
+  const [activeMilestoneId, setActiveMilestoneId] = useState("");
   const canManage = role === "owner" || role === "admin";
-  const editable = projectStatus === "active" || inactiveWorkEditable;
+  const editable = projectStatus === "active";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -285,10 +294,19 @@ export default function WorkspaceWork({
         .order("created_at"),
     ]);
     if (taskError || milestoneError)
-      setError("Workspace tasks could not be loaded. Try again.");
+      setError("Project tasks could not be loaded. Try again.");
     else {
       setTasks(taskRows ?? []);
       setMilestones(milestoneRows ?? []);
+      setActiveMilestoneId((currentId) => {
+        if (milestoneRows?.some((milestone) => milestone.id === currentId))
+          return currentId;
+        return (
+          milestoneRows?.find((milestone) => !milestone.is_completed)?.id ??
+          milestoneRows?.[0]?.id ??
+          ""
+        );
+      });
     }
     setLoading(false);
   }, [workspaceId]);
@@ -321,7 +339,7 @@ export default function WorkspaceWork({
   async function saveMilestone(form) {
     setBusy(true);
     setError("");
-    const { error: saveError } = await supabase.rpc(
+    const { data: savedMilestoneId, error: saveError } = await supabase.rpc(
       "save_workspace_milestone",
       {
         p_workspace_id: workspaceId,
@@ -334,6 +352,7 @@ export default function WorkspaceWork({
     );
     setBusy(false);
     if (saveError) return describeRpcError(saveError, "Milestone");
+    if (!form.id && savedMilestoneId) setActiveMilestoneId(savedMilestoneId);
     setMilestoneEditor(null);
     setNotice("Milestone saved.");
     await load();
@@ -369,7 +388,9 @@ export default function WorkspaceWork({
     setBusy(false);
     if (deleteError)
       setError(
-        `The ${label} could not be deleted. (Error code: ${deleteError.code ?? "unknown"})`,
+        deleteError.code === "P0001" && deleteError.message
+          ? `${deleteError.message.replace(/workspace/gi, "project")} (Error code: ${deleteError.code})`
+          : `The ${label} could not be deleted. (Error code: ${deleteError.code ?? "unknown"})`,
       );
     else {
       setNotice(`${label[0].toUpperCase()}${label.slice(1)} deleted.`);
@@ -408,70 +429,110 @@ export default function WorkspaceWork({
           assignment,
       )
       .filter(Boolean);
-    const mayUpdate =
-      canManage ||
-      (task.task_assignees ?? []).some(
-        (assignment) => assignment.user_id === user.id,
-      );
+    const assignedToMe = (task.task_assignees ?? []).some(
+      (assignment) => assignment.user_id === user.id,
+    );
+    const assigneeNames = assigned.length
+      ? assigned
+          .map(
+            (member) =>
+              `${member.profiles?.display_name ?? "Developer"}${members.some((active) => active.user_id === member.user_id) ? "" : " (former member)"}`,
+          )
+          .join(", ")
+      : "Unassigned";
     return (
-      <article className="workspace-task-card" key={task.id}>
+      <article className="workspace-task-card project-task-card" key={task.id}>
         <div className="workspace-task-card-heading">
-          <div>
-            <h4>{task.title}</h4>
-            {task.description && <p>{task.description}</p>}
+          <div className="project-task-title">
+            {(canManage || assignedToMe) && editable && (
+              <span
+                className="task-drag-handle"
+                role="button"
+                tabIndex={0}
+                aria-label={`Move ${task.title} to another status`}
+                aria-description="Drag this handle, or use the left and right arrow keys to change status."
+                title="Drag this task to another column"
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData("text/task-id", task.id);
+                  event.dataTransfer.effectAllowed = "move";
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight")
+                    return;
+                  event.preventDefault();
+                  const statuses = ["to_do", "in_progress", "done"];
+                  const currentIndex = statuses.indexOf(task.status);
+                  const nextIndex =
+                    currentIndex + (event.key === "ArrowRight" ? 1 : -1);
+                  if (nextIndex >= 0 && nextIndex < statuses.length)
+                    void updateStatus(task.id, statuses[nextIndex]);
+                }}
+              >
+                <svg viewBox="0 0 12 20" focusable="false">
+                  <circle cx="3" cy="3" r="1.5" />
+                  <circle cx="9" cy="3" r="1.5" />
+                  <circle cx="3" cy="10" r="1.5" />
+                  <circle cx="9" cy="10" r="1.5" />
+                  <circle cx="3" cy="17" r="1.5" />
+                  <circle cx="9" cy="17" r="1.5" />
+                </svg>
+              </span>
+            )}
+            <div>
+              <h4>{task.title}</h4>
+            </div>
           </div>
           {canManage && editable && (
-            <div className="workspace-task-card-actions">
-              <button
-                className="text-button"
-                type="button"
-                disabled={busy}
-                onClick={() => editTask(task)}
+            <details className="three-dot-menu project-task-menu">
+              <summary
+                aria-label={`Actions for ${task.title}`}
+                title="Task actions"
               >
-                Edit
-              </button>
-              <button
-                className="text-button-danger"
-                type="button"
-                disabled={busy}
-                onClick={() =>
-                  void deleteRecord("delete_workspace_task", task.id, "task")
-                }
-              >
-                Delete
-              </button>
-            </div>
+                <svg aria-hidden="true" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="1" />
+                  <circle cx="12" cy="12" r="1" />
+                  <circle cx="12" cy="19" r="1" />
+                </svg>
+              </summary>
+              <div className="three-dot-menu-items">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={(event) => {
+                    event.currentTarget.closest("details").open = false;
+                    editTask(task);
+                  }}
+                >
+                  Edit task
+                </button>
+                <button
+                  className="workspace-delete-action"
+                  type="button"
+                  disabled={busy}
+                  onClick={(event) => {
+                    event.currentTarget.closest("details").open = false;
+                    void deleteRecord("delete_workspace_task", task.id, "task");
+                  }}
+                >
+                  Delete task
+                </button>
+              </div>
+            </details>
           )}
         </div>
         <div className="workspace-task-meta">
-          <label>
-            <span className="visually-hidden">Status for {task.title}</span>
-            <select
-              aria-label={`Status for ${task.title}`}
-              className="field-control"
-              value={task.status}
-              disabled={!editable || !mayUpdate || busy}
-              onChange={(event) =>
-                void updateStatus(task.id, event.target.value)
-              }
-            >
-              <option value="to_do">To do</option>
-              <option value="in_progress">In progress</option>
-              <option value="done">Done</option>
-            </select>
-          </label>
           <span>{toLocalDate(task.due_at)}</span>
-          <span>
-            {assigned.length
-              ? assigned
-                  .map(
-                    (member) =>
-                      `${member.profiles?.display_name ?? "Developer"}${members.some((active) => active.user_id === member.user_id) ? "" : " (former member)"}`,
-                  )
-                  .join(", ")
-              : "Unassigned"}
-          </span>
         </div>
+        <details className="project-task-details">
+          <summary>View details</summary>
+          <div>
+            {task.description && <p>{task.description}</p>}
+            <p>
+              <strong>Assignees:</strong> {assigneeNames}
+            </p>
+          </div>
+        </details>
       </article>
     );
   }
@@ -479,48 +540,18 @@ export default function WorkspaceWork({
   if (loading)
     return (
       <p className="empty-card" role="status">
-        Loading workspace tasks…
+        Loading project tasks…
       </p>
     );
   return (
     <section
       className="workspace-work-panel"
-      aria-label="Workspace tasks and milestones"
+      aria-label="Project task board and milestones"
     >
-      <div className="workspace-work-heading">
-        <div>
-          <h2>Tasks &amp; milestones</h2>
-          <p>Coordinate the work and track progress.</p>
-        </div>
-        {canManage && editable && (
-          <div className="workspace-work-heading-actions">
-            <button
-              className="button button-secondary"
-              type="button"
-              onClick={() => {
-                setNotice("");
-                setMilestoneEditor(emptyMilestone());
-              }}
-            >
-              Add milestone
-            </button>
-            <button
-              className="button button-primary"
-              type="button"
-              onClick={() => {
-                setNotice("");
-                setTaskEditor(emptyTask());
-              }}
-            >
-              Add task
-            </button>
-          </div>
-        )}
-      </div>
       {!editable && (
         <p className="feedback feedback-info" role="status">
-          This project is read-only. The owner or an admin can allow work edits
-          in project settings.
+          This project is read-only. Task changes are available while the
+          project is Active.
         </p>
       )}
       {error && (
@@ -529,7 +560,10 @@ export default function WorkspaceWork({
         </p>
       )}
       {notice && (
-        <p className="feedback feedback-success" role="status">
+        <p
+          className="feedback feedback-success workspace-work-notice"
+          role="status"
+        >
           {notice}
         </p>
       )}
@@ -559,75 +593,194 @@ export default function WorkspaceWork({
           />
         </section>
       )}
-      {milestones.length === 0 && tasks.length === 0 ? (
-        <p className="empty-card">No tasks or milestones yet.</p>
-      ) : (
-        <div className="workspace-work-groups">
-          {milestones.map((milestone) => {
-            const linked = tasks.filter(
-              (task) => task.milestone_id === milestone.id,
-            );
-            return (
-              <section className="workspace-work-group" key={milestone.id}>
-                <div className="workspace-work-group-heading">
-                  <div>
-                    <h3>{milestone.title}</h3>
-                    {milestone.description && <p>{milestone.description}</p>}
-                    <span
-                      className={`status-chip ${milestone.is_completed ? "status-open" : "status-closed"}`}
-                    >
-                      {milestone.is_completed ? "Complete" : "In progress"} ·{" "}
-                      {milestone.completion_mode === "automatic"
-                        ? "Automatic"
-                        : "Manual"}
-                    </span>
-                  </div>
-                  {canManage && editable && (
-                    <div className="workspace-task-card-actions">
-                      <button
-                        className="text-button"
-                        type="button"
-                        disabled={busy}
-                        onClick={() => {
-                          setNotice("");
-                          setMilestoneEditor(milestone);
-                        }}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="text-button-danger"
-                        type="button"
-                        disabled={busy}
-                        onClick={() =>
-                          void deleteRecord(
-                            "delete_workspace_milestone",
-                            milestone.id,
-                            "milestone",
-                          )
-                        }
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {linked.length ? (
-                  linked.map(renderTask)
-                ) : (
-                  <p className="workspace-work-empty">
-                    No tasks in this milestone yet.
-                  </p>
-                )}
-              </section>
-            );
-          })}
-          {tasks.some((task) => !task.milestone_id) && (
-            <section className="workspace-work-group">
-              <h3>Other tasks</h3>
-              {tasks.filter((task) => !task.milestone_id).map(renderTask)}
-            </section>
+      {milestones.length === 0 ? (
+        <section className="empty-card project-milestones-empty">
+          <h3>Create a milestone to start planning</h3>
+          <p>
+            Every task belongs to a milestone. Add one before creating tasks.
+          </p>
+          {canManage && editable && (
+            <button
+              className="button button-primary"
+              type="button"
+              onClick={() => setMilestoneEditor(emptyMilestone())}
+            >
+              Create milestone
+            </button>
           )}
+        </section>
+      ) : (
+        <div className="project-work-layout">
+          <aside
+            className="project-milestone-sidebar"
+            aria-labelledby="project-milestones-title"
+          >
+            <div className="project-milestone-sidebar-heading">
+              <h3 id="project-milestones-title">Milestones</h3>
+            </div>
+            <div
+              className="project-milestone-list"
+              aria-label="Select a milestone"
+            >
+              {milestones.map((milestone) => {
+                const count = tasks.filter(
+                  (task) => task.milestone_id === milestone.id,
+                ).length;
+                const selected = activeMilestoneId === milestone.id;
+                return (
+                  <div
+                    className={
+                      selected
+                        ? "project-milestone-item is-active"
+                        : "project-milestone-item"
+                    }
+                    key={milestone.id}
+                  >
+                    <button
+                      className="project-milestone-select"
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => {
+                        setActiveMilestoneId(milestone.id);
+                        setTaskEditor(null);
+                      }}
+                    >
+                      <strong>{milestone.title}</strong>
+                      <span>
+                        {milestone.is_completed
+                          ? "Completed"
+                          : count + (count === 1 ? " task" : " tasks")}
+                      </span>
+                    </button>
+                    {canManage && editable && (
+                      <details className="three-dot-menu project-milestone-menu">
+                        <summary
+                          aria-label={`Actions for ${milestone.title}`}
+                          title="Milestone actions"
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24">
+                            <circle cx="12" cy="5" r="1" />
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="12" cy="19" r="1" />
+                          </svg>
+                        </summary>
+                        <div className="three-dot-menu-items">
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details").open =
+                                false;
+                              setMilestoneEditor(milestone);
+                            }}
+                          >
+                            Edit milestone
+                          </button>
+                          <button
+                            className="workspace-delete-action"
+                            type="button"
+                            disabled={busy}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details").open =
+                                false;
+                              void deleteRecord(
+                                "delete_workspace_milestone",
+                                milestone.id,
+                                "milestone",
+                              );
+                            }}
+                          >
+                            Delete milestone
+                          </button>
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {canManage && editable && (
+              <button
+                className="text-button project-milestone-add"
+                type="button"
+                disabled={busy}
+                onClick={() => setMilestoneEditor(emptyMilestone())}
+              >
+                Add milestone
+              </button>
+            )}
+          </aside>
+          <div className="project-task-board-wrap">
+            <div className="project-task-board-heading">
+              {canManage && editable && (
+                <button
+                  className="button button-primary"
+                  type="button"
+                  disabled={busy || !activeMilestoneId}
+                  onClick={() => {
+                    setNotice("");
+                    setTaskEditor(emptyTask(activeMilestoneId));
+                  }}
+                >
+                  Add task
+                </button>
+              )}
+            </div>
+            <div className="project-task-board">
+              {[
+                ["to_do", "To do"],
+                ["in_progress", "In progress"],
+                ["done", "Completed"],
+              ].map(([status, label]) => (
+                <section
+                  className="project-task-column"
+                  key={status}
+                  aria-label={label + " tasks"}
+                  onDragOver={(event) => {
+                    if (editable && !busy) event.preventDefault();
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (!editable || busy) return;
+                    const taskId = event.dataTransfer.getData("text/task-id");
+                    const task = tasks.find((item) => item.id === taskId);
+                    const canUpdateTask =
+                      canManage ||
+                      task?.task_assignees?.some(
+                        (assignment) => assignment.user_id === user.id,
+                      );
+                    if (task && canUpdateTask && task.status !== status)
+                      void updateStatus(taskId, status);
+                  }}
+                >
+                  <h3>
+                    {label}
+                    <span>
+                      {
+                        tasks.filter(
+                          (task) =>
+                            task.milestone_id === activeMilestoneId &&
+                            task.status === status,
+                        ).length
+                      }
+                    </span>
+                  </h3>
+                  {tasks
+                    .filter(
+                      (task) =>
+                        task.milestone_id === activeMilestoneId &&
+                        task.status === status,
+                    )
+                    .map(renderTask)}
+                  {tasks.every(
+                    (task) =>
+                      task.milestone_id !== activeMilestoneId ||
+                      task.status !== status,
+                  ) && <p className="workspace-work-empty">No tasks</p>}
+                </section>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </section>

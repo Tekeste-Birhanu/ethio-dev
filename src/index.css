@@ -2784,6 +2784,21 @@ h1 {
   width: min(100%, 820px);
   margin: 0 auto;
 }
+.workspace-page-work {
+  width: min(100%, 1440px);
+}
+.workspace-page-work .page-heading {
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.workspace-page-work .page-heading h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.65rem, 2.5vw, 2.25rem);
+}
+.workspace-page-work .page-description {
+  margin: 0.2rem 0 0;
+}
 .workspace-page-actions {
   display: flex;
   align-items: center;
@@ -2796,14 +2811,14 @@ h1 {
 .workspace-view-nav {
   display: flex;
   gap: 0.35rem;
-  margin-top: 1rem;
-  padding: 0.3rem;
+  margin-top: 0;
+  padding: 0.2rem;
   border: 1px solid var(--color-border);
   border-radius: 0.9rem;
   background: var(--color-surface);
 }
 .workspace-view-nav button {
-  min-height: 2.75rem;
+  min-height: 2.4rem;
   flex: 1;
   padding: 0.65rem 1rem;
   border: 0;
@@ -2829,8 +2844,14 @@ h1 {
 }
 .workspace-work-panel {
   display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+.workspace-work-notice {
+  margin: 0;
+  padding: 0.2rem 0;
+  border: 0;
+  background: transparent;
 }
 .workspace-work-heading,
 .workspace-work-group-heading,
@@ -2858,6 +2879,241 @@ h1 {
 .workspace-work-groups {
   display: grid;
   gap: 1rem;
+}
+.project-task-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 1rem;
+}
+.project-task-column {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  min-height: 11rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface-muted, #f6f8fa);
+}
+.project-task-column > h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 0.25rem;
+  font-size: 0.98rem;
+}
+.project-task-column > h3 span {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+.workspace-task-card-heading > div:first-child.project-task-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.project-task-title > div {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+.project-task-title h4 {
+  overflow: hidden;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-task-title > div:first-child {
+  flex: 1;
+}
+.project-task-details {
+  margin-top: 0.3rem;
+}
+.project-task-details > summary {
+  width: fit-content;
+  color: var(--color-primary);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+.project-task-details > div {
+  display: grid;
+  gap: 0.25rem;
+  padding-top: 0.2rem;
+}
+.project-task-details p {
+  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+.project-task-details strong {
+  color: var(--color-text);
+}
+.project-task-card .field-control {
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.82rem;
+}
+.project-task-meta {
+  gap: 0.4rem 0.55rem;
+  font-size: 0.8rem;
+}
+.task-drag-handle {
+  display: grid;
+  width: 1.55rem;
+  height: 1.8rem;
+  flex: 0 0 auto;
+  place-items: center;
+  margin: -0.15rem 0 0 -0.2rem;
+  border-radius: 0.35rem;
+  color: var(--color-muted);
+  cursor: grab;
+}
+.task-drag-handle svg {
+  width: 0.75rem;
+  height: 1.25rem;
+  fill: currentColor;
+}
+.task-drag-handle:active {
+  cursor: grabbing;
+}
+.task-drag-handle:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.project-work-layout {
+  display: grid;
+  grid-template-columns: minmax(13rem, 16rem) minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+}
+.project-milestone-sidebar {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0 1rem 0 0;
+  border-right: 1px solid var(--color-border);
+}
+.project-milestone-sidebar-heading,
+.project-task-board-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.project-milestone-sidebar-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.project-milestone-list {
+  display: grid;
+  gap: 0.3rem;
+}
+.project-milestone-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+}
+.project-milestone-item.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft, #eaf4f9);
+}
+.project-milestone-menu > summary,
+.project-task-menu > summary {
+  width: 30px;
+  height: 30px;
+  border-color: transparent;
+  background: transparent;
+}
+.project-milestone-menu > summary:hover,
+.project-milestone-menu[open] > summary,
+.project-task-menu > summary:hover,
+.project-task-menu[open] > summary {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+}
+.project-milestone-menu > summary svg,
+.project-task-menu > summary svg {
+  width: 18px;
+  height: 18px;
+}
+.project-milestone-menu .three-dot-menu-items,
+.project-task-menu .three-dot-menu-items {
+  min-width: 180px;
+}
+.project-milestone-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: 0.1rem;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.project-milestone-select strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-milestone-select span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.project-task-board-heading p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+.project-milestone-item .workspace-task-card-actions {
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+.project-milestone-item .text-button,
+.project-milestone-item .text-button-danger {
+  min-height: 1.8rem;
+  padding: 0 0.15rem;
+  border: 0;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.project-task-board-wrap {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+}
+.project-task-board-heading {
+  justify-content: flex-end;
+}
+.project-milestones-empty {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+}
+.project-milestones-empty h3,
+.project-milestones-empty p {
+  margin: 0;
+}
+.workspace-task-active-milestone {
+  padding-top: 0.5rem;
+  font-weight: 600;
 }
 .workspace-work-group,
 .workspace-work-editor {
@@ -2937,6 +3193,31 @@ h1 {
 .workspace-work-empty {
   margin: 0;
   color: var(--color-muted);
+}
+.workspace-project-settings {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+}
+.workspace-project-settings h2,
+.workspace-project-settings p {
+  margin-top: 0;
+}
+.workspace-project-settings .field-control {
+  max-width: 28rem;
+}
+.workspace-setting-help {
+  margin-bottom: 0;
+  color: var(--color-muted);
+}
+.workspace-setting-divider {
+  height: 1px;
+  margin: 0.5rem 0;
+  background: var(--color-border);
 }
 .workspace-list,
 .workspace-create-section,
@@ -3144,6 +3425,34 @@ h1 {
   }
 }
 @media (max-width: 760px) {
+  .project-work-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 0.75rem;
+  }
+  .project-milestone-sidebar {
+    padding: 0 0 0.8rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .project-milestone-list {
+    display: grid;
+  }
+  .project-milestone-item {
+    width: 100%;
+  }
+  .project-milestone-menu[open] {
+    z-index: 12;
+  }
+  .project-task-menu[open] {
+    z-index: 12;
+  }
+  .project-task-board {
+    grid-template-columns: 1fr;
+  }
+  .project-milestone-row {
+    align-items: flex-start;
+  }
   .workspace-work-heading,
   .workspace-work-form-grid {
     grid-template-columns: 1fr;

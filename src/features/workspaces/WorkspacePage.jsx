@@ -12,6 +12,10 @@ function WorkspaceStatus({ title, children }) {
   );
 }
 
+function displayProjectStatus(status) {
+  return status ? status[0].toUpperCase() + status.slice(1) : "Active";
+}
+
 async function processStorageCleanup() {
   const { data: jobs } = await supabase.rpc("claim_storage_cleanup_jobs");
   for (const job of jobs ?? []) {
@@ -58,16 +62,12 @@ export default function WorkspacePage({ user, workspaceId = null }) {
     if (workspaceId) {
       const { data: workspaceData, error: workspaceError } = await supabase
         .from("workspaces")
-        .select(
-          "id, opportunity_id, owner_id, project_status, inactive_work_editable",
-        )
+        .select("id, opportunity_id, owner_id, project_status")
         .eq("id", workspaceId)
         .maybeSingle();
       if (workspaceError || !workspaceData) {
         setWorkspace(null);
-        setError(
-          "This workspace is unavailable or you are no longer a member.",
-        );
+        setError("This project is unavailable or you are no longer a member.");
         setLoading(false);
         return;
       }
@@ -90,7 +90,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           .order("joined_at"),
       ]);
       if (memberError) {
-        setError("Workspace members could not be loaded. Try again.");
+        setError("Project members could not be loaded. Try again.");
         setLoading(false);
         return;
       }
@@ -99,11 +99,11 @@ export default function WorkspacePage({ user, workspaceId = null }) {
       );
       if (!currentMembership) {
         setWorkspace(null);
-        setError("You are no longer a member of this workspace.");
+        setError("You are no longer a member of this project.");
       } else {
         setWorkspace({
           ...workspaceData,
-          title: opportunity?.title ?? "Workspace",
+          title: opportunity?.title ?? "Project",
         });
         setMembers(membershipData ?? []);
         setRole(currentMembership.role);
@@ -115,7 +115,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
         .eq("user_id", user.id)
         .is("ended_at", null);
       if (membershipError) {
-        setError("Your workspaces could not be loaded. Try again.");
+        setError("Your projects could not be loaded. Try again.");
         setLoading(false);
         return;
       }
@@ -130,7 +130,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             .order("created_at", { ascending: false })
         : { data: [], error: null };
       if (workspaceError) {
-        setError("Your workspaces could not be loaded. Try again.");
+        setError("Your projects could not be loaded. Try again.");
         setLoading(false);
         return;
       }
@@ -149,7 +149,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
       setWorkspaces(
         (workspaceRows ?? []).map((row) => ({
           ...row,
-          title: titles.get(row.opportunity_id) ?? "Workspace",
+          title: titles.get(row.opportunity_id) ?? "Project",
         })),
       );
 
@@ -202,11 +202,11 @@ export default function WorkspacePage({ user, workspaceId = null }) {
     if (createError) {
       setError(
         createError.message?.includes("already exists")
-          ? "A workspace already exists for this opportunity. Refresh the list."
-          : "The workspace could not be created. Try again.",
+          ? "A project already exists for this opportunity. Refresh the list."
+          : "The project could not be created. Try again.",
       );
     } else {
-      window.location.assign(`/workspaces/${encodeURIComponent(data)}`);
+      window.location.assign(`/projects/${encodeURIComponent(data)}`);
     }
     setBusy(false);
   }
@@ -238,8 +238,8 @@ export default function WorkspacePage({ user, workspaceId = null }) {
       const leaving = targetUserId === user.id;
       const confirmed = window.confirm(
         leaving
-          ? "Leave this workspace? You will lose access to its chat and files, and unfinished tasks assigned to you will be unassigned."
-          : "Remove this member? They will lose access to workspace chat and files, and unfinished tasks assigned to them will be unassigned.",
+          ? "Leave this project? You will lose access to its chat and files, and unfinished tasks assigned to you will be unassigned."
+          : "Remove this member? They will lose access to project chat and files, and unfinished tasks assigned to them will be unassigned.",
       );
       if (!confirmed) return;
     }
@@ -269,8 +269,8 @@ export default function WorkspacePage({ user, workspaceId = null }) {
       } else {
         setNotice(
           operation === "invite_workspace_member"
-            ? "Developer added to the workspace."
-            : "Workspace membership updated.",
+            ? "Developer added to the project."
+            : "Project membership updated.",
         );
         setMatches([]);
         setSearch("");
@@ -307,8 +307,8 @@ export default function WorkspacePage({ user, workspaceId = null }) {
         );
       setDeleteDialogError(
         functionMissing
-          ? "Workspace deletion setup is not applied to Supabase yet. Apply the latest migration, then try again."
-          : `The workspace could not be deleted. Try again. (Error code: ${deleteError.code ?? "unknown"})`,
+          ? "Project deletion setup is not applied to Supabase yet. Apply the latest migration, then try again."
+          : `The project could not be deleted. Try again. (Error code: ${deleteError.code ?? "unknown"})`,
       );
       setBusy(false);
       return;
@@ -319,33 +319,59 @@ export default function WorkspacePage({ user, workspaceId = null }) {
     } catch {
       // The storage cleanup job remains queued for another authorized attempt.
     }
-    window.location.assign("/workspaces");
+    window.location.assign("/projects");
+  }
+
+  async function changeProjectStatus(status) {
+    if (role !== "owner" || status === workspace?.project_status) return;
+    if (status === "completed") {
+      const accepted = window.confirm(
+        `Mark “${workspace?.title ?? "this project"}” as Completed? Completed projects cannot be reactivated. This project will be ready for a showcase.`,
+      );
+      if (!accepted) return;
+    }
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const { error: statusError } = await supabase.rpc("set_project_status", {
+      p_workspace_id: workspaceId,
+      p_status: status,
+    });
+    setBusy(false);
+    if (statusError) {
+      setError(
+        `Project status could not be changed. ${statusError.code === "P0001" ? statusError.message.replace(/workspace/gi, "project") : "Try again."} (Error code: ${statusError.code ?? "unknown"})`,
+      );
+      return;
+    }
+    setNotice("Project status updated.");
+    await load();
   }
 
   if (!isSupabaseConfigured) {
     return (
       <WorkspaceStatus title="Connect Supabase">
-        Add Supabase settings to use workspaces.
+        Add Supabase settings to use projects.
       </WorkspaceStatus>
     );
   }
   if (!user) {
     return (
-      <WorkspaceStatus title="Sign in to view workspaces">
-        Workspace access is limited to members.
+      <WorkspaceStatus title="Sign in to view projects">
+        Project access is limited to members.
       </WorkspaceStatus>
     );
   }
   if (loading)
     return (
-      <WorkspaceStatus title="Loading workspace">Please wait…</WorkspaceStatus>
+      <WorkspaceStatus title="Loading project">Please wait…</WorkspaceStatus>
     );
   if (error && !workspace && workspaceId) {
     return (
-      <WorkspaceStatus title="Workspace unavailable">
+      <WorkspaceStatus title="Project unavailable">
         <p>{error}</p>
-        <a className="button button-secondary" href="/workspaces">
-          Your workspaces
+        <a className="button button-secondary" href="/projects">
+          Your projects
         </a>
       </WorkspaceStatus>
     );
@@ -356,7 +382,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
       <section className="workspace-page">
         <div className="page-heading">
           <div>
-            <h1>Workspaces</h1>
+            <h1>Projects</h1>
           </div>
         </div>
         {error && (
@@ -374,12 +400,12 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             {workspaces.map((item) => (
               <a
                 className="workspace-list-item"
-                href={`/workspaces/${item.id}`}
+                href={`/projects/${item.id}`}
                 key={item.id}
               >
                 <span>
                   <strong>{item.title}</strong>
-                  <small>{item.project_status}</small>
+                  <small>{displayProjectStatus(item.project_status)}</small>
                 </span>
                 <span aria-hidden="true">›</span>
               </a>
@@ -387,13 +413,15 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           </div>
         ) : (
           <p className="empty-card">
-            You are not a member of any workspaces yet.
+            You are not a member of any projects yet.
           </p>
         )}
         {eligibleOpportunities.length > 0 && (
           <section className="workspace-create-section">
-            <h2>Create a workspace</h2>
-            <p>Create one for an opportunity with an accepted collaboration.</p>
+            <h2>Create a project</h2>
+            <p>
+              Create one from an opportunity with an accepted collaboration.
+            </p>
             {eligibleOpportunities.map((item) => (
               <div className="workspace-list-item" key={item.id}>
                 <strong>{item.title}</strong>
@@ -403,7 +431,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
                   disabled={busy}
                   onClick={() => createWorkspace(item.id)}
                 >
-                  {busy ? "Creating…" : "Create workspace"}
+                  {busy ? "Creating…" : "Create project"}
                 </button>
               </div>
             ))}
@@ -415,20 +443,22 @@ export default function WorkspacePage({ user, workspaceId = null }) {
 
   const canManage = role === "owner" || role === "admin";
   return (
-    <section className="workspace-page">
+    <section
+      className={`workspace-page${activeView === "work" ? " workspace-page-work" : ""}`}
+    >
       <div className="page-heading">
         <div>
-          <h1>{workspace?.title ?? "Workspace"}</h1>
+          <h1>{workspace?.title ?? "Project"}</h1>
           <p className="page-description">
-            Project workspace · {workspace?.project_status}
+            Project · {displayProjectStatus(workspace?.project_status)}
           </p>
         </div>
         <div className="workspace-page-actions">
-          <a className="button button-secondary" href="/workspaces">
-            All workspaces
+          <a className="button button-secondary" href="/projects">
+            All projects
           </a>
           <details className="three-dot-menu">
-            <summary aria-label="Workspace settings" title="Workspace settings">
+            <summary aria-label="Project settings" title="Project settings">
               <svg aria-hidden="true" viewBox="0 0 24 24">
                 <circle cx="12" cy="5" r="1" />
                 <circle cx="12" cy="12" r="1" />
@@ -436,6 +466,15 @@ export default function WorkspacePage({ user, workspaceId = null }) {
               </svg>
             </summary>
             <div className="three-dot-menu-items">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.currentTarget.closest("details").open = false;
+                  setActiveView("settings");
+                }}
+              >
+                Project settings
+              </button>
               <button
                 type="button"
                 onClick={(event) => {
@@ -457,14 +496,14 @@ export default function WorkspacePage({ user, workspaceId = null }) {
                     setDeleteDialogOpen(true);
                   }}
                 >
-                  Delete workspace
+                  Delete project
                 </button>
               )}
             </div>
           </details>
         </div>
       </div>
-      <nav className="workspace-view-nav" aria-label="Workspace views">
+      <nav className="workspace-view-nav" aria-label="Project views">
         <button
           type="button"
           aria-current={activeView === "chat" ? "page" : undefined}
@@ -477,7 +516,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           aria-current={activeView === "work" ? "page" : undefined}
           onClick={() => setActiveView("work")}
         >
-          Tasks &amp; milestones
+          Task board
         </button>
       </nav>
       {error && (
@@ -503,7 +542,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             <div className="section-heading">
               <h2>Members</h2>
               <span className="status-chip status-closed">
-                {workspace?.project_status}
+                {displayProjectStatus(workspace?.project_status)}
               </span>
             </div>
             <ul className="workspace-member-list">
@@ -588,7 +627,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
                 disabled={busy}
                 onClick={() => mutateMembership("end_workspace_membership")}
               >
-                Leave workspace
+                Leave project
               </button>
             )}
             {canManage && (
@@ -636,6 +675,63 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             )}
           </section>
         </>
+      ) : activeView === "settings" ? (
+        <>
+          <button
+            className="button button-secondary workspace-back-to-chat"
+            type="button"
+            onClick={() => setActiveView("chat")}
+          >
+            <span aria-hidden="true">{"\u2190"}</span> Back to project
+          </button>
+          <section className="workspace-project-settings">
+            <h2>Project settings</h2>
+            <p className="page-description">
+              Pause this project while work is on hold. Completed projects are
+              final and eligible for a showcase.
+            </p>
+            <label className="field-label" htmlFor="workspace-project-status">
+              Project status
+            </label>
+            <select
+              id="workspace-project-status"
+              className="field-control"
+              value={workspace?.project_status ?? "active"}
+              disabled={
+                busy ||
+                role !== "owner" ||
+                workspace?.project_status === "completed"
+              }
+              onChange={(event) => void changeProjectStatus(event.target.value)}
+            >
+              <option value="active">Active</option>
+              <option value="paused">Paused</option>
+              <option value="completed">Completed</option>
+            </select>
+            {role !== "owner" && (
+              <p className="workspace-setting-help">
+                Only the project owner can change its status.
+              </p>
+            )}
+            {workspace?.project_status === "completed" && (
+              <p className="workspace-setting-help">
+                Completed is final. This project cannot be reactivated.
+              </p>
+            )}
+            <div className="workspace-setting-divider" />
+            <p className="workspace-setting-help">
+              Tasks and milestones can be changed while the project is Active.
+              Paused projects become editable again when the owner reactivates
+              them; Completed projects stay read-only.
+            </p>
+            {workspace?.project_status === "paused" && (
+              <p className="workspace-setting-help">
+                Reactivate this project to make its tasks and milestones
+                editable again.
+              </p>
+            )}
+          </section>
+        </>
       ) : activeView === "work" ? (
         <WorkspaceWork
           workspaceId={workspaceId}
@@ -643,7 +739,6 @@ export default function WorkspacePage({ user, workspaceId = null }) {
           role={role}
           members={members}
           projectStatus={workspace?.project_status}
-          inactiveWorkEditable={workspace?.inactive_work_editable}
         />
       ) : (
         <WorkspaceChat workspaceId={workspaceId} user={user} />
@@ -665,12 +760,13 @@ export default function WorkspacePage({ user, workspaceId = null }) {
             void deleteWorkspace();
           }}
         >
-          <h2 id="workspace-delete-title">Delete workspace?</h2>
+          <h2 id="workspace-delete-title">Delete project?</h2>
           <p>
-            This permanently deletes the workspace, its members, chat history
-            and attachments, tasks, milestones, showcase, and related
-            notifications. The opportunity and accepted collaboration history
-            remain, and you can create a new workspace later.
+            This permanently deletes the project, its members, chat history and
+            attachments, tasks, milestones, showcase, and related notifications.
+            The opportunity and accepted collaboration history remain. The owner
+            can create another project later if eligible. This action cannot be
+            undone.
           </p>
           <label className="field-label" htmlFor="workspace-delete-name">
             Type <strong>{workspace?.title}</strong> to confirm
@@ -703,7 +799,7 @@ export default function WorkspacePage({ user, workspaceId = null }) {
               type="submit"
               disabled={busy || deleteConfirmName.trim() !== workspace?.title}
             >
-              {busy ? "Deleting…" : "Delete workspace"}
+              {busy ? "Deleting…" : "Delete project"}
             </button>
           </div>
         </form>

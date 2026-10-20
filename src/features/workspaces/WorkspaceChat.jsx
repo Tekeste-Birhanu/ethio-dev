@@ -166,7 +166,7 @@ export default function WorkspaceChat({ workspaceId, user }) {
         .limit(PAGE_SIZE);
       if (!active) return;
       if (queryError) {
-        setError("Workspace messages could not be loaded. Try again.");
+        setError("Project messages could not be loaded. Try again.");
       } else {
         setMessages(sortMessages(await hydrateMessages(data ?? [])));
         setHasOlder((data ?? []).length === PAGE_SIZE);
@@ -350,7 +350,7 @@ export default function WorkspaceChat({ workspaceId, user }) {
   }
 
   return (
-    <section className="workspace-chat-panel" aria-label="Workspace chat">
+    <section className="workspace-chat-panel" aria-label="Project chat">
       <div className="section-heading">
         <h2>Chat</h2>
       </div>
@@ -376,7 +376,7 @@ export default function WorkspaceChat({ workspaceId, user }) {
         <div className="workspace-chat-messages" aria-live="polite">
           {membershipEnded && (
             <p className="feedback feedback-error" role="alert">
-              Your workspace membership ended. Chat access has been revoked.
+              Your project membership ended. Chat access has been revoked.
             </p>
           )}
           {hasOlder && (
