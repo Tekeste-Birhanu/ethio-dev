@@ -73,7 +73,7 @@
 ### Opportunity composer and management
 
 - **Purpose:** Let users publish and manage opportunity posts from the feed.
-- **Layout:** Expand the composer in the feed for creating a post. Keep edit controls on a dedicated management form; display the full description and engagement in the feed post.
+- **Layout:** Open the composer in place of the feed search and results, so empty-feed content does not appear beside the form. Cancel returns to the feed; successful publishing returns to the feed with the new post. Keep edit controls on a dedicated management form; display the full description and engagement in the feed post.
 - **Primary action:** Like or comment for signed-in users; request to join for eligible verified users; edit/manage for the creator.
 - **Secondary actions:** View the creator profile and read or reply in the comment thread.
 - **Content and behavior:** Explain verification requirements at the point a user tries to publish or request to join. Closing or deleting an opportunity must explain what happens to pending requests and existing collaborations before confirmation.

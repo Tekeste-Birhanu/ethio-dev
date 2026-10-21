@@ -80,7 +80,12 @@ function buildDirectoryQuery(filters, offset) {
   return query;
 }
 
-function buildOpportunityQuery(filters, offset, userId) {
+function buildOpportunityQuery(
+  filters,
+  offset,
+  userId,
+  focusOpportunityId = null,
+) {
   const skillsEmbed = filters.skillId
     ? "opportunity_skills!inner(skill_id, skills(id, name))"
     : "opportunity_skills(skills(id, name))";
@@ -93,17 +98,21 @@ function buildOpportunityQuery(filters, offset, userId) {
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + pageSize);
-  if (userId) query = query.neq("creator_id", userId);
-  query = addTextSearch(query, filters.search, ["title", "description"]);
-  query = applyLocation(query, filters.city);
-  if (filters.skillId)
-    query = query.eq("opportunity_skills.skill_id", filters.skillId);
-  if (filters.type) query = query.eq("project_type", filters.type);
-  if (filters.experience) {
-    query = query.overlaps("experience_levels", [
-      filters.experience,
-      "any_level",
-    ]);
+  if (focusOpportunityId) {
+    query = query.eq("id", focusOpportunityId);
+  } else {
+    if (userId) query = query.neq("creator_id", userId);
+    query = addTextSearch(query, filters.search, ["title", "description"]);
+    query = applyLocation(query, filters.city);
+    if (filters.skillId)
+      query = query.eq("opportunity_skills.skill_id", filters.skillId);
+    if (filters.type) query = query.eq("project_type", filters.type);
+    if (filters.experience) {
+      query = query.overlaps("experience_levels", [
+        filters.experience,
+        "any_level",
+      ]);
+    }
   }
   return query;
 }
@@ -322,6 +331,12 @@ function DiscoveryFilters({
 
 function FilteredListing({ mode, user, showComposer = false }) {
   const directory = mode === "developers";
+  const focusOpportunityId = new URLSearchParams(window.location.search).get(
+    "focus",
+  );
+  const focusCommentId = new URLSearchParams(window.location.search).get(
+    "comment",
+  );
   const { cities, skills } = useFilterOptions();
   const [filters, setFilters] = useState({
     search: "",
@@ -353,7 +368,7 @@ function FilteredListing({ mode, user, showComposer = false }) {
       const queryFilters = { search, city, skillId, type, experience };
       const request = directory
         ? buildDirectoryQuery(queryFilters, 0)
-        : buildOpportunityQuery(queryFilters, 0, user?.id);
+        : buildOpportunityQuery(queryFilters, 0, user?.id, focusOpportunityId);
       const { data, error: queryError } = await request;
       if (!active) return;
       if (queryError) {
@@ -367,7 +382,7 @@ function FilteredListing({ mode, user, showComposer = false }) {
       const pageResults = data ?? [];
       const results = pageResults.slice(0, pageSize);
       setRows(results);
-      setHasMore(pageResults.length > pageSize);
+      setHasMore(!focusOpportunityId && pageResults.length > pageSize);
       setOffset(results.length);
       setImageUrls({});
       setLoading(false);
@@ -394,6 +409,7 @@ function FilteredListing({ mode, user, showComposer = false }) {
     skillId,
     type,
     experience,
+    focusOpportunityId,
     retryCount,
     user?.id,
   ]);
@@ -421,7 +437,12 @@ function FilteredListing({ mode, user, showComposer = false }) {
     const queryFilters = { ...filters, search };
     const request = directory
       ? buildDirectoryQuery(queryFilters, offset)
-      : buildOpportunityQuery(queryFilters, offset, user?.id);
+      : buildOpportunityQuery(
+          queryFilters,
+          offset,
+          user?.id,
+          focusOpportunityId,
+        );
     const { data, error: moreError } = await request;
     if (moreError) setError("We couldn’t load more results. Please try again.");
     else {
@@ -484,9 +505,18 @@ function FilteredListing({ mode, user, showComposer = false }) {
             <OpportunityForm
               user={user}
               embedded
-              onCancel={() => setComposerOpen(false)}
+              onCancel={() => {
+                if (showComposer) {
+                  window.location.assign("/opportunities");
+                } else {
+                  setComposerOpen(false);
+                }
+              }}
               onPublished={({ coverFailed }) => {
                 setComposerOpen(false);
+                if (showComposer) {
+                  window.history.replaceState(null, "", "/opportunities");
+                }
                 setRetryCount((count) => count + 1);
                 setPublishNotice(
                   coverFailed
@@ -498,107 +528,119 @@ function FilteredListing({ mode, user, showComposer = false }) {
           </Suspense>
         </div>
       )}
-      <DiscoveryFilters
-        cities={cities}
-        skills={skills}
-        values={filters}
-        onChange={updateFilter}
-        action={
-          !directory && (
-            <button
-              className="button button-primary discovery-post-action"
-              type="button"
-              onClick={() => {
-                if (!user) {
-                  window.location.assign(
-                    "/auth/sign-in?next=%2Fopportunities%2Fnew",
-                  );
-                  return;
-                }
-                setComposerOpen((open) => !open);
-              }}
-              aria-expanded={composerOpen}
-              aria-controls="opportunity-composer"
-            >
-              Post an opportunity
-            </button>
-          )
-        }
-        showOpportunityFilters={!directory}
-      />
-      {error && rows.length > 0 && (
-        <p className="feedback feedback-error" role="alert">
-          {error}
-        </p>
-      )}
-      {loading ? (
-        <div className="discovery-results" aria-label="Loading results">
-          {Array.from({ length: 3 }, (_, index) => (
-            <div className="loading-skeleton discovery-skeleton" key={index} />
-          ))}
-        </div>
-      ) : rows.length === 0 && error ? (
-        <StatusPanel
-          title="Couldn’t load results"
-          text={error}
+      {!composerOpen && (
+        <DiscoveryFilters
+          cities={cities}
+          skills={skills}
+          values={filters}
+          onChange={updateFilter}
           action={
-            <button
-              className="button button-secondary"
-              type="button"
-              onClick={() => setRetryCount((current) => current + 1)}
-            >
-              Try again
-            </button>
-          }
-        />
-      ) : rows.length === 0 ? (
-        <StatusPanel
-          title={directory ? "No developers found" : "No projects yet"}
-          text={
-            directory
-              ? "Try a different search or clear your filters."
-              : "New project opportunities will appear here. Try changing your search or filters."
-          }
-          action={
-            directory ? null : (
-              <a className="text-link" href="/developers">
-                Browse developers
-              </a>
+            !directory && (
+              <button
+                className="button button-primary discovery-post-action"
+                type="button"
+                onClick={() => {
+                  if (!user) {
+                    window.location.assign(
+                      "/auth/sign-in?next=%2Fopportunities%2Fnew",
+                    );
+                    return;
+                  }
+                  setComposerOpen((open) => !open);
+                }}
+                aria-expanded={composerOpen}
+                aria-controls="opportunity-composer"
+              >
+                Post an opportunity
+              </button>
             )
           }
+          showOpportunityFilters={!directory}
         />
-      ) : (
-        <div className={directory ? "developer-grid" : "opportunity-grid"}>
-          {rows.map((row) =>
-            directory ? (
-              <DeveloperCard
-                key={row.user_id}
-                profile={row}
-                imageUrl={imageUrls[row.avatar_path]}
-              />
-            ) : (
-              <OpportunityCard
-                key={row.id}
-                opportunity={row}
-                avatarUrl={imageUrls[row.creator?.avatar_path]}
-                coverUrl={imageUrls[row.cover_path]}
-                user={user}
-              />
-            ),
-          )}
-        </div>
       )}
-      {!loading && rows.length > 0 && hasMore && (
-        <div className="load-more-row">
-          <button
-            className="button button-secondary"
-            type="button"
-            onClick={loadMore}
-            disabled={moreBusy}
-          >
-            {moreBusy ? "Loading…" : "Load more"}
-          </button>
-        </div>
+      {!composerOpen && (
+        <>
+          {error && rows.length > 0 && (
+            <p className="feedback feedback-error" role="alert">
+              {error}
+            </p>
+          )}
+          {loading ? (
+            <div className="discovery-results" aria-label="Loading results">
+              {Array.from({ length: 3 }, (_, index) => (
+                <div
+                  className="loading-skeleton discovery-skeleton"
+                  key={index}
+                />
+              ))}
+            </div>
+          ) : rows.length === 0 && error ? (
+            <StatusPanel
+              title="Couldn’t load results"
+              text={error}
+              action={
+                <button
+                  className="button button-secondary"
+                  type="button"
+                  onClick={() => setRetryCount((current) => current + 1)}
+                >
+                  Try again
+                </button>
+              }
+            />
+          ) : rows.length === 0 ? (
+            <StatusPanel
+              title={directory ? "No developers found" : "No projects yet"}
+              text={
+                directory
+                  ? "Try a different search or clear your filters."
+                  : "New project opportunities will appear here. Try changing your search or filters."
+              }
+              action={
+                directory ? null : (
+                  <a className="text-link" href="/developers">
+                    Browse developers
+                  </a>
+                )
+              }
+            />
+          ) : (
+            <div className={directory ? "developer-grid" : "opportunity-grid"}>
+              {rows.map((row) =>
+                directory ? (
+                  <DeveloperCard
+                    key={row.user_id}
+                    profile={row}
+                    imageUrl={imageUrls[row.avatar_path]}
+                  />
+                ) : (
+                  <OpportunityCard
+                    key={row.id}
+                    opportunity={row}
+                    avatarUrl={imageUrls[row.creator?.avatar_path]}
+                    coverUrl={imageUrls[row.cover_path]}
+                    user={user}
+                    focusCommentId={
+                      row.id === focusOpportunityId ? focusCommentId : null
+                    }
+                  />
+                ),
+              )}
+            </div>
+          )}
+          {!loading && rows.length > 0 && hasMore && (
+            <div className="load-more-row">
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={loadMore}
+                disabled={moreBusy}
+              >
+                {moreBusy ? "Loading…" : "Load more"}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </>
   );
@@ -661,7 +703,13 @@ async function processOpportunityStorageCleanup() {
   }
 }
 
-export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
+export function OpportunityCard({
+  opportunity,
+  avatarUrl,
+  coverUrl,
+  user,
+  focusCommentId = null,
+}) {
   const [expanded, setExpanded] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const [status, setStatus] = useState(opportunity.status);
@@ -842,6 +890,7 @@ export function OpportunityCard({ opportunity, avatarUrl, coverUrl, user }) {
             opportunityOwnerId={opportunity.creator?.user_id}
             title={opportunity.title}
             user={user}
+            focusCommentId={focusCommentId}
           />
           <Suspense fallback={null}>
             <OpportunityRequestAction
@@ -1067,6 +1116,7 @@ function OpportunityEngagement({
   opportunityOwnerId,
   title,
   user,
+  focusCommentId = null,
 }) {
   const [likeCount, setLikeCount] = useState(0);
   const [commentCount, setCommentCount] = useState(0);
@@ -1074,12 +1124,14 @@ function OpportunityEngagement({
   const [liked, setLiked] = useState(false);
   const [comments, setComments] = useState([]);
   const [countsLoading, setCountsLoading] = useState(true);
-  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentsLoading, setCommentsLoading] = useState(
+    Boolean(focusCommentId),
+  );
   const [busy, setBusy] = useState(false);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [retryCount, setRetryCount] = useState(0);
-  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(Boolean(focusCommentId));
   const [replyTo, setReplyTo] = useState(null);
   const [editing, setEditing] = useState(null);
   const [editorKey, setEditorKey] = useState(0);

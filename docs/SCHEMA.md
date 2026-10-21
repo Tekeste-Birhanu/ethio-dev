@@ -162,7 +162,8 @@ Use this allowlist for chat attachments, validating both extension and declared 
 
 - **Purpose:** Persist in-app notifications.
 - **Fields:** `id uuid`; `recipient_id uuid`; `actor_id uuid` nullable; `event_type text`; `entity_type text`; `entity_id uuid`; `created_at timestamptz`; `read_at timestamptz` nullable; `metadata jsonb` limited to non-sensitive presentation context.
-- **Rules:** Generate notifications through trusted database functions for requests/decisions, workspace invitations/membership, task assignments, project status, likes, comments, and replies. For an immediate workspace invite, notify the invitee when the active membership is created. Recipient can read/update read state only. Resolve destinations through current authorization and avoid exposing deleted/private content.
+- **Rules:** Generate notifications through trusted database functions for requests/decisions, workspace invitations/membership and role changes, task assignments, project status, likes, comments, and replies. Likes/comments never notify their own author; replies notify the parent comment author and opportunity owner without duplicate rows. For an immediate project invite, notify the invitee when active membership is created. Recipients can read their notifications and change only their own read state. Resolve destinations through current authorization and avoid exposing deleted/private content. Closing or deleting an opportunity silently removes pending requests and sends no cancellation notification.
+- **Event types:** `request_received`, `request_decided`, `workspace_invite`, `member_joined`, `member_left`, `member_removed`, `member_role_changed`, `task_assigned`, `project_status_changed`, `opportunity_liked`, `comment_added`, and `comment_replied`.
 
 ### `storage_cleanup_jobs` (internal)
 

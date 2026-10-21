@@ -324,7 +324,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Avoid sending notifications for silent join-request cancellation on opportunity close/delete.
 - **Done when:** supported events notify the right current users and silent events remain silent.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-21). Added the signed-in notification center, individual read actions, a live unread navigation count, and links to relevant opportunities, request decisions, private chats, projects, and task boards. A new migration adds database-generated like/comment/reply and project-membership notifications, including joins, departures, and role changes. Apply the migration and verify each event and recipient live before closing T-16.
 
 ## M7 — Reviewer readiness and release
 

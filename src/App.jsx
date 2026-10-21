@@ -30,6 +30,9 @@ const WorkspacePage = lazy(
 const ShowcasesPage = lazy(
   () => import("./features/showcases/ShowcasesPage.jsx"),
 );
+const NotificationsPage = lazy(
+  () => import("./features/notifications/NotificationsPage.jsx"),
+);
 
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
@@ -38,6 +41,7 @@ const navigation = [
   { label: "Messages", href: "/messages", icon: "message" },
   { label: "Showcases", href: "/showcases", icon: "grid" },
   { label: "Profile", href: "/settings/profile", icon: "users" },
+  { label: "Notifications", href: "/notifications", icon: "bell" },
 ];
 
 function Icon({ name, size = 20 }) {
@@ -66,6 +70,12 @@ function Icon({ name, size = 20 }) {
     message: (
       <>
         <path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z" />
+      </>
+    ),
+    bell: (
+      <>
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+        <path d="M10 21h4" />
       </>
     ),
     briefcase: (
@@ -121,7 +131,7 @@ function Brand() {
   );
 }
 
-function NavItems({ mobile = false, profileHref }) {
+function NavItems({ mobile = false, profileHref, unreadCount = 0 }) {
   const pathname = window.location.pathname;
   const items = mobile
     ? [
@@ -131,7 +141,10 @@ function NavItems({ mobile = false, profileHref }) {
           icon: "compass",
         },
         ...navigation.filter(
-          ({ label }) => label !== "Discover" && label !== "Developers",
+          ({ label }) =>
+            label !== "Discover" &&
+            label !== "Developers" &&
+            label !== "Notifications",
         ),
       ]
     : navigation;
@@ -154,6 +167,8 @@ function NavItems({ mobile = false, profileHref }) {
           (label === "Profile" &&
             (pathname === "/my-profile" || pathname === "/settings/profile")) ||
           (label === "Messages" && pathname === "/messages");
+        const notificationCurrent =
+          label === "Notifications" && pathname.startsWith("/notifications");
         const showcaseCurrent =
           label === "Showcases" && pathname.startsWith("/showcases");
         const workspaceCurrent =
@@ -163,16 +178,27 @@ function NavItems({ mobile = false, profileHref }) {
         return (
           <a
             key={label}
-            className={`nav-link${current || showcaseCurrent || workspaceCurrent ? " is-current" : ""}`}
+            className={`nav-link${current || showcaseCurrent || workspaceCurrent || notificationCurrent ? " is-current" : ""}`}
             href={label === "Profile" ? profileHref : href}
             aria-current={
-              current || showcaseCurrent || workspaceCurrent
+              current ||
+              showcaseCurrent ||
+              workspaceCurrent ||
+              notificationCurrent
                 ? "page"
                 : undefined
             }
           >
             <Icon name={icon} />
             <span>{label}</span>
+            {label === "Notifications" && unreadCount > 0 && (
+              <span
+                className="nav-unread-count"
+                aria-label={`${unreadCount} unread`}
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </a>
         );
       })}
@@ -182,6 +208,7 @@ function NavItems({ mobile = false, profileHref }) {
 
 function App() {
   const [user, setUser] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   useEffect(() => {
     if (!isSupabaseConfigured) return undefined;
@@ -202,7 +229,42 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user || !isSupabaseConfigured) {
+      return undefined;
+    }
+    let active = true;
+    const refreshUnreadCount = async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null);
+      if (active) {
+        setUnreadCounts((current) => ({ ...current, [user.id]: count ?? 0 }));
+      }
+    };
+    refreshUnreadCount();
+    const channel = supabase
+      .channel(`notification-count-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${user.id}`,
+        },
+        refreshUnreadCount,
+      )
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
   const profileHref = user ? "/my-profile" : "/auth/sign-in";
+  const unreadCount = user ? (unreadCounts[user.id] ?? 0) : 0;
 
   if (window.location.pathname.startsWith("/auth/")) {
     return <AuthPage user={user} />;
@@ -215,7 +277,7 @@ function App() {
       </a>
       <aside className="sidebar" aria-label="EthioDev sidebar">
         <Brand />
-        <NavItems profileHref={profileHref} />
+        <NavItems profileHref={profileHref} unreadCount={unreadCount} />
         <div className="sidebar-bottom">
           {user ? (
             <div className="account-menu">
@@ -250,6 +312,31 @@ function App() {
         </div>
       </aside>
 
+      <header className="mobile-header">
+        <Brand />
+        <a
+          className="mobile-notification-link"
+          href="/notifications"
+          aria-label={
+            unreadCount > 0
+              ? `Notifications, ${unreadCount} unread`
+              : "Notifications"
+          }
+          aria-current={
+            window.location.pathname.startsWith("/notifications")
+              ? "page"
+              : undefined
+          }
+        >
+          <Icon name="bell" />
+          {unreadCount > 0 && (
+            <span className="nav-unread-count" aria-hidden="true">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </a>
+      </header>
+
       <div className="app-main-column">
         <main className="main-content" id="main-content">
           {window.location.pathname.match(
@@ -260,6 +347,10 @@ function App() {
                 user={user}
                 opportunityId={window.location.pathname.split("/")[2]}
               />
+            </Suspense>
+          ) : window.location.pathname === "/notifications" ? (
+            <Suspense fallback={<p role="status">Loading notifications…</p>}>
+              <NotificationsPage user={user} />
             </Suspense>
           ) : window.location.pathname === "/messages" ? (
             <Suspense fallback={<p role="status">Loading messages…</p>}>
@@ -405,7 +496,7 @@ function App() {
         </main>
       </div>
       <nav className="mobile-tabbar" aria-label="Mobile navigation">
-        <NavItems mobile profileHref={profileHref} />
+        <NavItems mobile profileHref={profileHref} unreadCount={unreadCount} />
       </nav>
     </div>
   );

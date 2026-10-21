@@ -61,10 +61,10 @@ Project member
 ### J-03 — Publish and manage an opportunity
 
 - **Actor / role:** Signed-in, verified opportunity creator.
-- **Entry point:** Expand the feed composer or open the creator’s profile.
+- **Entry point:** Open the feed composer or open the creator’s profile.
 - **Preconditions / access:** Publishing requires verified email. Only the creator manages the opportunity.
 - **Steps:**
-  1. Expand the composer in the opportunity feed, enter the project details, and publish. Long descriptions expand inline in the feed.
+  1. Open the composer from the opportunity feed. While it is open, show the form in place of the feed search and results so the empty-feed message is not shown alongside the form. Enter the project details and publish; after success, return to the feed. Long descriptions expand inline in the feed.
   2. Review and edit the public listing, or close, reopen, or delete it.
   3. When closing, pending join request rows are deleted silently. Reopening allows those applicants to submit a fresh request; rejected or withdrawn requests remain terminal.
   4. When deleting, confirm the destructive action; the public listing, likes, comments, and non-accepted requests are removed. Accepted collaborations, chats, and project remain private to authorized participants. Without accepted collaboration/project context, the opportunity and cover are deleted.
@@ -162,8 +162,9 @@ Direct invitations remain available to the creator and admins for an existing pr
 - **Entry point:** In-app notification center.
 - **Preconditions / access:** User can read and update read state only on their own notifications.
 - **Steps:**
-  1. Review in-app notifications for requests and decisions, project and membership changes, task assignments, project status changes, and opportunity engagement.
-- **Success outcome:** The user can review notifications, follow their destinations, and mark them read.
+  1. Review the newest notifications and unread count in the notification center.
+  2. Mark an item read without leaving the list, or open it to mark it read and navigate to its opportunity thread, request, private chat, project, or task board.
+- **Success outcome:** The user can review notifications, follow available destinations, and mark them read. Unavailable private destinations remain protected and the notification stays readable.
 - **Failure and recovery:** If a destination is no longer available, explain that and keep the notification readable without exposing private data.
 - **Related requirements:** F-14.
 

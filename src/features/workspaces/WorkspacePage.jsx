@@ -44,11 +44,14 @@ export default function WorkspacePage({ user, workspaceId = null }) {
   const [inviteBusyUserId, setInviteBusyUserId] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [activeView, setActiveView] = useState(() =>
-    new URLSearchParams(window.location.search).get("view") === "showcase"
-      ? "showcase"
-      : "chat",
-  );
+  const [activeView, setActiveView] = useState(() => {
+    const requestedView = new URLSearchParams(window.location.search).get(
+      "view",
+    );
+    return ["showcase", "work", "members"].includes(requestedView)
+      ? requestedView
+      : "chat";
+  });
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [deleteDialogError, setDeleteDialogError] = useState("");

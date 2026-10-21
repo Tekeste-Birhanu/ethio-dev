@@ -12,7 +12,7 @@ EthioDev is a mobile-friendly collaboration platform for beginner and junior dev
 
 ## Status
 
-Implementation progress is tracked in `docs/TASKS.md`. T-06 through T-15 are complete; T-16 onward has not started. The specification files define the intended behavior. Unit and browser test files have not been added yet.
+Implementation progress is tracked in `docs/TASKS.md`. T-06 through T-15 are complete; T-16 is in progress pending migration application and live verification. The specification files define the intended behavior. Unit and browser test files have not been added yet.
 
 ## Documentation
 
