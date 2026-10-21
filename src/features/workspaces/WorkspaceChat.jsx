@@ -166,7 +166,7 @@ export default function WorkspaceChat({ workspaceId, user }) {
         .limit(PAGE_SIZE);
       if (!active) return;
       if (queryError) {
-        setError("Project messages could not be loaded. Try again.");
+        setError("Collabspace messages could not be loaded. Try again.");
       } else {
         setMessages(sortMessages(await hydrateMessages(data ?? [])));
         setHasOlder((data ?? []).length === PAGE_SIZE);
@@ -234,8 +234,10 @@ export default function WorkspaceChat({ workspaceId, user }) {
   }, [refreshLatest, workspaceId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
-  }, [messages]);
+    if (!loading && messages.length) {
+      bottomRef.current?.scrollIntoView({ block: "end" });
+    }
+  }, [loading, messages]);
 
   async function loadOlderMessages() {
     if (!messages.length || loadingOlder || !hasOlder) return;
@@ -350,10 +352,7 @@ export default function WorkspaceChat({ workspaceId, user }) {
   }
 
   return (
-    <section className="workspace-chat-panel" aria-label="Project chat">
-      <div className="section-heading">
-        <h2>Chat</h2>
-      </div>
+    <section className="workspace-chat-panel" aria-label="Collabspace chat">
       {error && (
         <div>
           <p className="feedback feedback-error" role="alert">
@@ -368,91 +367,85 @@ export default function WorkspaceChat({ workspaceId, user }) {
           </button>
         </div>
       )}
-      {loading ? (
-        <p className="muted-small" role="status">
-          Loading messages…
-        </p>
-      ) : (
-        <div className="workspace-chat-messages" aria-live="polite">
-          {membershipEnded && (
-            <p className="feedback feedback-error" role="alert">
-              Your project membership ended. Chat access has been revoked.
-            </p>
-          )}
-          {hasOlder && (
-            <button
-              type="button"
-              className="text-button"
-              disabled={loadingOlder}
-              onClick={loadOlderMessages}
-            >
-              {loadingOlder ? "Loading…" : "Load older messages"}
-            </button>
-          )}
-          {!messages.length && (
-            <p className="muted-small">
-              No messages yet. Start the conversation.
-            </p>
-          )}
-          {messages.map((message, index) => {
-            const dateKey = localChatDateKey(message.created_at);
-            const previousDateKey =
-              index > 0
-                ? localChatDateKey(messages[index - 1].created_at)
-                : null;
-            return (
-              <Fragment key={message.id}>
-                {dateKey !== previousDateKey && (
-                  <div className="chat-date-divider">
-                    <span>{formatChatDate(message.created_at)}</span>
-                  </div>
-                )}
-                <article
-                  className={`workspace-chat-message${message.sender_id === user.id ? " is-own-message" : ""}`}
-                >
-                  <strong className="workspace-chat-sender">
-                    {senderNames[message.sender_id] ??
-                      (message.sender_id === user.id
-                        ? user.user_metadata?.display_name || "You"
-                        : "Developer")}
-                  </strong>
-                  <p>{message.body}</p>
-                  {message.workspace_attachments?.map((file) => (
-                    <button
-                      className="workspace-chat-attachment"
-                      type="button"
-                      disabled={Boolean(downloadingPath)}
-                      onClick={() => void downloadAttachment(file)}
-                      key={file.id}
-                    >
-                      {downloadingPath === file.storage_path
-                        ? "Downloading…"
-                        : `${file.original_name} (${Math.ceil(file.size_bytes / 1024)} KB)`}
-                    </button>
-                  ))}
-                  <time dateTime={message.created_at}>
-                    {formatChatTime(message.created_at)}
-                  </time>
-                </article>
-              </Fragment>
-            );
-          })}
-          <div ref={bottomRef} />
-        </div>
-      )}
+      <div
+        className={`workspace-chat-messages${messages.length ? "" : " is-empty"}`}
+        aria-live="polite"
+      >
+        {loading ? (
+          <p className="muted-small" role="status">
+            Loading messages…
+          </p>
+        ) : (
+          <>
+            {membershipEnded && (
+              <p className="feedback feedback-error" role="alert">
+                Your Collabspace membership ended. Chat access has been revoked.
+              </p>
+            )}
+            {hasOlder && (
+              <button
+                type="button"
+                className="text-button"
+                disabled={loadingOlder}
+                onClick={loadOlderMessages}
+              >
+                {loadingOlder ? "Loading…" : "Load older messages"}
+              </button>
+            )}
+            {!messages.length && (
+              <p className="muted-small">
+                No messages yet. Start the conversation.
+              </p>
+            )}
+            {messages.map((message, index) => {
+              const dateKey = localChatDateKey(message.created_at);
+              const previousDateKey =
+                index > 0
+                  ? localChatDateKey(messages[index - 1].created_at)
+                  : null;
+              return (
+                <Fragment key={message.id}>
+                  {dateKey !== previousDateKey && (
+                    <div className="chat-date-divider">
+                      <span>{formatChatDate(message.created_at)}</span>
+                    </div>
+                  )}
+                  <article
+                    className={`workspace-chat-message${message.sender_id === user.id ? " is-own-message" : ""}`}
+                  >
+                    <strong className="workspace-chat-sender">
+                      {senderNames[message.sender_id] ??
+                        (message.sender_id === user.id
+                          ? user.user_metadata?.display_name || "You"
+                          : "Developer")}
+                    </strong>
+                    <p>{message.body}</p>
+                    {message.workspace_attachments?.map((file) => (
+                      <button
+                        className="workspace-chat-attachment"
+                        type="button"
+                        disabled={Boolean(downloadingPath)}
+                        onClick={() => void downloadAttachment(file)}
+                        key={file.id}
+                      >
+                        {downloadingPath === file.storage_path
+                          ? "Downloading…"
+                          : `${file.original_name} (${Math.ceil(file.size_bytes / 1024)} KB)`}
+                      </button>
+                    ))}
+                    <time dateTime={message.created_at}>
+                      {formatChatTime(message.created_at)}
+                    </time>
+                  </article>
+                </Fragment>
+              );
+            })}
+          </>
+        )}
+        <div ref={bottomRef} />
+      </div>
       <form className="workspace-chat-composer" onSubmit={sendMessage}>
-        <textarea
-          ref={messageInputRef}
-          className="field-control"
-          value={body}
-          maxLength={10000}
-          rows={1}
-          placeholder="Write a message…"
-          aria-label="Write a message"
-          onChange={(event) => setBody(event.target.value)}
-          disabled={busy || loading || membershipEnded}
-        />
-        <div className="workspace-chat-tools">
+        <div className="workspace-chat-compose-row">
           <input
             ref={fileInputRef}
             className="visually-hidden"
@@ -464,36 +457,59 @@ export default function WorkspaceChat({ workspaceId, user }) {
           />
           <button
             type="button"
-            className="button button-secondary"
+            className="workspace-chat-attach"
+            aria-label="Attach file"
+            title="Attach file"
             disabled={busy || loading}
             onClick={() => fileInputRef.current?.click()}
           >
-            Attach file
+            <svg aria-hidden="true" viewBox="0 0 24 24">
+              <path d="m21.4 11.1-8.9 8.9a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5" />
+            </svg>
           </button>
-          {attachment && (
-            <span className="muted-small">
-              {attachment.name} · {Math.ceil(attachment.size / 1024)} KB
-              <button
-                type="button"
-                className="text-button"
-                aria-label="Remove attachment"
-                onClick={() => {
-                  setAttachment(null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-              >
-                Remove
-              </button>
-            </span>
-          )}
+          <textarea
+            ref={messageInputRef}
+            className="field-control"
+            value={body}
+            maxLength={10000}
+            rows={1}
+            placeholder="Write a message…"
+            aria-label="Write a message"
+            onChange={(event) => setBody(event.target.value)}
+            disabled={busy || loading || membershipEnded}
+          />
           <button
+            aria-label="Send message"
             className="button button-primary"
             type="submit"
             disabled={busy || loading || membershipEnded || !body.trim()}
           >
-            {busy ? "Sending…" : "Send"}
+            {busy ? (
+              "…"
+            ) : (
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+              </svg>
+            )}
           </button>
         </div>
+        {attachment && (
+          <span className="workspace-chat-attachment-selection muted-small">
+            {attachment.name} · {Math.ceil(attachment.size / 1024)} KB
+            <button
+              type="button"
+              className="text-button"
+              aria-label="Remove attachment"
+              onClick={() => {
+                setAttachment(null);
+                if (fileInputRef.current) fileInputRef.current.value = "";
+              }}
+            >
+              Remove
+            </button>
+          </span>
+        )}
       </form>
     </section>
   );

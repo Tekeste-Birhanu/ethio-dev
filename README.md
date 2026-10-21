@@ -1,18 +1,18 @@
 # EthioDev
 
-EthioDev is a mobile-friendly collaboration platform for beginner and junior developers across Ethiopia. Developers can discover project opportunities, find collaborators, coordinate through project chat and a shared task board, and showcase completed projects.
+EthioDev is a mobile-friendly collaboration platform for beginner and junior developers across Ethiopia. Developers can discover project opportunities, find collaborators, send collab requests, coordinate through Collabspace chat and a shared task board, and showcase completed projects.
 
 ## MVP features
 
 - Public developer profiles, directory, and project opportunity discovery.
-- Opportunity publishing, likes, threaded comments, and collaboration requests.
-- Private chat, collaborative projects, tasks, and milestones.
+- Opportunity publishing, likes, threaded comments, and collab requests.
+- Private chat, Collabspaces, tasks, and milestones.
 - Public showcases for completed projects.
 - Email/password and Google sign-in, with in-app notifications.
 
 ## Status
 
-Implementation progress is tracked in `docs/TASKS.md`. T-06 through T-15 are complete; T-16 is in progress pending migration application and live verification. The specification files define the intended behavior. Unit and browser test files have not been added yet.
+Implementation progress is tracked in `docs/TASKS.md`. T-06 through T-16 are complete; T-17 is in progress. The specification files define the intended behavior. Unit and browser test files have not been added yet.
 
 ## Documentation
 
@@ -75,7 +75,11 @@ npm run build
 npm run preview
 ```
 
-`npm test` runs Vitest with jsdom and React Testing Library. `npm run test:e2e` runs Playwright in Chromium; install its browser once with `npx playwright install chromium`. The test commands succeed when no test files exist and will run matching tests when added. `.env.example` lists the public Supabase client variables; the hosted project is linked and configured. Never place service-role keys or email credentials in browser environment variables. Database changes belong in timestamped files under `supabase/migrations/`. No fictional records or reset jobs are planned; reviewers can create persistent records through the product. Apply pending migrations before using newly added database-backed features. See [Implementation tasks](docs/TASKS.md) for the sequence.
+`npm test` runs Vitest with jsdom and React Testing Library and exits successfully when no unit test files exist. `npm run test:e2e` runs Playwright in Chromium; install its browser once with `npx playwright install chromium`. End-to-end tests are not yet present under `e2e/`. `.env.example` lists the public Supabase client variables; the hosted project is linked and configured. Never place service-role keys or email credentials in browser environment variables. Database changes belong in timestamped files under `supabase/migrations/`. No fictional records or reset jobs are planned; reviewers can create persistent records through the product. Apply pending migrations before using newly added database-backed features. See [Implementation tasks](docs/TASKS.md) for the sequence.
+
+## Reviewer access
+
+Open registration is available at `/auth/sign-up`. Visitors can create their own account with email and password plus the emailed verification code, or use Google sign-in. They can browse public opportunities and developer profiles without an account; posting, sending collab requests, messaging, and Collabspace work require signing in, and publishing or sending a collab request also requires verified email. Data created through an account is stored in Supabase and persists between sessions. The app does not include shared demo credentials, fictional seed records, or a reset job. The deployed URL and provider-specific access instructions will be added in T-18.
 
 ## Deployment
 

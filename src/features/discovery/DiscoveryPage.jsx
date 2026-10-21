@@ -1,4 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { navigateTo } from "../../lib/clientNavigation.js";
+import {
+  cachedRequest,
+  invalidateRequestCache,
+} from "../../lib/requestCache.js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 
 const OpportunityRequestAction = lazy(() =>
@@ -92,7 +97,7 @@ function buildOpportunityQuery(
   let query = supabase
     .from("opportunities")
     .select(
-      `id, title, description, project_type, project_type_other, experience_levels, commitment, city_id, city_other, cover_path, status, created_at, creator:profiles!opportunities_creator_id_fkey(user_id, username, display_name, avatar_path), city:cities!opportunities_city_id_fkey(name), ${skillsEmbed}`,
+      `id, title, description, project_type, project_type_other, experience_levels, city_id, city_other, status, created_at, creator:profiles!opportunities_creator_id_fkey(user_id, username, display_name, avatar_path), city:cities!opportunities_city_id_fkey(name), ${skillsEmbed}`,
     )
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
@@ -120,14 +125,23 @@ function buildOpportunityQuery(
 async function signedImages(bucket, paths) {
   const uniquePaths = [...new Set(paths.filter(Boolean))];
   if (!uniquePaths.length) return {};
-  const { data } = await supabase.storage
-    .from(bucket)
-    .createSignedUrls(uniquePaths, 3600);
-  return Object.fromEntries(
-    (data ?? [])
-      .filter((item) => item.signedUrl)
-      .map((item) => [item.path, item.signedUrl]),
+  const cacheKey = `signed-images:${bucket}:${JSON.stringify([...uniquePaths].sort())}`;
+  const result = await cachedRequest(
+    cacheKey,
+    async () => {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .createSignedUrls(uniquePaths, 3600);
+      if (error) return { error };
+      return Object.fromEntries(
+        (data ?? [])
+          .filter((item) => item.signedUrl)
+          .map((item) => [item.path, item.signedUrl]),
+      );
+    },
+    30 * 60 * 1000,
   );
+  return result?.error ? {} : result;
 }
 
 function useFilterOptions() {
@@ -136,17 +150,29 @@ function useFilterOptions() {
   useEffect(() => {
     if (!isSupabaseConfigured) return undefined;
     let active = true;
-    Promise.all([
-      supabase
-        .from("cities")
-        .select("id, name")
-        .eq("is_active", true)
-        .order("sort_order"),
-      supabase.from("skills").select("id, name").order("normalized_name"),
-    ]).then(([citiesResult, skillsResult]) => {
+    cachedRequest(
+      "catalog:discovery-filters",
+      async () => {
+        const [citiesResult, skillsResult] = await Promise.all([
+          supabase
+            .from("cities")
+            .select("id, name")
+            .eq("is_active", true)
+            .order("sort_order"),
+          supabase.from("skills").select("id, name").order("normalized_name"),
+        ]);
+        return {
+          citiesResult,
+          skillsResult,
+          error: citiesResult.error || skillsResult.error,
+        };
+      },
+      10 * 60 * 1000,
+    ).then(({ citiesResult, skillsResult, error }) => {
       if (!active) return;
-      if (!citiesResult.error) setCities(citiesResult.data ?? []);
-      if (!skillsResult.error) setSkills(skillsResult.data ?? []);
+      if (error) return;
+      setCities(citiesResult.data ?? []);
+      setSkills(skillsResult.data ?? []);
     });
     return () => {
       active = false;
@@ -197,7 +223,7 @@ function DiscoveryFilters({
   }
   return (
     <section
-      className={`discovery-filters${showOpportunityFilters ? " opportunity-search-filters" : ""}`}
+      className={`discovery-filters${showOpportunityFilters ? " opportunity-search-filters" : " developer-search-filters"}`}
       aria-label="Search and filters"
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -205,8 +231,8 @@ function DiscoveryFilters({
         }
       }}
     >
-      <label className="field-label discovery-search-label">
-        Search
+      <label className="discovery-search-label">
+        <span className="sr-only">Search</span>
         <input
           className="field-control"
           type="search"
@@ -216,7 +242,9 @@ function DiscoveryFilters({
           onFocus={openFilters}
           onChange={(event) => onChange("search", event.target.value)}
           placeholder={
-            showOpportunityFilters ? "Search projects" : "Search developers"
+            showOpportunityFilters
+              ? "Search opportunities"
+              : "Search developers"
           }
         />
       </label>
@@ -366,10 +394,20 @@ function FilteredListing({ mode, user, showComposer = false }) {
       setLoading(true);
       setError("");
       const queryFilters = { search, city, skillId, type, experience };
-      const request = directory
-        ? buildDirectoryQuery(queryFilters, 0)
-        : buildOpportunityQuery(queryFilters, 0, user?.id, focusOpportunityId);
-      const { data, error: queryError } = await request;
+      const cacheKey = `discovery:${directory ? "developers" : "opportunities"}:${user?.id ?? "anonymous"}:${JSON.stringify({ ...queryFilters, focusOpportunityId })}`;
+      const { data, error: queryError } = await cachedRequest(
+        cacheKey,
+        () =>
+          directory
+            ? buildDirectoryQuery(queryFilters, 0)
+            : buildOpportunityQuery(
+                queryFilters,
+                0,
+                user?.id,
+                focusOpportunityId,
+              ),
+        30 * 1000,
+      );
       if (!active) return;
       if (queryError) {
         setError("We couldn’t load results. Please try again.");
@@ -389,14 +427,8 @@ function FilteredListing({ mode, user, showComposer = false }) {
       const avatars = results
         .map((row) => (directory ? row.avatar_path : row.creator?.avatar_path))
         .filter(Boolean);
-      const covers = directory
-        ? []
-        : results.map((row) => row.cover_path).filter(Boolean);
-      const [avatarUrls, coverUrls] = await Promise.all([
-        signedImages("profile-media", avatars),
-        signedImages("opportunity-media", covers),
-      ]);
-      if (active) setImageUrls({ ...avatarUrls, ...coverUrls });
+      const avatarUrls = await signedImages("profile-media", avatars);
+      if (active) setImageUrls(avatarUrls);
     }
     load();
     return () => {
@@ -455,14 +487,8 @@ function FilteredListing({ mode, user, showComposer = false }) {
       const avatars = results
         .map((row) => (directory ? row.avatar_path : row.creator?.avatar_path))
         .filter(Boolean);
-      const covers = directory
-        ? []
-        : results.map((row) => row.cover_path).filter(Boolean);
-      const [avatarUrls, coverUrls] = await Promise.all([
-        signedImages("profile-media", avatars),
-        signedImages("opportunity-media", covers),
-      ]);
-      setImageUrls((current) => ({ ...current, ...avatarUrls, ...coverUrls }));
+      const avatarUrls = await signedImages("profile-media", avatars);
+      setImageUrls((current) => ({ ...current, ...avatarUrls }));
     }
     setMoreBusy(false);
   }
@@ -507,22 +533,19 @@ function FilteredListing({ mode, user, showComposer = false }) {
               embedded
               onCancel={() => {
                 if (showComposer) {
-                  window.location.assign("/opportunities");
+                  navigateTo("/opportunities");
                 } else {
                   setComposerOpen(false);
                 }
               }}
-              onPublished={({ coverFailed }) => {
+              onPublished={() => {
                 setComposerOpen(false);
                 if (showComposer) {
-                  window.history.replaceState(null, "", "/opportunities");
+                  navigateTo("/opportunities", { replace: true });
                 }
+                invalidateRequestCache("discovery:opportunities:");
                 setRetryCount((count) => count + 1);
-                setPublishNotice(
-                  coverFailed
-                    ? "Your opportunity is posted, but its cover image did not upload. You can add it by editing the post."
-                    : "Your opportunity is posted.",
-                );
+                setPublishNotice("Your opportunity is posted.");
               }}
             />
           </Suspense>
@@ -541,9 +564,7 @@ function FilteredListing({ mode, user, showComposer = false }) {
                 type="button"
                 onClick={() => {
                   if (!user) {
-                    window.location.assign(
-                      "/auth/sign-in?next=%2Fopportunities%2Fnew",
-                    );
+                    navigateTo("/auth/sign-in?next=%2Fopportunities%2Fnew");
                     return;
                   }
                   setComposerOpen((open) => !open);
@@ -565,17 +586,19 @@ function FilteredListing({ mode, user, showComposer = false }) {
               {error}
             </p>
           )}
-          {loading ? (
-            <div className="discovery-results" aria-label="Loading results">
+          {loading && rows.length === 0 ? (
+            <div
+              className={`discovery-results ${directory ? "developer-grid" : "opportunity-grid"}`}
+              role="status"
+              aria-label={`Loading ${directory ? "developers" : "opportunities"}`}
+            >
               {Array.from({ length: 3 }, (_, index) => (
-                <div
-                  className="loading-skeleton discovery-skeleton"
-                  key={index}
-                />
+                <DiscoveryCardSkeleton directory={directory} key={index} />
               ))}
             </div>
           ) : rows.length === 0 && error ? (
             <StatusPanel
+              className={directory ? "developer-status" : "opportunity-status"}
               title="Couldn’t load results"
               text={error}
               action={
@@ -590,11 +613,12 @@ function FilteredListing({ mode, user, showComposer = false }) {
             />
           ) : rows.length === 0 ? (
             <StatusPanel
-              title={directory ? "No developers found" : "No projects yet"}
+              className={directory ? "developer-status" : "opportunity-status"}
+              title={directory ? "No developers found" : "No opportunities yet"}
               text={
                 directory
                   ? "Try a different search or clear your filters."
-                  : "New project opportunities will appear here. Try changing your search or filters."
+                  : "New collaboration opportunities will appear here. Try changing your search or filters."
               }
               action={
                 directory ? null : (
@@ -618,7 +642,6 @@ function FilteredListing({ mode, user, showComposer = false }) {
                     key={row.id}
                     opportunity={row}
                     avatarUrl={imageUrls[row.creator?.avatar_path]}
-                    coverUrl={imageUrls[row.cover_path]}
                     user={user}
                     focusCommentId={
                       row.id === focusOpportunityId ? focusCommentId : null
@@ -690,23 +713,63 @@ function DeveloperCard({ profile, imageUrl }) {
   );
 }
 
-async function processOpportunityStorageCleanup() {
-  const { data: jobs, error } = await supabase.rpc(
-    "claim_storage_cleanup_jobs",
-  );
-  if (error || !jobs?.length) return;
-  for (const job of jobs) {
-    await supabase.storage.from(job.bucket_id).remove([job.object_path]);
-    await supabase.rpc("acknowledge_storage_cleanup_job", {
-      p_job_id: job.job_id,
-    });
+function DiscoveryCardSkeleton({ directory }) {
+  if (directory) {
+    return (
+      <article
+        className="developer-card discovery-skeleton-card"
+        aria-hidden="true"
+      >
+        <div className="developer-card-top">
+          <span className="loading-skeleton discovery-skeleton-avatar" />
+          <div className="developer-card-identity discovery-skeleton-identity">
+            <span className="loading-skeleton discovery-skeleton-title" />
+            <span className="loading-skeleton discovery-skeleton-handle" />
+          </div>
+        </div>
+        <span className="loading-skeleton discovery-skeleton-location" />
+        <div className="discovery-skeleton-skills">
+          <span className="loading-skeleton" />
+          <span className="loading-skeleton" />
+        </div>
+        <span className="loading-skeleton discovery-skeleton-link" />
+      </article>
+    );
   }
+
+  return (
+    <article
+      className="opportunity-card opportunity-skeleton-card"
+      aria-hidden="true"
+    >
+      <div className="opportunity-card-content">
+        <div className="discovery-skeleton-meta">
+          <span className="loading-skeleton" />
+          <span className="loading-skeleton" />
+          <span className="loading-skeleton" />
+        </div>
+        <span className="loading-skeleton discovery-skeleton-title" />
+        <div className="discovery-skeleton-description">
+          <span className="loading-skeleton" />
+          <span className="loading-skeleton" />
+        </div>
+        <div className="opportunity-creator discovery-skeleton-creator">
+          <span className="loading-skeleton discovery-skeleton-avatar" />
+          <span className="loading-skeleton" />
+        </div>
+        <div className="opportunity-action-area discovery-skeleton-actions">
+          <span className="loading-skeleton" />
+          <span className="loading-skeleton" />
+          <span className="loading-skeleton" />
+        </div>
+      </div>
+    </article>
+  );
 }
 
 export function OpportunityCard({
   opportunity,
   avatarUrl,
-  coverUrl,
   user,
   focusCommentId = null,
 }) {
@@ -742,7 +805,7 @@ export function OpportunityCard({
     if (
       nextStatus === "closed" &&
       !window.confirm(
-        "Close this opportunity? New join requests will stop. Pending requests will be removed without notifying applicants. You can reopen it later, and applicants can request again.",
+        "Close this opportunity? New collab requests will stop. Pending requests will be removed without notifying applicants. You can reopen it later, and applicants can request to collab again.",
       )
     ) {
       return;
@@ -756,6 +819,7 @@ export function OpportunityCard({
     if (error) {
       setDeleteError("The opportunity status couldn’t be changed. Try again.");
     } else {
+      invalidateRequestCache("discovery:opportunities:");
       setStatus(nextStatus);
     }
     setStatusBusy(false);
@@ -764,7 +828,7 @@ export function OpportunityCard({
   async function deleteOpportunity() {
     if (
       !window.confirm(
-        "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any related project will remain private to their participants.",
+        "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any related Collabspace will remain private to their participants.",
       )
     ) {
       return;
@@ -779,18 +843,13 @@ export function OpportunityCard({
       setDeleting(false);
       return;
     }
-    await processOpportunityStorageCleanup();
+    invalidateRequestCache("discovery:opportunities:");
     setDeleted(true);
   }
 
   if (deleted) return null;
   return (
     <article className="opportunity-card">
-      {coverUrl && (
-        <div className="opportunity-card-image has-image">
-          <img src={coverUrl} alt="" />
-        </div>
-      )}
       <div className="opportunity-card-content">
         <div className="opportunity-card-topline">
           <div className="opportunity-card-meta">
@@ -860,11 +919,6 @@ export function OpportunityCard({
             ))}
           </ul>
         )}
-        {opportunity.commitment && (
-          <p className="opportunity-commitment">
-            <strong>Commitment:</strong> {opportunity.commitment}
-          </p>
-        )}
         <a
           className="opportunity-creator"
           href={
@@ -919,6 +973,7 @@ function CommentItem({
   onCancelEdit,
   saving,
   busyId,
+  replyToComment = null,
 }) {
   const canEdit = user?.id === comment.author_id && !comment.deleted_at;
   const canDelete =
@@ -928,6 +983,16 @@ function CommentItem({
     <li className="comment-item">
       {comment.deleted_at ? (
         <>
+          {replyToComment && (
+            <p className="comment-reply-context">
+              Replying to{" "}
+              {replyToComment.deleted_at ? (
+                <span>deleted comment</span>
+              ) : (
+                <span>{replyToComment.author?.display_name ?? "comment"}</span>
+              )}
+            </p>
+          )}
           <p className="comment-deleted">This comment was deleted.</p>
           {user && (
             <div className="comment-actions">
@@ -943,51 +1008,92 @@ function CommentItem({
         </>
       ) : (
         <>
-          <div className="comment-author-row">
+          <div
+            className={`comment-author-row${replyToComment ? " is-reply" : ""}`}
+          >
             <a
               className="comment-author"
               href={`/u/${encodeURIComponent(comment.author?.username ?? "")}`}
             >
               {comment.author?.display_name ?? "Developer"}
             </a>
-            <time dateTime={comment.created_at}>
-              {new Date(comment.created_at).toLocaleDateString()}
+            {replyToComment && (
+              <>
+                <span className="comment-replying-label">replying to</span>
+                {replyToComment.deleted_at ? (
+                  <span className="comment-reply-target">deleted comment</span>
+                ) : (
+                  <a
+                    className="comment-reply-target"
+                    href={`/u/${encodeURIComponent(replyToComment.author?.username ?? "")}`}
+                  >
+                    {replyToComment.author?.display_name ?? "comment"}
+                  </a>
+                )}
+              </>
+            )}
+            <time
+              dateTime={comment.created_at}
+              title={new Date(comment.created_at).toLocaleString()}
+            >
+              {formatCommentTime(comment.created_at)}
             </time>
             {comment.edited_at && (
               <span className="comment-edited">Edited</span>
             )}
+            {(canEdit || canDelete) && (
+              <details className="three-dot-menu comment-menu">
+                <summary
+                  aria-label={`Comment settings for ${comment.author?.display_name ?? "this comment"}`}
+                  title="Comment settings"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <circle cx="12" cy="5" r="1" />
+                    <circle cx="12" cy="12" r="1" />
+                    <circle cx="12" cy="19" r="1" />
+                  </svg>
+                </summary>
+                <div className="three-dot-menu-items">
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.currentTarget.closest("details").open = false;
+                        onEdit(comment);
+                      }}
+                    >
+                      Edit comment
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      className="comment-delete"
+                      type="button"
+                      disabled={busyId === comment.id}
+                      onClick={(event) => {
+                        event.currentTarget.closest("details").open = false;
+                        onDelete(comment);
+                      }}
+                    >
+                      Delete comment
+                    </button>
+                  )}
+                </div>
+              </details>
+            )}
           </div>
-          <p className="comment-body">{comment.body}</p>
-          <div className="comment-actions">
+          <p className="comment-body">
+            {comment.body}
             {user && (
               <button
-                className="text-button"
+                className="text-button comment-inline-reply"
                 type="button"
                 onClick={() => onReply(comment)}
               >
                 Reply
               </button>
             )}
-            {canEdit && (
-              <button
-                className="text-button"
-                type="button"
-                onClick={() => onEdit(comment)}
-              >
-                Edit
-              </button>
-            )}
-            {canDelete && (
-              <button
-                className="text-button comment-delete"
-                type="button"
-                disabled={busyId === comment.id}
-                onClick={() => onDelete(comment)}
-              >
-                Delete
-              </button>
-            )}
-          </div>
+          </p>
         </>
       )}
       {comment.children.length > 0 && (
@@ -1009,6 +1115,7 @@ function CommentItem({
               onCancelEdit={onCancelEdit}
               saving={saving}
               busyId={busyId}
+              replyToComment={child.replyTo}
             />
           ))}
         </ol>
@@ -1020,7 +1127,6 @@ function CommentItem({
             placeholder={`Reply to ${comment.author?.display_name ?? "comment"}…`}
             submitLabel="Reply"
             onSubmit={(text) => onSave(text, comment.id)}
-            onCancel={onCancelReply}
             busy={saving}
           />
         </div>
@@ -1039,6 +1145,30 @@ function CommentItem({
         </div>
       )}
     </li>
+  );
+}
+
+function formatCommentTime(value) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "";
+
+  const elapsedSeconds = (Date.now() - timestamp) / 1000;
+  if (Math.abs(elapsedSeconds) < 60) return "just now";
+
+  const units = [
+    [60 * 60 * 24 * 365, "year"],
+    [60 * 60 * 24 * 30, "month"],
+    [60 * 60 * 24 * 7, "week"],
+    [60 * 60 * 24, "day"],
+    [60 * 60, "hour"],
+    [60, "minute"],
+  ];
+  const [secondsPerUnit, unit] =
+    units.find(([size]) => Math.abs(elapsedSeconds) >= size) ?? units.at(-1);
+  const amount = Math.round(elapsedSeconds / secondsPerUnit);
+  return new Intl.RelativeTimeFormat("en", { numeric: "always" }).format(
+    -amount,
+    unit,
   );
 }
 
@@ -1068,12 +1198,14 @@ function CommentEditor({
           onChange={(event) => setText(event.target.value)}
           placeholder={placeholder}
           maxLength={5000}
-          rows={3}
+          rows={1}
           required
         />
       </label>
       <div className="comment-editor-footer">
-        <span className="muted-small">{text.length}/5000</span>
+        {text.length > 0 && (
+          <span className="muted-small">{text.length}/5000</span>
+        )}
         <div>
           {onCancel && (
             <button
@@ -1100,12 +1232,24 @@ function CommentEditor({
 
 function buildCommentTree(rows) {
   const nodes = new Map(rows.map((row) => [row.id, { ...row, children: [] }]));
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
   const roots = [];
   for (const node of nodes.values()) {
-    const parent = node.parent_comment_id
+    let parent = node.parent_comment_id
       ? nodes.get(node.parent_comment_id)
       : null;
-    if (parent) parent.children.push(node);
+    if (!parent) {
+      roots.push(node);
+      continue;
+    }
+
+    node.replyTo = rowsById.get(node.parent_comment_id) ?? null;
+    const visited = new Set([node.id]);
+    while (parent?.parent_comment_id && !visited.has(parent.id)) {
+      visited.add(parent.id);
+      parent = nodes.get(parent.parent_comment_id);
+    }
+    if (parent && !visited.has(parent.id)) parent.children.push(node);
     else roots.push(node);
   }
   return roots;
@@ -1185,7 +1329,8 @@ function OpportunityEngagement({
         supabase
           .from("comments")
           .select("id", { count: "exact", head: true })
-          .eq("opportunity_id", opportunityId),
+          .eq("opportunity_id", opportunityId)
+          .is("parent_comment_id", null),
         user
           ? supabase
               .from("opportunity_likes")
@@ -1382,8 +1527,8 @@ function OpportunityEngagement({
           <a
             className="post-action-button request-action"
             href={`/opportunities/${opportunityId}/requests`}
-            aria-label={`View join requests. ${requestCount} pending`}
-            title="View join requests"
+            aria-label={`View collab requests. ${requestCount} pending`}
+            title="View collab requests"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24">
               <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -1439,8 +1584,8 @@ function OpportunityEngagement({
             <div className="comment-composer">
               <CommentEditor
                 key={"new-" + editorKey}
-                placeholder="Write a comment..."
-                submitLabel="Comment"
+                placeholder="Add a comment…"
+                submitLabel="Post"
                 onSubmit={(text) => saveComment(text)}
                 busy={busy}
               />
@@ -1515,9 +1660,9 @@ function Avatar({ name, src }) {
   );
 }
 
-function StatusPanel({ title, text, action }) {
+function StatusPanel({ title, text, action, className = "" }) {
   return (
-    <section className="discovery-status">
+    <section className={`discovery-status ${className}`}>
       <h2>{title}</h2>
       <p>{text}</p>
       {action}

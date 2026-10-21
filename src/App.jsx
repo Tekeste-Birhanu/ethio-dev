@@ -1,7 +1,13 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import AuthPage from "./features/auth/AuthPage.jsx";
 import DiscoveryPage from "./features/discovery/DiscoveryPage.jsx";
 import ProfilePage from "./features/profiles/ProfilePage.jsx";
+import LoadingSkeleton from "./components/LoadingSkeleton.jsx";
+import {
+  handleInternalLinkClick,
+  subscribeToNavigation,
+} from "./lib/clientNavigation.js";
+import { clearRequestCache } from "./lib/requestCache.js";
 import { isSupabaseConfigured, supabase } from "./lib/supabaseClient.js";
 
 const MyOpportunities = lazy(() =>
@@ -37,7 +43,7 @@ const NotificationsPage = lazy(
 const navigation = [
   { label: "Discover", href: "/", icon: "compass", current: true },
   { label: "Developers", href: "/developers", icon: "users" },
-  { label: "Projects", href: "/projects", icon: "briefcase" },
+  { label: "Collabspaces", href: "/projects", icon: "briefcase" },
   { label: "Messages", href: "/messages", icon: "message" },
   { label: "Showcases", href: "/showcases", icon: "grid" },
   { label: "Profile", href: "/settings/profile", icon: "users" },
@@ -172,7 +178,7 @@ function NavItems({ mobile = false, profileHref, unreadCount = 0 }) {
         const showcaseCurrent =
           label === "Showcases" && pathname.startsWith("/showcases");
         const workspaceCurrent =
-          label === "Projects" &&
+          label === "Collabspaces" &&
           (pathname.startsWith("/workspaces") ||
             pathname.startsWith("/projects"));
         return (
@@ -209,18 +215,79 @@ function NavItems({ mobile = false, profileHref, unreadCount = 0 }) {
 function App() {
   const [user, setUser] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
+  const [routeKey, setRouteKey] = useState(
+    () =>
+      `${window.location.pathname}${window.location.search}${window.location.hash}`,
+  );
+  const previousRouteKey = useRef(routeKey);
+  const lastUserId = useRef(null);
+
+  useEffect(() => {
+    const updateRoute = () =>
+      setRouteKey(
+        `${window.location.pathname}${window.location.search}${window.location.hash}`,
+      );
+    const closeOutsideThreeDotMenus = (event) => {
+      const clickedMenu = event.target.closest?.(".three-dot-menu");
+      document.querySelectorAll(".three-dot-menu[open]").forEach((menu) => {
+        if (menu !== clickedMenu) menu.open = false;
+      });
+    };
+    const unsubscribeNavigation = subscribeToNavigation(updateRoute);
+    document.addEventListener("click", handleInternalLinkClick);
+    document.addEventListener("click", closeOutsideThreeDotMenus);
+    return () => {
+      unsubscribeNavigation();
+      document.removeEventListener("click", handleInternalLinkClick);
+      document.removeEventListener("click", closeOutsideThreeDotMenus);
+    };
+  }, []);
+
+  useEffect(() => {
+    const url = new URL(routeKey, window.location.origin);
+    const previousUrl = new URL(
+      previousRouteKey.current,
+      window.location.origin,
+    );
+    previousRouteKey.current = routeKey;
+    if (url.hash) {
+      let targetId = url.hash.slice(1);
+      try {
+        targetId = decodeURIComponent(targetId);
+      } catch {
+        // Ignore malformed escapes and try the raw fragment as an element id.
+      }
+      window.requestAnimationFrame(() => {
+        document.getElementById(targetId)?.scrollIntoView?.();
+      });
+    } else if (!(
+      /^\/(?:projects|workspaces)(?:\/|$)/.test(url.pathname) &&
+      /^\/(?:projects|workspaces)(?:\/|$)/.test(previousUrl.pathname)
+    )) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }, [routeKey]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return undefined;
 
     let active = true;
+    const updateUser = (nextUser) => {
+      const nextUserId = nextUser?.id ?? null;
+      if (lastUserId.current !== nextUserId) {
+        clearRequestCache();
+        lastUserId.current = nextUserId;
+      }
+      setUser(nextUser);
+    };
     supabase.auth.getSession().then(({ data }) => {
-      if (active) setUser(data.session?.user ?? null);
+      if (active) updateUser(data.session?.user ?? null);
     });
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      updateUser(session?.user ?? null);
     });
 
     return () => {
@@ -267,7 +334,7 @@ function App() {
   const unreadCount = user ? (unreadCounts[user.id] ?? 0) : 0;
 
   if (window.location.pathname.startsWith("/auth/")) {
-    return <AuthPage user={user} />;
+    return <AuthPage key={routeKey} user={user} />;
   }
 
   return (
@@ -314,27 +381,38 @@ function App() {
 
       <header className="mobile-header">
         <Brand />
-        <a
-          className="mobile-notification-link"
-          href="/notifications"
-          aria-label={
-            unreadCount > 0
-              ? `Notifications, ${unreadCount} unread`
-              : "Notifications"
-          }
-          aria-current={
-            window.location.pathname.startsWith("/notifications")
-              ? "page"
-              : undefined
-          }
-        >
-          <Icon name="bell" />
-          {unreadCount > 0 && (
-            <span className="nav-unread-count" aria-hidden="true">
-              {unreadCount > 99 ? "99+" : unreadCount}
-            </span>
+        <div className="mobile-header-actions">
+          <a
+            className="mobile-notification-link"
+            href="/notifications"
+            aria-label={
+              unreadCount > 0
+                ? `Notifications, ${unreadCount} unread`
+                : "Notifications"
+            }
+            aria-current={
+              window.location.pathname.startsWith("/notifications")
+                ? "page"
+                : undefined
+            }
+          >
+            <Icon name="bell" />
+            {unreadCount > 0 && (
+              <span className="nav-unread-count" aria-hidden="true">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </a>
+          {user && (
+            <button
+              className="button button-secondary mobile-sign-out"
+              type="button"
+              onClick={() => supabase.auth.signOut()}
+            >
+              Sign out
+            </button>
           )}
-        </a>
+        </div>
       </header>
 
       <div className="app-main-column">
@@ -342,23 +420,45 @@ function App() {
           {window.location.pathname.match(
             /^\/opportunities\/[^/]+\/requests$/,
           ) ? (
-            <Suspense fallback={<p role="status">Loading requests…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton variant="rows" label="Loading requests" />
+              }
+            >
               <OpportunityRequestsPage
                 user={user}
                 opportunityId={window.location.pathname.split("/")[2]}
               />
             </Suspense>
           ) : window.location.pathname === "/notifications" ? (
-            <Suspense fallback={<p role="status">Loading notifications…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="notifications"
+                  label="Loading notifications"
+                />
+              }
+            >
               <NotificationsPage user={user} />
             </Suspense>
           ) : window.location.pathname === "/messages" ? (
-            <Suspense fallback={<p role="status">Loading messages…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="conversations"
+                  label="Loading messages"
+                />
+              }
+            >
               <PrivateMessagesPage user={user} />
             </Suspense>
           ) : window.location.pathname === "/showcases" ||
             window.location.pathname.match(/^\/showcases\/[^/]+$/) ? (
-            <Suspense fallback={<p role="status">Loading showcases…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton variant="cards" label="Loading showcases" />
+              }
+            >
               <ShowcasesPage
                 user={user}
                 showcaseId={window.location.pathname.split("/")[2] ?? null}
@@ -368,24 +468,52 @@ function App() {
             window.location.pathname.match(/^\/projects\/[^/]+$/) ||
             window.location.pathname === "/workspaces" ||
             window.location.pathname.match(/^\/workspaces\/[^/]+$/) ? (
-            <Suspense fallback={<p role="status">Loading project…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="project"
+                  label="Loading Collabspace"
+                />
+              }
+            >
               <WorkspacePage
                 user={user}
                 workspaceId={window.location.pathname.split("/")[2] ?? null}
               />
             </Suspense>
           ) : window.location.pathname === "/my-opportunities" ? (
-            <Suspense fallback={<p role="status">Loading opportunities…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="cards"
+                  label="Loading opportunities"
+                />
+              }
+            >
               <MyOpportunities user={user} />
             </Suspense>
           ) : window.location.pathname === "/opportunities/new" ? (
-            <Suspense fallback={<p role="status">Loading opportunity form…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="form"
+                  label="Loading opportunity form"
+                />
+              }
+            >
               <DiscoveryPage mode="opportunities" user={user} showComposer />
             </Suspense>
           ) : window.location.pathname.match(
               /^\/opportunities\/[^/]+\/edit$/,
             ) ? (
-            <Suspense fallback={<p role="status">Loading opportunity form…</p>}>
+            <Suspense
+              fallback={
+                <LoadingSkeleton
+                  variant="form"
+                  label="Loading opportunity form"
+                />
+              }
+            >
               <OpportunityForm
                 user={user}
                 opportunityId={window.location.pathname.split("/")[2]}
@@ -413,7 +541,7 @@ function App() {
                 <div>
                   <h1>Discover</h1>
                   <p className="page-description">
-                    Find a project or developer to work with.
+                    Find a collaboration opportunity or developer to work with.
                   </p>
                 </div>
                 <a
@@ -433,7 +561,8 @@ function App() {
                     Build with developers across Ethiopia.
                   </h2>
                   <p>
-                    Find projects, meet collaborators, and share what you build.
+                    Find collaborators, create Collabspaces, and share what you
+                    build.
                   </p>
                   <a className="button button-light" href="/auth/sign-in">
                     Get started <Icon name="arrow" size={17} />
@@ -467,7 +596,7 @@ function App() {
                 <div className="section-heading">
                   <div>
                     <h2 id="opportunities-title">Opportunities</h2>
-                    <p>Find a project to join.</p>
+                    <p>Find an opportunity to collaborate.</p>
                   </div>
                   <a className="text-link" href="/opportunities">
                     Browse all <Icon name="arrow" size={15} />
@@ -479,7 +608,7 @@ function App() {
                   </div>
                   <div className="empty-copy">
                     <h3>No opportunities yet</h3>
-                    <p>New projects will appear here.</p>
+                    <p>New opportunities will appear here.</p>
                     <a className="text-link" href="/developers">
                       Browse developers <Icon name="arrow" size={15} />
                     </a>

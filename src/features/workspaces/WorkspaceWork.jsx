@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
 import { supabase } from "../../lib/supabaseClient.js";
 
 function toLocalInput(value) {
@@ -40,7 +41,7 @@ function emptyMilestone() {
 
 function describeRpcError(error, operation) {
   if (error?.code === "P0001" && error.message)
-    return `${error.message.replace(/workspace/gi, "project")} (Error code: ${error.code})`;
+    return `${error.message.replace(/workspace/gi, "Collabspace")} (Error code: ${error.code})`;
   if (error?.code === "PGRST202")
     return `${operation} is not available yet. Apply the latest Supabase migration, then try again.`;
   return `${operation} could not be saved. Try again. (Error code: ${error?.code ?? "unknown"})`;
@@ -294,7 +295,7 @@ export default function WorkspaceWork({
         .order("created_at"),
     ]);
     if (taskError || milestoneError)
-      setError("Project tasks could not be loaded. Try again.");
+      setError("Collabspace tasks could not be loaded. Try again.");
     else {
       setTasks(taskRows ?? []);
       setMilestones(milestoneRows ?? []);
@@ -389,7 +390,7 @@ export default function WorkspaceWork({
     if (deleteError)
       setError(
         deleteError.code === "P0001" && deleteError.message
-          ? `${deleteError.message.replace(/workspace/gi, "project")} (Error code: ${deleteError.code})`
+          ? `${deleteError.message.replace(/workspace/gi, "Collabspace")} (Error code: ${deleteError.code})`
           : `The ${label} could not be deleted. (Error code: ${deleteError.code ?? "unknown"})`,
       );
     else {
@@ -537,21 +538,19 @@ export default function WorkspaceWork({
     );
   }
 
-  if (loading)
+  if (loading && tasks.length === 0 && milestones.length === 0)
     return (
-      <p className="empty-card" role="status">
-        Loading project tasks…
-      </p>
+      <LoadingSkeleton variant="tasks" label="Loading Collabspace tasks" />
     );
   return (
     <section
       className="workspace-work-panel"
-      aria-label="Project task board and milestones"
+      aria-label="Collabspace task board and milestones"
     >
       {!editable && (
         <p className="feedback feedback-info" role="status">
-          This project is read-only. Task changes are available while the
-          project is Active.
+          This Collabspace is read-only. Task changes are available while it is
+          Active.
         </p>
       )}
       {error && (

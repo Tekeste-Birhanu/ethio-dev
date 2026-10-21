@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-**Product terminology:** The shared team space is called a Project in the UI and product documents. Existing PostgreSQL tables, columns, Storage buckets, and RPC names keep `workspace` identifiers for compatibility; they do not represent a separate product feature.
+**Product terminology:** The shared team space is called a Collabspace in the UI and product documents. Existing PostgreSQL tables, columns, Storage buckets, RPC names, and `/projects` routes keep their legacy identifiers for compatibility; they do not represent a separate product feature. “Project opportunity” still refers to the public recruitment post.
 
 - **Application:** EthioDev, a mobile-friendly collaboration web app for beginner and junior Ethiopian developers.
 - **Architecture style:** React single-page application backed by Supabase services, with authorization enforced by PostgreSQL Row Level Security (RLS) and database functions.
@@ -84,6 +84,7 @@ Keep credentials in deployment environment settings and local ignored environmen
 - **DEC-06 — Brevo for auth email:** Configure Brevo as Supabase Auth's custom SMTP provider. Use the currently tested Brevo-branded sender. Do not add email notifications for social events.
 - **DEC-07 — Zero-spend deployment:** Use only free plans and free provider URLs; do not enable paid upgrades or add-ons. Supabase Free currently has a 500 MB database quota per project, 1 GB Storage quota across the organization, 5 GB egress, 50,000 monthly active users, 2 million Realtime messages, 200 peak connections, and 500,000 Edge Function invocations. Brevo Free allows up to 300 sends per day. See [Supabase quotas](https://supabase.com/docs/guides/platform/billing-on-supabase), [Realtime limits](https://supabase.com/docs/guides/realtime/limits), and [Brevo limits](https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan). Quotas and provider plans can change, so verify them again before deployment.
 - **DEC-08 — Express migration is deferred:** The MVP has no Express or Socket.IO layer. Whether a later Express service would replace only app-specific API logic or replace more Supabase services is intentionally undecided. Keep PostgreSQL constraints and data definitions documented, but do not build speculative compatibility layers now.
+- **DEC-10 — Client navigation and bounded read cache:** Internal links use client-side history navigation so route changes do not reload the application. Cache public discovery results briefly and filter catalogs longer; cache signed media URLs only for less than their expiry. Key personalized discovery results by user, clear the in-memory cache when the signed-in identity changes, and invalidate affected data after mutations. Do not cache private chat history or authorization decisions; reload them under current RLS and membership state.
 
 ## 7. Data and integration flow
 
@@ -109,11 +110,12 @@ Supabase Auth owns verification and password-reset tokens and templates. It send
 ## 8. Cross-cutting requirements
 
 - **Authentication / authorization:** Supabase Auth establishes identity. RLS is the mandatory authorization boundary for direct browser-to-Supabase access. Private Realtime channels and Storage policies must derive access from active membership/conversation participation. UI checks are usability only, never the security control.
-- **Verification:** Enforce verified-email requirements in trusted policies/functions for opportunity publishing and join requests. Google accounts count as verified only when Supabase Auth reports the provider-verified email state required by the PRD.
+- **Verification:** Enforce verified-email requirements in trusted policies/functions for opportunity publishing and collab requests. Google accounts count as verified only when Supabase Auth reports the provider-verified email state required by the PRD.
 - **Validation:** Validate data in the UI for feedback and again in database constraints/functions or trusted upload operations. A task must reference an existing milestone in its project; PostgreSQL enforces the required relationship. Use allowlists for enums, the attachment extensions/MIME types in `SCHEMA.md`, and state transitions.
 - **Errors and logging:** Surface actionable errors without leaking private records, tokens, message contents, file contents, or secrets to logs. Do not mark writes successful until confirmed. Handle rate limits, quotas, reconnects, stale state, and paused projects gracefully.
 - **Configuration and secrets:** Browser variables may contain only public Supabase URL/key. Store privileged keys, OAuth client secrets, and SMTP credentials in provider-managed secret settings. Never commit real credentials.
 - **Realtime durability:** Persist chat and notification records before broadcasting. Treat subscriptions as a live-update mechanism; reload canonical state after reconnect.
+- **Client read cache:** Treat Supabase as canonical. The browser cache is in-memory, time-limited, scoped by user where responses are personalized, and invalidated after writes or auth identity changes. Do not use cached values as permission checks.
 - **File privacy and lifecycle:** Use RLS for object reads/writes and keep attachment ownership linked to the protected conversation/workspace. Make object cleanup part of relevant deletion flows through the retriable Storage API queue described in `SCHEMA.md`.
 - **Cost controls:** Stay on free plans, watch usage dashboards, and set application limits below provider maximums where practical. When a free quota prevents an operation, show a clear limit/error and do not upgrade automatically.
 - **Reliability:** Supabase Free projects may pause after a period of low activity and have no paid-tier availability guarantee. Review demo readiness and service state before a portfolio review.

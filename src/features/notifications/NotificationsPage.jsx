@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
+import { navigateTo } from "../../lib/clientNavigation.js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 
 const eventLabels = {
-  request_received: "sent you a request to join an opportunity",
-  workspace_invite: "added you to a project",
-  member_joined: "joined a project",
-  member_left: "left a project",
-  member_removed: "removed you from a project",
-  member_role_changed: "changed your project role",
+  request_received: "sent you a collab request",
+  workspace_invite: "added you to a Collabspace",
+  member_joined: "joined a Collabspace",
+  member_left: "left a Collabspace",
+  member_removed: "removed you from a Collabspace",
+  member_role_changed: "changed your Collabspace role",
   task_assigned: "assigned you a task",
-  project_status_changed: "changed a project’s status",
+  project_status_changed: "changed a Collabspace’s status",
   opportunity_liked: "liked your opportunity",
   comment_added: "commented on your opportunity",
   comment_replied: "replied to a comment",
@@ -198,7 +200,7 @@ export default function NotificationsPage({ user }) {
       return;
     }
     const href = await destinationFor(notification);
-    window.location.assign(href);
+    navigateTo(href);
   }
 
   if (!user) {
@@ -211,8 +213,8 @@ export default function NotificationsPage({ user }) {
           <div className="empty-copy">
             <h2>Sign in to view notifications</h2>
             <p>
-              Notifications about your projects and opportunities will appear
-              here.
+              Notifications about your Collabspaces and opportunities will
+              appear here.
             </p>
             <a className="button button-primary" href={signInHref()}>
               Sign in
@@ -226,28 +228,27 @@ export default function NotificationsPage({ user }) {
   const unreadCount = rows.filter((row) => !row.read_at).length;
   return (
     <section className="notification-page">
-      <div className="page-heading">
-        <div>
-          <h1>Notifications</h1>
-          <p className="page-description">
-            {unreadCount ? `${unreadCount} unread` : "You’re all caught up"}
-          </p>
-        </div>
-      </div>
+      <h1 className="visually-hidden">Notifications</h1>
+      {unreadCount > 0 && (
+        <p className="notification-summary">{unreadCount} unread</p>
+      )}
       {error && (
         <p className="feedback feedback-error" role="alert">
           {error}
         </p>
       )}
-      {loading ? (
-        <p role="status">Loading notifications…</p>
+      {loading && rows.length === 0 ? (
+        <LoadingSkeleton
+          variant="notifications"
+          label="Loading notifications"
+        />
       ) : rows.length === 0 ? (
         <section className="empty-card">
           <div className="empty-copy">
             <h2>No notifications yet</h2>
             <p>
-              Updates about requests, comments, and project activity will show
-              up here.
+              Updates about collab requests, comments, and Collabspace activity
+              will show up here.
             </p>
           </div>
         </section>
@@ -261,10 +262,10 @@ export default function NotificationsPage({ user }) {
             const description =
               notification.event_type === "request_decided"
                 ? request?.status === "accepted"
-                  ? "accepted your request to join an opportunity"
+                  ? "accepted your collab request"
                   : request?.status === "rejected"
-                    ? "declined your request to join an opportunity"
-                    : "updated your collaboration request"
+                    ? "declined your collab request"
+                    : "updated your collab request"
                 : (eventLabels[notification.event_type] ??
                   "updated something you’re connected to");
             return (
@@ -280,7 +281,8 @@ export default function NotificationsPage({ user }) {
                 >
                   <span className="notification-dot" aria-hidden="true" />
                   <span className="notification-copy">
-                    <strong>{actorName}</strong> {description}
+                    <strong>{actorName}</strong>
+                    <span>{description}</span>
                     <time dateTime={notification.created_at}>
                       {timeLabel(notification.created_at)}
                     </time>

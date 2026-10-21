@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
+import { navigateTo } from "../../lib/clientNavigation.js";
+import { invalidateRequestCache } from "../../lib/requestCache.js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 
 const projectTypes = [
@@ -18,13 +21,6 @@ const experienceOptions = [
   ["experienced_mentor", "Experienced mentor"],
   ["any_level", "Any level"],
 ];
-const imageExtensions = {
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/gif": "gif",
-  "image/webp": "webp",
-};
-
 const emptyForm = {
   title: "",
   description: "",
@@ -35,7 +31,6 @@ const emptyForm = {
   cityId: "",
   cityOther: "",
   skills: [],
-  coverPath: null,
 };
 
 function signInHref(path) {
@@ -66,19 +61,6 @@ function uniqueSkills(skills) {
   return result;
 }
 
-async function processStorageCleanup() {
-  const { data: jobs, error: claimError } = await supabase.rpc(
-    "claim_storage_cleanup_jobs",
-  );
-  if (claimError || !jobs?.length) return;
-  for (const job of jobs) {
-    await supabase.storage.from(job.bucket_id).remove([job.object_path]);
-    await supabase.rpc("acknowledge_storage_cleanup_job", {
-      p_job_id: job.job_id,
-    });
-  }
-}
-
 function OpportunityForm({
   user,
   opportunityId,
@@ -89,9 +71,6 @@ function OpportunityForm({
   const [form, setForm] = useState(emptyForm);
   const [cities, setCities] = useState([]);
   const [skillDraft, setSkillDraft] = useState("");
-  const [coverFile, setCoverFile] = useState(null);
-  const [localCoverPreview, setLocalCoverPreview] = useState("");
-  const [storedCoverPreview, setStoredCoverPreview] = useState("");
   const [loading, setLoading] = useState(Boolean(opportunityId));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -119,7 +98,7 @@ function OpportunityForm({
       const { data, error: queryError } = await supabase
         .from("opportunities")
         .select(
-          "id, creator_id, title, description, project_type, project_type_other, experience_levels, commitment, city_id, city_other, cover_path, deleted_at, opportunity_skills(skill_id, skills(name))",
+          "id, creator_id, title, description, project_type, project_type_other, experience_levels, commitment, city_id, city_other, deleted_at, opportunity_skills(skill_id, skills(name))",
         )
         .eq("id", opportunityId)
         .eq("creator_id", user.id)
@@ -138,19 +117,12 @@ function OpportunityForm({
         projectTypeOther: data.project_type_other ?? "",
         experienceLevels: data.experience_levels ?? [],
         commitment: data.commitment ?? "",
-        cityId: data.city_id ?? "",
+        cityId: data.city_other ? "other" : (data.city_id ?? ""),
         cityOther: data.city_other ?? "",
         skills: (data.opportunity_skills ?? [])
           .map((row) => row.skills?.name)
           .filter(Boolean),
-        coverPath: data.cover_path,
       });
-      if (data.cover_path) {
-        const { data: signed } = await supabase.storage
-          .from("opportunity-media")
-          .createSignedUrl(data.cover_path, 3600);
-        if (active) setStoredCoverPreview(signed?.signedUrl ?? "");
-      }
       if (active) setLoading(false);
     }
     load();
@@ -158,13 +130,6 @@ function OpportunityForm({
       active = false;
     };
   }, [opportunityId, user]);
-
-  useEffect(
-    () => () => {
-      if (localCoverPreview) URL.revokeObjectURL(localCoverPreview);
-    },
-    [localCoverPreview],
-  );
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -210,7 +175,7 @@ function OpportunityForm({
     return results.map((result) => result.data);
   }
 
-  function fields(skillIds, coverPath = form.coverPath) {
+  function fields(skillIds) {
     return {
       p_title: form.title.trim(),
       p_description: form.description.trim(),
@@ -219,10 +184,10 @@ function OpportunityForm({
         form.projectType === "other" ? form.projectTypeOther.trim() : null,
       p_experience_levels: form.experienceLevels,
       p_commitment: form.commitment.trim() || null,
-      p_city_id: form.cityId || null,
-      p_city_other: form.cityId ? null : form.cityOther.trim() || null,
+      p_city_id: form.cityId && form.cityId !== "other" ? form.cityId : null,
+      p_city_other:
+        form.cityId === "other" ? form.cityOther.trim() || null : null,
       p_skill_ids: skillIds,
-      p_cover_path: coverPath,
     };
   }
 
@@ -239,17 +204,8 @@ function OpportunityForm({
     if (!form.experienceLevels.length) {
       return "Choose at least one experience level.";
     }
-    if (form.commitment.length > 500) {
-      return "Commitment details must be 500 characters or fewer.";
-    }
     if (form.cityOther.trim().length > 100) {
       return "Other city must be 100 characters or fewer.";
-    }
-    if (
-      coverFile &&
-      (!imageExtensions[coverFile.type] || coverFile.size > 10485760)
-    ) {
-      return "Choose a JPEG, PNG, GIF, or WebP image under 10 MB.";
     }
     return "";
   }
@@ -267,9 +223,9 @@ function OpportunityForm({
       return;
     }
     setBusy(true);
-    let uploadedPath = null;
     try {
       const skillIds = await getSkillIds();
+      invalidateRequestCache("catalog:");
       if (!opportunityId) {
         const { data: newId, error: createError } = await supabase.rpc(
           "create_opportunity",
@@ -282,9 +238,11 @@ function OpportunityForm({
                 ? form.projectTypeOther.trim()
                 : null,
             p_experience_levels: form.experienceLevels,
-            p_commitment: form.commitment.trim() || null,
-            p_city_id: form.cityId || null,
-            p_city_other: form.cityId ? null : form.cityOther.trim() || null,
+            p_commitment: null,
+            p_city_id:
+              form.cityId && form.cityId !== "other" ? form.cityId : null,
+            p_city_other:
+              form.cityId === "other" ? form.cityOther.trim() || null : null,
             p_skill_ids: skillIds,
           },
         );
@@ -292,101 +250,32 @@ function OpportunityForm({
           setBusy(false);
           if (!createError.code) {
             setError(
-              "We couldn’t confirm whether this opportunity was published. Check My opportunities before trying again.",
+              "We couldnâ€™t confirm whether this opportunity was published. Check My opportunities before trying again.",
             );
             return;
           }
           throw createError;
         }
-        if (coverFile) {
-          const extension = imageExtensions[coverFile.type];
-          uploadedPath = `${newId}/${crypto.randomUUID()}.${extension}`;
-          const { error: uploadError } = await supabase.storage
-            .from("opportunity-media")
-            .upload(uploadedPath, coverFile, {
-              contentType: coverFile.type,
-              upsert: false,
-            });
-          if (uploadError) {
-            await supabase.rpc("discard_opportunity_media", {
-              p_opportunity_id: newId,
-              p_object_path: uploadedPath,
-            });
-            await processStorageCleanup();
-            setBusy(false);
-            if (onPublished) onPublished({ id: newId, coverFailed: true });
-            else window.location.assign(`/opportunities/${newId}?cover=failed`);
-            return;
-          }
-        }
-        if (uploadedPath) {
-          const { error: updateError } = await supabase.rpc(
-            "update_opportunity",
-            {
-              p_opportunity_id: newId,
-              ...fields(skillIds, uploadedPath),
-            },
-          );
-          if (updateError) {
-            await supabase.rpc("discard_opportunity_media", {
-              p_opportunity_id: newId,
-              p_object_path: uploadedPath,
-            });
-            await processStorageCleanup();
-            setBusy(false);
-            if (onPublished) onPublished({ id: newId, coverFailed: true });
-            else window.location.assign(`/opportunities/${newId}?cover=failed`);
-            return;
-          }
-        }
-        await processStorageCleanup();
-        if (onPublished) onPublished({ id: newId, coverFailed: false });
-        else window.location.assign(`/opportunities/${newId}`);
+        invalidateRequestCache("discovery:opportunities:");
+        if (onPublished) onPublished({ id: newId });
+        else navigateTo(`/opportunities/${newId}`);
         return;
       }
 
-      if (coverFile) {
-        const extension = imageExtensions[coverFile.type];
-        uploadedPath = `${opportunityId}/${crypto.randomUUID()}.${extension}`;
-        const { error: uploadError } = await supabase.storage
-          .from("opportunity-media")
-          .upload(uploadedPath, coverFile, {
-            contentType: coverFile.type,
-            upsert: false,
-          });
-        if (uploadError) {
-          await supabase.rpc("discard_opportunity_media", {
-            p_opportunity_id: opportunityId,
-            p_object_path: uploadedPath,
-          });
-          await processStorageCleanup();
-          throw uploadError;
-        }
-      }
-      const coverPath = uploadedPath ?? (form.coverPath || null);
       const { error: updateError } = await supabase.rpc("update_opportunity", {
         p_opportunity_id: opportunityId,
-        ...fields(skillIds, coverPath),
+        ...fields(skillIds),
       });
-      if (updateError) {
-        if (uploadedPath) {
-          await supabase.rpc("discard_opportunity_media", {
-            p_opportunity_id: opportunityId,
-            p_object_path: uploadedPath,
-          });
-          await processStorageCleanup();
-        }
-        throw updateError;
-      }
-      await processStorageCleanup();
-      window.location.assign(`/opportunities/${opportunityId}`);
+      if (updateError) throw updateError;
+      invalidateRequestCache("discovery:opportunities:");
+      navigateTo(`/opportunities/${opportunityId}`);
     } catch (submitError) {
       setError(
         submitError.message?.includes("Verify your email")
           ? "Verify your email before publishing an opportunity."
           : submitError.message?.includes("skill")
             ? "A skill could not be saved. Check the list and try again."
-            : "We couldn’t save this opportunity. Your entered details are still here; please try again.",
+            : "We couldnâ€™t save this opportunity. Your entered details are still here; please try again.",
       );
       setBusy(false);
     }
@@ -416,13 +305,13 @@ function OpportunityForm({
       />
     );
   }
-  if (loading) {
-    return <StatusPanel title="Loading opportunity" text="Please wait…" />;
+  if (loading && opportunityId && !form.title) {
+    return <LoadingSkeleton variant="form" label="Loading opportunity" />;
   }
   if (opportunityId && error && !form.title) {
     return (
       <StatusPanel
-        title="Couldn’t load this opportunity"
+        title="Couldnâ€™t load this opportunity"
         text={error}
         action={
           <a className="button button-secondary" href="/my-opportunities">
@@ -437,11 +326,6 @@ function OpportunityForm({
     <section
       className={`opportunity-form-page${embedded ? " is-embedded" : ""}`}
     >
-      {embedded && (
-        <div className="composer-heading">
-          <h2>New opportunity post</h2>
-        </div>
-      )}
       {!embedded && (
         <div className="page-heading">
           <div>
@@ -450,7 +334,7 @@ function OpportunityForm({
               {opportunityId ? "Edit opportunity" : "Post an opportunity"}
             </h1>
             <p className="page-description">
-              Share the project, skills, and experience you’re looking for.
+              Share the project, skills, and experience youâ€™re looking for.
             </p>
           </div>
         </div>
@@ -472,30 +356,18 @@ function OpportunityForm({
         </a>
       )}
       <form className="opportunity-form" onSubmit={onSubmit}>
-        <label className="field-label">
-          Project title <span aria-hidden="true">*</span>
-          <input
-            className="field-control"
-            name="title"
-            value={form.title}
-            onChange={updateField}
-            maxLength={120}
-            required
-          />
-        </label>
-        <label className="field-label">
-          Project description <span aria-hidden="true">*</span>
-          <textarea
-            className="field-control opportunity-description-input"
-            name="description"
-            value={form.description}
-            onChange={updateField}
-            maxLength={10000}
-            rows={8}
-            required
-          />
-        </label>
         <div className="opportunity-form-grid">
+          <label className="field-label">
+            Project title <span aria-hidden="true">*</span>
+            <input
+              className="field-control"
+              name="title"
+              value={form.title}
+              onChange={updateField}
+              maxLength={120}
+              required
+            />
+          </label>
           <label className="field-label">
             Project type <span aria-hidden="true">*</span>
             <select
@@ -524,6 +396,75 @@ function OpportunityForm({
               />
             </label>
           )}
+          <label className="field-label">
+            Project description <span aria-hidden="true">*</span>
+            <textarea
+              className="field-control opportunity-description-input"
+              name="description"
+              value={form.description}
+              onChange={updateField}
+              maxLength={10000}
+              rows={4}
+              required
+            />
+          </label>
+          <section className="opportunity-form-section">
+            <h2>Skills</h2>
+            <p className="form-section-description">
+              Add the skills collaborators should bring. New skills join the
+              shared list.
+            </p>
+            <div className="skill-entry">
+              <label className="sr-only" htmlFor="opportunity-skill-draft">
+                Add a skill
+              </label>
+              <input
+                className="field-control"
+                id="opportunity-skill-draft"
+                value={skillDraft}
+                onChange={(event) => setSkillDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    addSkill();
+                  }
+                }}
+                maxLength={60}
+                placeholder="e.g. React"
+              />
+              <button
+                className="button button-secondary"
+                type="button"
+                onClick={addSkill}
+                disabled={!skillDraft.trim()}
+              >
+                Add
+              </button>
+            </div>
+            {form.skills.length > 0 && (
+              <ul className="skill-list">
+                {form.skills.map((skill) => (
+                  <li className="skill-chip" key={skill}>
+                    {skill}
+                    <button
+                      type="button"
+                      aria-label={`Remove ${skill}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          skills: current.skills.filter(
+                            (item) => item !== skill,
+                          ),
+                        }))
+                      }
+                    >
+                      {"\u00D7"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
           <fieldset className="field-label experience-fieldset">
             <legend>
               Experience needed <span aria-hidden="true">*</span>
@@ -548,20 +489,24 @@ function OpportunityForm({
               name="cityId"
               value={form.cityId}
               onChange={(event) => {
-                updateField(event);
-                if (event.target.value)
-                  setForm((current) => ({ ...current, cityOther: "" }));
+                const cityId = event.target.value;
+                setForm((current) => ({
+                  ...current,
+                  cityId,
+                  cityOther: cityId === "other" ? current.cityOther : "",
+                }));
               }}
             >
-              <option value="">Choose a city or enter another</option>
+              <option value="">Choose a city (optional)</option>
               {cities.map((city) => (
                 <option key={city.id} value={city.id}>
                   {city.name}
                 </option>
               ))}
+              <option value="other">Other</option>
             </select>
           </label>
-          {!form.cityId && (
+          {form.cityId === "other" && (
             <label className="field-label">
               Other city
               <input
@@ -575,117 +520,7 @@ function OpportunityForm({
             </label>
           )}
         </div>
-        <label className="field-label">
-          Commitment
-          <textarea
-            className="field-control opportunity-description-input short-textarea"
-            name="commitment"
-            value={form.commitment}
-            onChange={updateField}
-            maxLength={500}
-            rows={3}
-            placeholder="Time or availability expectations (optional)"
-          />
-        </label>
-        <section className="opportunity-form-section">
-          <h2>Skills</h2>
-          <p className="form-section-description">
-            Add the skills collaborators should bring. New skills join the
-            shared list.
-          </p>
-          <div className="skill-entry">
-            <label className="sr-only" htmlFor="opportunity-skill-draft">
-              Add a skill
-            </label>
-            <input
-              className="field-control"
-              id="opportunity-skill-draft"
-              value={skillDraft}
-              onChange={(event) => setSkillDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  addSkill();
-                }
-              }}
-              maxLength={60}
-              placeholder="e.g. React"
-            />
-            <button
-              className="button button-secondary"
-              type="button"
-              onClick={addSkill}
-              disabled={!skillDraft.trim()}
-            >
-              Add
-            </button>
-          </div>
-          {form.skills.length > 0 && (
-            <ul className="skill-list">
-              {form.skills.map((skill) => (
-                <li className="skill-chip" key={skill}>
-                  {skill}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${skill}`}
-                    onClick={() =>
-                      setForm((current) => ({
-                        ...current,
-                        skills: current.skills.filter((item) => item !== skill),
-                      }))
-                    }
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <section className="opportunity-form-section">
-          <h2>Cover image</h2>
-          <p className="form-section-description">
-            Optional. Use a JPEG, PNG, GIF, or WebP image up to 10 MB.
-          </p>
-          {(coverFile
-            ? localCoverPreview
-            : form.coverPath
-              ? storedCoverPreview
-              : "") && (
-            <img
-              className="opportunity-cover-preview"
-              src={coverFile ? localCoverPreview : storedCoverPreview}
-              alt="Opportunity cover preview"
-            />
-          )}
-          <label className="field-label">
-            {form.coverPath ? "Replace cover image" : "Choose cover image"}
-            <input
-              className="field-control file-control"
-              type="file"
-              accept="image/jpeg,image/png,image/gif,image/webp"
-              onChange={(event) => {
-                const file = event.target.files?.[0] ?? null;
-                setCoverFile(file);
-                setLocalCoverPreview(file ? URL.createObjectURL(file) : "");
-                setError("");
-              }}
-            />
-          </label>
-          {(form.coverPath || coverFile) && (
-            <button
-              className="text-button"
-              type="button"
-              onClick={() => {
-                setCoverFile(null);
-                setLocalCoverPreview("");
-                setForm((current) => ({ ...current, coverPath: null }));
-              }}
-            >
-              Remove cover image
-            </button>
-          )}
-        </section>
+
         <div className="opportunity-form-actions">
           {onCancel ? (
             <button
@@ -713,7 +548,7 @@ function OpportunityForm({
             disabled={busy}
           >
             {busy
-              ? "Publishing…"
+              ? "Publishingâ€¦"
               : opportunityId
                 ? "Save changes"
                 : "Publish opportunity"}
@@ -743,7 +578,7 @@ function MyOpportunities({ user }) {
       .then(({ data, error: queryError }) => {
         if (!active) return;
         setRows(data ?? []);
-        setError(queryError ? "We couldn’t load your opportunities." : "");
+        setError(queryError ? "We couldnâ€™t load your opportunities." : "");
         setLoading(false);
       });
     return () => {
@@ -756,7 +591,7 @@ function MyOpportunities({ user }) {
     if (
       nextStatus === "closed" &&
       !window.confirm(
-        "Close this opportunity? New join requests will stop. Pending requests will be removed without notifying applicants. You can reopen it later, and applicants can request again.",
+        "Close this opportunity? New collab requests will stop. Pending requests will be removed without notifying applicants. You can reopen it later, and applicants can request to collab again.",
       )
     ) {
       return;
@@ -771,19 +606,21 @@ function MyOpportunities({ user }) {
       },
     );
     if (statusError)
-      setError("The opportunity status couldn’t be changed. Try again.");
-    else
+      setError("The opportunity status couldnâ€™t be changed. Try again.");
+    else {
+      invalidateRequestCache("discovery:opportunities:");
       setRows((current) =>
         current.map((item) =>
           item.id === row.id ? { ...item, status: nextStatus } : item,
         ),
       );
+    }
     setBusyId("");
   }
 
   async function deleteOpportunity(row) {
     const message =
-      "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any related project will remain private to their participants.";
+      "Delete this opportunity? It will disappear from discovery. Accepted collaborations and any related Collabspace will remain private to their participants.";
     if (!window.confirm(message)) return;
     setBusyId(row.id);
     setError("");
@@ -791,11 +628,11 @@ function MyOpportunities({ user }) {
       p_opportunity_id: row.id,
     });
     if (deleteError) {
-      setError("This opportunity couldn’t be deleted. Please try again.");
+      setError("This opportunity couldnâ€™t be deleted. Please try again.");
       setBusyId("");
       return;
     }
-    await processStorageCleanup();
+    invalidateRequestCache("discovery:opportunities:");
     setRows((current) => current.filter((item) => item.id !== row.id));
     setBusyId("");
   }
@@ -826,18 +663,9 @@ function MyOpportunities({ user }) {
   }
   return (
     <section className="my-opportunities-page">
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">YOUR PROJECTS</p>
-          <h1>My opportunities</h1>
-          <p className="page-description">
-            Manage the listings you’ve published.
-          </p>
-        </div>
-        <a
-          className="button button-primary heading-action"
-          href="/opportunities/new"
-        >
+      <h1 className="visually-hidden">My opportunities</h1>
+      <div className="my-opportunities-toolbar">
+        <a className="button button-primary" href="/opportunities/new">
           Post an opportunity
         </a>
       </div>
@@ -846,11 +674,11 @@ function MyOpportunities({ user }) {
           {error}
         </p>
       )}
-      {loading ? (
-        <StatusPanel title="Loading opportunities" text="Please wait…" />
+      {loading && rows.length === 0 ? (
+        <LoadingSkeleton variant="rows" label="Loading your opportunities" />
       ) : error && rows.length === 0 ? (
         <StatusPanel
-          title="Couldn’t load your opportunities"
+          title="Couldnâ€™t load your opportunities"
           text={error}
           action={
             <button
@@ -868,7 +696,7 @@ function MyOpportunities({ user }) {
       ) : rows.length === 0 ? (
         <StatusPanel
           title="No opportunities yet"
-          text="Publish a project idea when you’re ready to find collaborators."
+          text="Publish a project idea when youâ€™re ready to find collaborators."
           action={
             <a className="button button-primary" href="/opportunities/new">
               Post an opportunity

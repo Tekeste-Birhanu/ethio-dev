@@ -1,4 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
+import { navigateTo } from "../../lib/clientNavigation.js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 import {
   formatChatDate,
@@ -516,15 +518,15 @@ export function PrivateMessagesPage({ user }) {
         );
       setError(
         rpcIsMissing
-          ? "Project setup is not applied to Supabase yet. Run npm run supabase:push, confirm the migrations with npm run supabase:migrations, then try again."
+          ? "Collabspace setup is not applied to Supabase yet. Run npm run supabase:push, confirm the migrations with npm run supabase:migrations, then try again."
           : collaborationIsUnavailable
             ? "This accepted private collaboration could not be found. Refresh the chat and try again."
-            : `The collaborator could not be added to the project. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
+            : `The collaborator could not be added to the Collabspace. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
       );
       setWorkspaceBusy(false);
       return;
     }
-    window.location.assign(`/projects/${encodeURIComponent(workspaceId)}`);
+    navigateTo(`/projects/${encodeURIComponent(workspaceId)}`);
   }
 
   async function addConversationToWorkspace(conversation) {
@@ -537,12 +539,12 @@ export function PrivateMessagesPage({ user }) {
     );
     if (workspaceError || !workspaceId) {
       setListActionError(
-        `The collaborator could not be added to the project. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
+        `The collaborator could not be added to the Collabspace. Try again. (Error code: ${workspaceError?.code ?? "unknown"})`,
       );
       setListActionBusyId("");
       return;
     }
-    window.location.assign(`/projects/${encodeURIComponent(workspaceId)}`);
+    navigateTo(`/projects/${encodeURIComponent(workspaceId)}`);
   }
 
   async function endConversationFromList(conversation) {
@@ -603,19 +605,16 @@ export function PrivateMessagesPage({ user }) {
     <section
       className={`private-messages-page${conversationId ? " is-chat-open" : ""}`}
     >
-      <div className="page-heading">
-        <div>
-          <h1>Messages</h1>
-        </div>
-      </div>
+      <h1 className="visually-hidden">Messages</h1>
       <div
         className={`private-messages-layout${conversationId ? " has-selected-conversation" : ""}`}
       >
         <aside className="conversation-list" aria-label="Conversations">
-          {listLoading ? (
-            <p className="muted-small" role="status">
-              Loading conversations…
-            </p>
+          {listLoading && conversations.length === 0 ? (
+            <LoadingSkeleton
+              variant="conversations"
+              label="Loading conversations"
+            />
           ) : listError ? (
             <div>
               <p className="feedback feedback-error" role="alert">
@@ -632,7 +631,14 @@ export function PrivateMessagesPage({ user }) {
           ) : conversations.length ? (
             <ul>
               {conversations.map((conversation) => (
-                <li className="conversation-list-item" key={conversation.id}>
+                <li
+                  className={
+                    conversationId === conversation.id
+                      ? "conversation-list-item is-selected"
+                      : "conversation-list-item"
+                  }
+                  key={conversation.id}
+                >
                   <a
                     className={
                       conversationId === conversation.id
@@ -682,7 +688,7 @@ export function PrivateMessagesPage({ user }) {
                         >
                           {listActionBusyId === conversation.id
                             ? "Adding…"
-                            : "Add to project"}
+                            : "Add to Collabspace"}
                         </button>
                       )}
                       <button
@@ -721,14 +727,15 @@ export function PrivateMessagesPage({ user }) {
               <h2>Select a conversation</h2>
               <p>Choose a private collaboration chat to view its messages.</p>
             </div>
-          ) : detailLoading ? (
+          ) : detailLoading && !detail ? (
             <div className="private-chat-placeholder">
               <a className="private-chat-back" href="/messages">
                 <span aria-hidden="true">←</span> Back to conversations
               </a>
-              <p className="muted-small" role="status">
-                Loading conversation…
-              </p>
+              <LoadingSkeleton
+                variant="conversation"
+                label="Loading conversation"
+              />
             </div>
           ) : detailError ? (
             <div className="private-chat-placeholder">
@@ -788,7 +795,7 @@ export function PrivateMessagesPage({ user }) {
                               void addCollaboratorToWorkspace();
                             }}
                           >
-                            {workspaceBusy ? "Adding…" : "Add to project"}
+                            {workspaceBusy ? "Adding…" : "Add to Collabspace"}
                           </button>
                         )}
                         <button
@@ -886,7 +893,7 @@ export function PrivateMessagesPage({ user }) {
                                 {message.message_type === "system"
                                   ? message.body.replace(
                                       /the workspace/gi,
-                                      "the project",
+                                      "the Collabspace",
                                     )
                                   : message.body}
                               </p>
@@ -896,7 +903,7 @@ export function PrivateMessagesPage({ user }) {
                                     className="private-message-workspace-link"
                                     href={`/projects/${encodeURIComponent(message.workspace_id)}`}
                                   >
-                                    Open project
+                                    Open Collabspace
                                   </a>
                                 )}
                               {(message.private_attachments ?? []).map(

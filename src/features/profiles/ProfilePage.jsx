@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
+import { invalidateRequestCache } from "../../lib/requestCache.js";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 import { OpportunityCard } from "../discovery/DiscoveryPage.jsx";
 
@@ -40,6 +42,17 @@ function Avatar({ name, src, large = false }) {
   );
 }
 
+function fetchProfileOpportunities(ownerId) {
+  return supabase
+    .from("opportunities")
+    .select(
+      "id, title, description, project_type, project_type_other, experience_levels, city_id, city_other, status, created_at, creator:profiles!opportunities_creator_id_fkey(user_id, username, display_name, avatar_path), city:cities!cities_id_fkey(name), opportunity_skills(skills(name))",
+    )
+    .eq("creator_id", ownerId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+}
+
 function ProfilePage({ user, username, viewOwn = false }) {
   const editing = !username && !viewOwn;
   const [profile, setProfile] = useState(null);
@@ -55,15 +68,16 @@ function ProfilePage({ user, username, viewOwn = false }) {
   });
   const [skillDraft, setSkillDraft] = useState("");
   const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarError, setAvatarError] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [opportunities, setOpportunities] = useState([]);
-  const [opportunityCoverUrls, setOpportunityCoverUrls] = useState({});
   const [opportunitiesLoading, setOpportunitiesLoading] = useState(false);
   const [opportunitiesError, setOpportunitiesError] = useState("");
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [usernameError, setUsernameError] = useState("");
 
   useEffect(() => {
     if (!isSupabaseConfigured || ((editing || viewOwn) && !user)) {
@@ -129,14 +143,9 @@ function ProfilePage({ user, username, viewOwn = false }) {
       setLoading(false);
       if (!editing) {
         setOpportunitiesLoading(true);
-        const opportunitiesResult = await supabase
-          .from("opportunities")
-          .select(
-            "id, title, description, project_type, project_type_other, experience_levels, commitment, city_id, city_other, cover_path, status, created_at, creator:profiles!opportunities_creator_id_fkey(user_id, username, display_name, avatar_path), city:cities!opportunities_city_id_fkey(name), opportunity_skills(skills(name))",
-          )
-          .eq("creator_id", record.user_id)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false });
+        const opportunitiesResult = await fetchProfileOpportunities(
+          record.user_id,
+        );
         if (!active) return;
         if (opportunitiesResult.error) {
           setOpportunitiesError(
@@ -145,22 +154,7 @@ function ProfilePage({ user, username, viewOwn = false }) {
         } else {
           const posts = opportunitiesResult.data ?? [];
           setOpportunities(posts);
-          const coverPaths = posts
-            .map((post) => post.cover_path)
-            .filter(Boolean);
-          if (coverPaths.length) {
-            const { data: signedImages } = await supabase.storage
-              .from("opportunity-media")
-              .createSignedUrls(coverPaths, 3600);
-            if (!active) return;
-            setOpportunityCoverUrls(
-              Object.fromEntries(
-                (signedImages ?? [])
-                  .filter((image) => image.signedUrl)
-                  .map((image) => [image.path, image.signedUrl]),
-              ),
-            );
-          }
+          setOpportunitiesError("");
         }
         if (active) setOpportunitiesLoading(false);
       }
@@ -177,9 +171,66 @@ function ProfilePage({ user, username, viewOwn = false }) {
     };
   }, [editing, user, username, viewOwn]);
 
+  useEffect(() => {
+    if (!editing || !profile) return undefined;
+    const candidate = form.username;
+    let active = true;
+    const wait =
+      candidate === profile.username || !usernamePattern.test(candidate)
+        ? 0
+        : 350;
+    const timer = window.setTimeout(async () => {
+      if (candidate === profile.username) {
+        setUsernameError("");
+        return;
+      }
+      if (!usernamePattern.test(candidate)) {
+        setUsernameError(
+          candidate.length < 3 || candidate.length > 30
+            ? "Username must be 3-30 characters."
+            : "Use only letters, numbers, and underscores.",
+        );
+        return;
+      }
+      const { data, error: lookupError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("username", candidate)
+        .maybeSingle();
+      if (!active) return;
+      if (lookupError) {
+        setUsernameError("Could not check username availability.");
+      } else if (data && data.user_id !== profile.user_id) {
+        setUsernameError("That username is already taken.");
+      } else {
+        setUsernameError("");
+      }
+    }, wait);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [editing, form.username, profile]);
+  async function retryOpportunities() {
+    if (!profile) return;
+    setOpportunitiesLoading(true);
+    setOpportunitiesError("");
+    const result = await fetchProfileOpportunities(profile.user_id);
+    if (result.error) {
+      setOpportunitiesError(
+        "Couldnâ€™t load this developerâ€™s opportunities.",
+      );
+    } else {
+      setOpportunities(result.data ?? []);
+    }
+    setOpportunitiesLoading(false);
+  }
+
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => ({ ...current, [name]: value }));
+    if (name === "username") setUsernameError("");
     setError("");
     setNotice("");
   }
@@ -214,7 +265,7 @@ function ProfilePage({ user, username, viewOwn = false }) {
       }))
       .filter((link) => link.label || link.url);
     if (!usernamePattern.test(cleanUsername)) {
-      setError("Username must be 3–30 letters, numbers, or underscores.");
+      setUsernameError("Use 3-30 letters, numbers, and underscores.");
       return;
     }
     if (!cleanDisplayName || cleanDisplayName.length > 80) {
@@ -246,7 +297,11 @@ function ProfilePage({ user, username, viewOwn = false }) {
       avatarFile &&
       (!imageExtensions[avatarFile.type] || avatarFile.size > 10 * 1024 * 1024)
     ) {
-      setError("Choose a JPEG, PNG, GIF, or WebP image under 10 MB.");
+      setAvatarError(
+        !imageExtensions[avatarFile.type]
+          ? "Choose a JPEG, PNG, GIF, or WebP image."
+          : "Image must be 10 MB or smaller.",
+      );
       return;
     }
     setBusy(true);
@@ -287,6 +342,10 @@ function ProfilePage({ user, username, viewOwn = false }) {
         await supabase.storage.from("profile-media").remove([newAvatarPath]);
       }
       setBusy(false);
+      if (profileError.code === "23505") {
+        setUsernameError("That username is already taken.");
+        return;
+      }
       setError(
         profileError.code === "23505"
           ? "That username is already taken."
@@ -294,6 +353,8 @@ function ProfilePage({ user, username, viewOwn = false }) {
       );
       return;
     }
+    invalidateRequestCache("discovery:developers:");
+    invalidateRequestCache("signed-images:profile-media:");
     setProfile((current) => ({
       ...current,
       username: cleanUsername,
@@ -422,6 +483,7 @@ function ProfilePage({ user, username, viewOwn = false }) {
     }
     setBusy(false);
     setNotice("Profile saved.");
+    invalidateRequestCache("catalog:");
     if (cleanUsername !== username)
       window.history.replaceState(null, "", `/settings/profile`);
   }
@@ -454,13 +516,8 @@ function ProfilePage({ user, username, viewOwn = false }) {
       </ProfileMessage>
     );
   }
-  if (loading)
-    return (
-      <ProfileMessage
-        title="Loading profile"
-        text="Please wait while we load the profile."
-      />
-    );
+  if (loading && !profile)
+    return <LoadingSkeleton variant="profile" label="Loading profile" />;
   if (error && !profile)
     return <ProfileMessage title="Profile unavailable" text={error} />;
   if (!profile)
@@ -552,9 +609,19 @@ function ProfilePage({ user, username, viewOwn = false }) {
               Loading posts...
             </p>
           ) : opportunitiesError ? (
-            <p className="feedback feedback-error" role="alert">
-              {opportunitiesError}
-            </p>
+            <div className="profile-opportunities-error">
+              <p className="feedback feedback-error" role="alert">
+                {opportunitiesError}
+              </p>
+              <button
+                className="button button-secondary"
+                type="button"
+                disabled={opportunitiesLoading}
+                onClick={() => void retryOpportunities()}
+              >
+                Try again
+              </button>
+            </div>
           ) : opportunities.length ? (
             <div className="opportunity-grid profile-opportunity-grid">
               {opportunities.map((opportunity) => (
@@ -562,7 +629,6 @@ function ProfilePage({ user, username, viewOwn = false }) {
                   key={opportunity.id}
                   opportunity={opportunity}
                   avatarUrl={avatarUrl}
-                  coverUrl={opportunityCoverUrls[opportunity.cover_path]}
                   user={user}
                 />
               ))}
@@ -583,20 +649,13 @@ function ProfilePage({ user, username, viewOwn = false }) {
   }
 
   return (
-    <>
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">YOUR PROFILE</p>
-          <h1>Edit profile</h1>
-          <p className="page-description">
-            Add a few details so collaborators can get to know you.
-          </p>
-        </div>
+    <div className="profile-editor-page">
+      <div className="profile-editor-topbar">
         <a
-          className="button button-secondary"
+          className="text-link"
           href={`/u/${encodeURIComponent(profile.username)}`}
         >
-          View profile
+          <span aria-hidden="true">←</span> Back to profile
         </a>
       </div>
       <form className="profile-editor" onSubmit={saveProfile}>
@@ -611,7 +670,6 @@ function ProfilePage({ user, username, viewOwn = false }) {
           </p>
         )}
         <section className="profile-form-section">
-          <h2>Basics</h2>
           <div className="profile-avatar-edit">
             <Avatar name={form.displayName} src={avatarUrl} />
             <label className="field-label">
@@ -620,14 +678,35 @@ function ProfilePage({ user, username, viewOwn = false }) {
                 className="field-control"
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp"
+                aria-invalid={Boolean(avatarError)}
+                aria-describedby={
+                  avatarError ? "profile-image-error" : undefined
+                }
                 onChange={(event) => {
-                  setAvatarFile(event.target.files?.[0] ?? null);
+                  const file = event.target.files?.[0] ?? null;
+                  setAvatarFile(file);
+                  setAvatarError(
+                    !file
+                      ? ""
+                      : !imageExtensions[file.type]
+                        ? "Choose a JPEG, PNG, GIF, or WebP image."
+                        : file.size > 10 * 1024 * 1024
+                          ? "Image must be 10 MB or smaller."
+                          : "",
+                  );
                   setError("");
                 }}
               />
-              <span className="field-hint">
-                JPEG, PNG, GIF, or WebP. Up to 10 MB.
-              </span>
+              {avatarError && (
+                <span
+                  className="field-error"
+                  id="profile-image-error"
+                  role="status"
+                  aria-live="polite"
+                >
+                  {avatarError}
+                </span>
+              )}
             </label>
           </div>
           <label className="field-label">
@@ -640,12 +719,20 @@ function ProfilePage({ user, username, viewOwn = false }) {
               minLength={3}
               maxLength={30}
               pattern="[A-Za-z0-9_]{3,30}"
+              aria-invalid={Boolean(usernameError)}
+              aria-describedby={usernameError ? "username-error" : undefined}
               required
             />
-            <span className="field-hint">
-              Letters, numbers, and underscores. Your public profile URL uses
-              this name.
-            </span>
+            {usernameError && (
+              <span
+                className="field-error"
+                id="username-error"
+                role="status"
+                aria-live="polite"
+              >
+                {usernameError}
+              </span>
+            )}
           </label>
           <label className="field-label">
             Display name
@@ -658,25 +745,27 @@ function ProfilePage({ user, username, viewOwn = false }) {
               required
             />
           </label>
+        </section>
+        <section className="profile-form-section profile-bio-section">
+          <h2>About you</h2>
           <label className="field-label">
-            About you
+            <span className="sr-only">About you</span>
             <textarea
               className="field-control profile-textarea"
               name="bio"
               value={form.bio}
               onChange={updateField}
               maxLength={1000}
-              rows={5}
+              rows={3}
               placeholder="What are you learning or building?"
             />
             <span className="field-hint">{form.bio.length}/1,000</span>
           </label>
         </section>
-        <section className="profile-form-section">
+        <section className="profile-form-section profile-skills-section">
           <h2>Skills</h2>
           <p className="form-section-description">
-            Add the tools and technologies you use. New skills are added to the
-            shared list automatically.
+            Add the tools and technologies you use.
           </p>
           <div className="skill-entry">
             <label className="sr-only" htmlFor="skill-draft">
@@ -729,7 +818,7 @@ function ProfilePage({ user, username, viewOwn = false }) {
             </ul>
           )}
         </section>
-        <section className="profile-form-section">
+        <section className="profile-form-section profile-location-section">
           <h2>Location</h2>
           <label className="field-label">
             City
@@ -767,7 +856,7 @@ function ProfilePage({ user, username, viewOwn = false }) {
             />
           </label>
         </section>
-        <section className="profile-form-section">
+        <section className="profile-form-section profile-links-section">
           <div className="section-heading">
             <div>
               <h2>Links</h2>
@@ -843,7 +932,7 @@ function ProfilePage({ user, username, viewOwn = false }) {
           </button>
         </div>
       </form>
-    </>
+    </div>
   );
 }
 

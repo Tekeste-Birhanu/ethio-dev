@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { navigateTo } from "../../lib/clientNavigation.js";
 import {
   isSupabaseConfigured,
   passwordRecoveryStorageKey,
@@ -134,10 +135,12 @@ function AuthPage({ user }) {
           return;
         }
         if (!data) {
-          window.location.replace(authHref("/auth/complete-profile", next));
+          navigateTo(authHref("/auth/complete-profile", next), {
+            replace: true,
+          });
           return;
         }
-        window.location.replace(next);
+        navigateTo(next, { replace: true });
       });
 
     return () => {
@@ -213,7 +216,7 @@ function AuthPage({ user }) {
       }
       setForm((current) => ({ ...current, password: "" }));
       if (data.session?.user) {
-        window.location.assign(next);
+        navigateTo(next);
       } else {
         setVerificationPending(true);
         setMessage("Enter the code we sent to your email.");
@@ -253,10 +256,10 @@ function AuthPage({ user }) {
       return;
     }
     if (!profile) {
-      window.location.assign(authHref("/auth/complete-profile", next));
+      navigateTo(authHref("/auth/complete-profile", next));
       return;
     }
-    window.location.assign(next);
+    navigateTo(next);
   }
 
   async function signInWithGoogle() {
@@ -315,7 +318,7 @@ function AuthPage({ user }) {
       );
       return;
     }
-    window.location.assign(authHref("/auth/callback", next));
+    navigateTo(authHref("/auth/callback", next));
   }
 
   async function sendPasswordReset(event) {
@@ -390,11 +393,11 @@ function AuthPage({ user }) {
       }
       return;
     }
-    window.location.assign(next);
+    navigateTo(next);
   }
 
   async function requestNewReset() {
-    window.location.assign(authHref("/auth/reset-password", next));
+    navigateTo(authHref("/auth/reset-password", next));
   }
 
   if (!isSupabaseConfigured) {

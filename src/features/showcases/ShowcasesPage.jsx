@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 
 function ShowcaseStatus({ title, children }) {
@@ -7,6 +8,47 @@ function ShowcaseStatus({ title, children }) {
       <h1>{title}</h1>
       {children}
     </section>
+  );
+}
+
+function ShowcaseContributorSummary({ showcaseId, contributors }) {
+  const [expanded, setExpanded] = useState(false);
+  const first = contributors[0];
+  const others = contributors.slice(1);
+  const listId = `showcase-contributors-${showcaseId}`;
+
+  if (!first) return null;
+
+  return (
+    <div className="showcase-card-contributors">
+      <a href={`/u/${encodeURIComponent(first.username)}`}>
+        {first.display_name}
+      </a>
+      {others.length > 0 && (
+        <>
+          <button
+            className="showcase-contributors-toggle"
+            type="button"
+            aria-expanded={expanded}
+            aria-controls={listId}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            {expanded ? "Hide others" : `and ${others.length} others`}
+          </button>
+          {expanded && (
+            <ul id={listId} className="showcase-contributors-expanded">
+              {others.map((person) => (
+                <li key={person.username}>
+                  <a href={`/u/${encodeURIComponent(person.username)}`}>
+                    {person.display_name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </div>
   );
 }
 
@@ -106,7 +148,8 @@ export function ShowcaseEditor({
     setNotice(publish ? "Showcase published." : "Showcase unpublished.");
   }
 
-  if (loading) return <p role="status">Loading showcase…</p>;
+  if (loading && showcase === null)
+    return <LoadingSkeleton variant="form" label="Loading showcase editor" />;
   return (
     <section
       className="showcase-editor"
@@ -338,8 +381,8 @@ export default function ShowcasesPage({ user, showcaseId = null }) {
     };
   }, [showcaseId, user]);
 
-  if (loading)
-    return <ShowcaseStatus title="Showcases">Loading…</ShowcaseStatus>;
+  if (loading && showcases.length === 0)
+    return <LoadingSkeleton variant="cards" label="Loading showcases" />;
   if (error)
     return (
       <ShowcaseStatus title="Showcases">
@@ -410,14 +453,7 @@ export default function ShowcasesPage({ user, showcaseId = null }) {
   }
   return (
     <section className="showcases-page">
-      <div className="page-heading">
-        <div>
-          <h1>Showcases</h1>
-          <p className="page-description">
-            Completed projects shared by the community.
-          </p>
-        </div>
-      </div>
+      <h1 className="visually-hidden">Showcases</h1>
       {showcases.length === 0 ? (
         <p className="empty-card">No project showcases yet.</p>
       ) : (
@@ -431,22 +467,23 @@ export default function ShowcasesPage({ user, showcaseId = null }) {
                 <a href={`/showcases/${showcase.id}`}>{showcase.title}</a>
               </h2>
               <p>{showcase.overview}</p>
-              <ul className="showcase-card-contributors">
-                {showcase.contributors.slice(0, 4).map((person) => (
-                  <li key={person.username}>{person.display_name}</li>
-                ))}
-              </ul>
-              <a className="text-link" href={`/showcases/${showcase.id}`}>
-                View showcase
-              </a>
-              {editableWorkspaceIds.has(showcase.workspace_id) && (
-                <a
-                  className="button button-secondary"
-                  href={`/projects/${encodeURIComponent(showcase.workspace_id)}?view=showcase`}
-                >
-                  Edit showcase
+              <ShowcaseContributorSummary
+                showcaseId={showcase.id}
+                contributors={showcase.contributors}
+              />
+              <div className="showcase-card-actions">
+                <a className="text-link" href={`/showcases/${showcase.id}`}>
+                  View showcase
                 </a>
-              )}
+                {editableWorkspaceIds.has(showcase.workspace_id) && (
+                  <a
+                    className="button button-secondary"
+                    href={`/projects/${encodeURIComponent(showcase.workspace_id)}?view=showcase`}
+                  >
+                    Edit showcase
+                  </a>
+                )}
+              </div>
             </article>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import LoadingSkeleton from "../../components/LoadingSkeleton.jsx";
 import { isSupabaseConfigured, supabase } from "../../lib/supabaseClient.js";
 
 function signInHref(path) {
@@ -139,7 +140,7 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
     return (
       <section className="discovery-status">
         <h1>Connect Supabase</h1>
-        <p>Add Supabase settings to review collaboration requests.</p>
+        <p>Add Supabase settings to review collab requests.</p>
       </section>
     );
   }
@@ -163,9 +164,9 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
       <div className="page-heading">
         <div>
           <p className="eyebrow">COLLABORATION</p>
-          <h1>{opportunity?.title ?? "Join requests"}</h1>
+          <h1>{opportunity?.title ?? "Collab requests"}</h1>
           <p className="page-description">
-            Review developers who want to join.
+            Review developers’ collab requests.
           </p>
         </div>
         <a className="button button-secondary" href="/my-profile#opportunities">
@@ -177,10 +178,8 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
           {error}
         </p>
       )}
-      {loading ? (
-        <p className="muted-small" role="status">
-          Loading requests…
-        </p>
+      {loading && requests.length === 0 ? (
+        <LoadingSkeleton variant="rows" label="Loading requests" />
       ) : error && requests.length === 0 ? (
         <section className="discovery-status">
           <h2>Couldn’t load requests</h2>
@@ -198,7 +197,7 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
         </section>
       ) : requests.length === 0 ? (
         <section className="discovery-status">
-          <h2>No requests yet</h2>
+          <h2>No collab requests yet</h2>
           <p>New requests for this opportunity will appear here.</p>
         </section>
       ) : (
@@ -265,7 +264,7 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
                       >
                         {row.acceptance_path === "private_chat"
                           ? "Open private chat"
-                          : "Open project"}
+                          : "Open Collabspace"}
                       </a>
                     )}
                 </div>
@@ -285,7 +284,7 @@ export function OpportunityRequestsPage({ user, opportunityId }) {
                       disabled={Boolean(busyId)}
                       onClick={() => decide(row, true, "workspace")}
                     >
-                      Accept to project
+                      Accept to Collabspace
                     </button>
                     <button
                       className="button button-danger"

@@ -7,10 +7,10 @@ This backlog breaks the MVP into reviewable implementation steps. Complete tasks
 - **M1 — Foundation and app shell:** product foundation, responsive shell, and Supabase baseline (T-01–T-03). **Outcome:** feature work has a runnable, styled app and a configured data platform.
 - **M2 — Accounts and profiles:** authentication, verification, password recovery, profiles, skills, locations, and public profile pages (T-04–T-05). **Outcome:** developers can sign in and maintain public profiles.
 - **M3 — Discovery and engagement:** developer directory, opportunity feed/search, likes, and threaded comments (T-06–T-07). **Outcome:** visitors can find developers and opportunities; signed-in users can engage.
-- **M4 — Opportunities and private collaboration:** opportunity lifecycle, join requests, acceptance, and private chat (T-08–T-10). **Outcome:** creators can recruit collaborators and work together privately.
-- **M5 — Projects:** project membership, chat, tasks, milestones, and project lifecycle (T-11–T-14). **Outcome:** teams can coordinate and manage project work.
+- **M4 — Opportunities and private collaboration:** opportunity lifecycle, collab requests, acceptance, and private chat (T-08–T-10). **Outcome:** creators can recruit collaborators and work together privately.
+- **M5 — Collabspaces:** membership, chat, tasks, milestones, and lifecycle (T-11–T-14). **Outcome:** teams can coordinate and manage shared work.
 - **M6 — Showcases and notifications:** public showcases and in-app notifications (T-15–T-16). **Outcome:** teams can present completed projects and users can follow important activity.
-- **M7 — Reviewer readiness and release:** reviewer access, hardening, deployment, and end-to-end verification (T-17–T-19). **Outcome:** the deployed MVP is ready for review.
+- **M7 — Hardening and release:** security review, deployment, and end-to-end verification (T-17–T-18). **Outcome:** the deployed MVP is ready for review.
 
 ## M1 — Foundation and app shell
 
@@ -80,7 +80,7 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Implement verification and password recovery**
 
 - Verify email/password registration with a 6-digit one-time code delivered through Brevo; password reset remains an email link.
-- Require verified email for publishing opportunities and sending join requests; trust Google’s verified email.
+- Require verified email for publishing opportunities and sending collab requests; trust Google’s verified email.
 - Preserve the intended destination through verification and password-reset flows.
 - **Done when:** verification and recovery work end to end, and verification gates are enforced by trusted policies/functions.
 
@@ -126,17 +126,17 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Included module: Build opportunity feed posts**
 
-- Present public opportunities as a visual feed with cover image first when available and clear project information.
+- Present public opportunities as text-based feed posts with clear project information.
 - Show public opportunity details and engagement in the feed; let readers expand long descriptions inline.
 - **Done when:** visitors can read complete opportunities in the feed without navigating to a separate detail page, and private/deleted content is not leaked.
 
 **Included module: Add opportunity search and filters**
 
 - Support keyword search and the agreed filters: project type, experience level, city, and skills where applicable.
-- Use predefined choices plus “Other” for categorical opportunity fields; omit commitment filtering.
+- Use predefined choices plus “Other” for categorical opportunity fields.
 - **Done when:** filters compose correctly and are usable on mobile.
 
-**Status:** Complete (2026-10-20). Added the public developer directory and searchable opportunity feed. Search and filters cover skills, city, project type, and experience. Lists are paginated and public images are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Full post reading and engagement stay in the feed. The user confirmed the Supabase data, filter, and signed-out access checks.
+**Status:** Complete (2026-10-20). Added the public developer directory and searchable opportunity feed. Search and filters cover skills, city, project type, and experience. Lists are paginated; profile avatars are signed from Storage. Discovery reads only public profile fields and undeleted opportunities. Opportunity posts are text-based. Full post reading and engagement stay in the feed. The user confirmed the Supabase data, filter, and signed-out access checks.
 
 ### T-07 — Add opportunity likes and threaded comments
 
@@ -146,10 +146,10 @@ This task groups the initial technical foundation into modules so each part keep
 - Prevent duplicate likes and display an accurate count and signed-in state.
 - **Done when:** likes persist, are private to their owner where appropriate, and update reliably.
 
-**Included module: Add comments and threaded replies**
+**Included module: Add comments and flat replies within threads**
 
-- Allow signed-in users to comment and reply at any depth without requiring email verification.
-- Allow authors to edit/delete their comments and the opportunity owner to delete any comment.
+- Allow signed-in users to reply to any comment without requiring email verification. Display replies in one flat list under their root comment, with a “Replying to @username” label when a reply targets another reply.
+- Allow authors to edit/delete their comments and the opportunity owner to delete any comment. Keep Reply visible and put Edit/Delete in the comment’s three-dot menu; show relative timestamps.
 - **Done when:** thread ordering, permissions, deleted-comment behavior, and empty/error states are handled.
 
 **Included module: Keep reading and engagement in the feed**
@@ -157,7 +157,7 @@ This task groups the initial technical foundation into modules so each part keep
 - Expand long opportunity descriptions inline and show likes and threaded comments on the feed post.
 - **Done when:** reading a full post or joining its discussion does not navigate to a separate opportunity detail page.
 
-**Status:** Complete (2026-10-19). Added opportunity likes with private per-user state and public aggregate counts, plus comment creation/editing, nested replies, and author/owner deletion through the existing tombstone function. Feed posts show activity counts and open the discussion in a popup. The user confirmed T-07 and T-08 and committed them together.
+**Status:** Complete (2026-10-19). Added opportunity likes with private per-user state and public aggregate counts, plus comment creation/editing, reply relationships, and author/owner deletion through the existing tombstone function. The comment popup displays replies in a flat list under each root comment and identifies the reply target by username. Feed posts show activity counts and open the discussion in a popup. The user confirmed T-07 and T-08 and committed them together.
 
 ## M4 — Opportunities and private collaboration
 
@@ -165,38 +165,38 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Included module: Create and publish opportunities**
 
-- Build the opportunity form with the agreed project types, experience choices, skills, city, optional commitment text, and cover image.
+- Build the opportunity form with the agreed project types, experience choices, skills, and city.
 - Open the creation form as an inline composer in the opportunity feed; keep editing on a dedicated form.
-- Require verified email to publish and start new opportunities as open. Projects start as Active when created.
+- Require verified email to publish and start new opportunities as open. Collabspaces start as Active when created.
 - **Done when:** valid opportunities publish publicly and invalid or unverified submissions are rejected safely.
 
 **Included module: Edit and manage opportunity lifecycle**
 
 - Let the creator edit, close/reopen, or delete their opportunity according to the PRD.
-- On deletion, keep the cover image private when accepted collaboration/project context remains; otherwise delete it. Revoke public access in either case.
-- Keep closed opportunities visible and engagement open; stop new join requests when closed.
-- On close, silently delete pending join requests so applicants can request again if reopened. On delete, remove non-accepted requests; retain deleted details privately for existing collaborators and remove likes/comments.
+- On deletion, preserve accepted collaboration/Collabspace context privately for authorized participants and revoke the public listing.
+- Keep closed opportunities visible and engagement open; stop new collab requests when closed.
+- On close, silently delete pending collab requests so applicants can request to collab again if reopened. On delete, remove non-accepted requests; retain deleted details privately for existing collaborators and remove likes/comments.
 - **Done when:** lifecycle transitions and public/private visibility follow the same rules in UI and database permissions.
 
-**Status:** Complete (2026-10-19). Added the verified opportunity form, shared-skill association, optional private-bucket cover upload, creator management page, editing, close/reopen, and deletion. Added trusted RPCs for create/edit/delete and applied the migration to the hosted project. Opportunity creation opens as a feed composer; the user confirmed T-08 was complete.
+**Status:** Complete (2026-10-19). Added the verified opportunity form, shared-skill association, creator management page, editing, close/reopen, and deletion. Added trusted RPCs for create/edit/delete and applied the migration to the hosted project. Opportunity creation opens as a feed composer; cover-image upload has since been removed by product decision. The follow-up database cleanup migration is pending application.
 
-### T-09 — Handle collaboration requests and acceptance
+### T-09 — Handle collab requests and acceptance
 
-**Included module: Submit, withdraw, and track join requests**
+**Included module: Send, withdraw, and track collab requests**
 
-- Require verified email to request to join an open opportunity.
+- Require verified email to send a collab request for an open opportunity.
 - Enforce one request row per person per opportunity at a time. Deleting pending rows when the opportunity closes allows resubmission after reopening; rejected/withdrawn requests remain terminal.
 - Let applicants see their request status and withdraw a pending request.
 - **Done when:** duplicate, closed, and unauthorized requests are prevented at the trusted data boundary.
 
-**Included module: Review join requests**
+**Included module: Review collab requests**
 
 - Give opportunity creators a request inbox and applicant profile context.
-- Allow accept or reject; on acceptance require the creator to choose Private chat or direct Project access.
+- Allow accept or reject; on acceptance require the creator to choose Private chat or direct Collabspace access.
 - Support multiple accepted collaborators and maintain the creator’s ability to close the opportunity.
 - **Done when:** every decision is recorded once and sends the user into the selected collaboration path.
 
-**Status:** Complete (2026-10-19). Implemented applicant request submission with an optional message, request status and withdrawal, and a creator inbox with applicant profile context. Creators can open requests from the request icon beside post comments; the icon shows the pending request count. Trusted request RPCs enforce verification, open-listing state, terminal rejected/withdrawn states, and atomic acceptance into private chat or project. The applicant-to-creator request and decision flow was verified live.
+**Status:** Complete (2026-10-19). Implemented direct applicant request submission, request status and withdrawal, and a creator inbox with applicant profile context. Creators can open requests from the request icon beside post comments; the icon shows the pending request count. Trusted request RPCs enforce verification, open-listing state, terminal rejected/withdrawn states, and atomic acceptance into private chat or Collabspace. The applicant-to-creator request and decision flow was verified live.
 
 ### T-10 — Build private collaboration chat and attachments
 
@@ -220,47 +220,47 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Status:** Complete (2026-10-19). Added the private messages page, active-conversation list, participant-only message workflow, Realtime updates with database history recovery, older-message pagination, allowlisted private attachments, and end-collaboration cleanup. Messages are grouped by date with a centered date pill and local time without seconds. The trusted send/end and conversation-status migrations are applied to Supabase, and the live chat, attachment, and ended-collaboration flows were verified. Conversation action menus also let either participant end a collaboration from the list without opening the chat.
 
-## M5 — Projects
+## M5 — Collabspaces
 
-### T-11 — Create projects and manage membership
+### T-11 — Create Collabspaces and manage membership
 
-**Included module: Create a project from accepted collaboration**
+**Included module: Create a Collabspace from accepted collaboration**
 
-- Let the opportunity creator manually create at most one project for an opportunity after acceptance.
-- Support the direct Project acceptance route and grant invited users access immediately.
-- **Done when:** duplicate projects are prevented and project membership starts with the intended participants.
+- Let the opportunity creator manually create at most one Collabspace for an opportunity after acceptance.
+- Support the direct Collabspace acceptance route and grant invited users access immediately.
+- **Done when:** duplicate Collabspaces are prevented and membership starts with the intended participants.
 
-**Included module: Invite members and manage project roles**
+**Included module: Invite members and manage Collabspace roles**
 
 - Let the creator appoint admins; creators and admins can invite/remove non-owner developers, and non-owner members can leave. The creator remains owner and cannot leave because ownership transfer is out of scope.
-- Allow invites whenever a project exists, including after the opportunity is closed or deleted.
+- Allow invites whenever a Collabspace exists, including after the opportunity is closed or deleted.
 - **Done when:** membership changes are recorded and unauthorized invitations/removals are rejected.
 
-**Included module: Enforce membership access and departure rules**
+**Included module: Enforce Collabspace access and departure rules**
 
-- Revoke a removed or departed member’s access to all project chat history and files, including prior content.
+- Revoke a removed or departed member’s access to all Collabspace chat history and files, including prior content.
 - Unassign unfinished tasks when a member leaves or is removed while retaining completed task history.
 - **Done when:** removal and departure update all relevant access and assignments consistently; the creator remains owner because ownership transfer is out of scope.
 
-**Status:** Complete (2026-10-20). Project creation from accepted collaboration, immediate direct invitations, creator/admin/member actions, role changes, and membership access revocation were implemented and confirmed by the user. Project deletion is tracked under T-14.
+**Status:** Complete (2026-10-20). Collabspace creation from accepted collaboration, immediate direct invitations, creator/admin/member actions, role changes, and membership access revocation were implemented and confirmed by the user. Collabspace deletion is tracked under T-14.
 
-### T-12 — Build project chat and attachments
+### T-12 — Build Collabspace chat and attachments
 
-**Included module: Build project chat**
+**Included module: Build Collabspace chat**
 
-- Add persistent real-time text conversations for current project members.
+- Add persistent real-time text conversations for current Collabspace members.
 - Enforce membership on history, subscriptions, and message writes.
 - **Done when:** removed members lose realtime and historical access immediately.
 
-**Included module: Add project chat attachments**
+**Included module: Add Collabspace chat attachments**
 
 - Use the same approved attachment allowlist and 10 MB limit as private chat.
 - Enforce current membership on upload, preview, and download, including access revocation after removal.
-- **Done when:** files follow the project’s private access and deletion rules.
+- **Done when:** files follow the Collabspace’s private access and deletion rules.
 
-**Status:** Complete (2026-10-20). Added project chat with persistent history, older-message pagination, Realtime updates, private attachments using the T-10 allowlist and 10 MB limit, and member-only access. Messages show the sender’s display name, a centered date pill between days, and local time without seconds. The project menu provides member access and project actions. The user confirmed the project chat and attachment flows and closed T-12.
+**Status:** Complete (2026-10-20). Added Collabspace chat with persistent history, older-message pagination, Realtime updates, private attachments using the T-10 allowlist and 10 MB limit, and member-only access. Messages show the sender’s display name, a centered date pill between days, and local time without seconds. The Collabspace menu provides member access and actions. The user confirmed the chat and attachment flows and closed T-12.
 
-### T-13 — Implement the project task board and milestones
+### T-13 — Implement the Collabspace task board and milestones
 
 **Included module: Implement tasks and assignments**
 
@@ -277,19 +277,19 @@ This task groups the initial technical foundation into modules so each part keep
 - Preserve manual completion overrides until changed manually again.
 - **Done when:** milestone status behaves consistently as tasks and manual overrides change.
 
-**Status:** Complete (2026-10-20). Added the three-column project task board, drag-handle status changes for creators/admins and assigned users, keyboard status changes from the handle, compact task details, and milestone selection beside the board. Tasks require exactly one milestone; new tasks use the selected milestone. Migrations `20261020000400_project_lifecycle_and_task_board.sql` and `20261020000500_required_task_milestones.sql` update task permissions, remove the Abandoned status, backfill ungrouped tasks into General milestones, and enforce required milestone assignment. The user confirmed T-13 is complete.
+**Status:** Complete (2026-10-20). Added the three-column Collabspace task board, drag-handle status changes for creators/admins and assigned users, keyboard status changes from the handle, compact task details, and milestone selection beside the board. Tasks require exactly one milestone; new tasks use the selected milestone. Migrations `20261020000400_project_lifecycle_and_task_board.sql` and `20261020000500_required_task_milestones.sql` update task permissions, remove the Abandoned status, backfill ungrouped tasks into General milestones, and enforce required milestone assignment. The user confirmed T-13 is complete.
 
-### T-14 — Enforce project lifecycle and read-only rules
+### T-14 — Enforce Collabspace lifecycle and read-only rules
 
-**Included module: Implement project lifecycle and read-only rules**
+**Included module: Implement Collabspace lifecycle and read-only rules**
 
-- Support Active, Paused, and Completed project states; owner alone changes project status.
+- Support Active, Paused, and Completed Collabspace states; owner alone changes Collabspace status.
 - Allow Paused to reactivate; Completed is final and requires clear confirmation. Start projects Active.
-- Allow task and milestone changes only while the project is Active. Paused and Completed projects are read-only; reactivating a Paused project restores editing.
-- Let the owner permanently delete a project after typing its name. Deletion removes project data and its showcase while retaining the opportunity and accepted collaboration history.
+- Allow task and milestone changes only while the Collabspace is Active. Paused and Completed Collabspaces are read-only; reactivating a Paused Collabspace restores editing.
+- Let the owner permanently delete a Collabspace after typing its name. Deletion removes Collabspace data and its showcase while retaining the opportunity and accepted collaboration history.
 - **Done when:** status transitions, edit permissions, and final-state behavior are enforced in UI and data policies.
 
-**Status:** Complete (2026-10-20). Added owner-only Active/Paused/Completed controls, a clear final-completion confirmation, and typed-name project deletion. Migration `20261020000400_project_lifecycle_and_task_board.sql` converts former Abandoned projects to Paused, makes Completed final, and updates task status permissions. The user confirmed T-14 is complete.
+**Status:** Complete (2026-10-20). Added owner-only Active/Paused/Completed controls, a clear final-completion confirmation, and typed-name Collabspace deletion. Migration `20261020000400_project_lifecycle_and_task_board.sql` converts former Abandoned projects to Paused, makes Completed final, and updates task status permissions. The user confirmed T-14 is complete.
 
 ## M6 — Showcases and notifications
 
@@ -298,7 +298,7 @@ This task groups the initial technical foundation into modules so each part keep
 **Included module: Publish project showcases**
 
 - Allow creator/project admins to publish a showcase only for a Completed project.
-- Let owners/admins open the editor from Project settings or the public showcase list/detail page to publish, edit, or unpublish.
+- Let owners/admins open the editor from Collabspace settings or the public showcase list/detail page to publish, edit, or unpublish.
 - Show contributor names automatically with no opt-out.
 - **Done when:** showcase visibility and attribution follow the approved lifecycle and deletion rules.
 
@@ -314,32 +314,21 @@ This task groups the initial technical foundation into modules so each part keep
 
 **Included module: Add collaboration notifications**
 
-- Create in-app notifications for join-request decisions, project invitations, and relevant membership changes.
-- Let users navigate to the correct request, chat, or project destination.
+- Create in-app notifications for collab request decisions, Collabspace invitations, and relevant membership changes.
+- Let users navigate to the correct request, chat, or Collabspace destination.
 - **Done when:** notification recipients and destinations match each event’s authorization rules.
 
 **Included module: Add work notifications**
 
 - Add useful in-app notifications for task assignment and important project lifecycle changes.
-- Avoid sending notifications for silent join-request cancellation on opportunity close/delete.
+- Avoid sending notifications for silent collab request cancellation on opportunity close/delete.
 - **Done when:** supported events notify the right current users and silent events remain silent.
 
-**Status:** In progress (2026-10-21). Added the signed-in notification center, individual read actions, a live unread navigation count, and links to relevant opportunities, request decisions, private chats, projects, and task boards. A new migration adds database-generated like/comment/reply and project-membership notifications, including joins, departures, and role changes. Apply the migration and verify each event and recipient live before closing T-16.
+**Status:** Complete (2026-10-21). The user verified notification behavior and the notification migration against the hosted project.
 
-## M7 — Reviewer readiness and release
+## M7 — Hardening and release
 
-### T-17 — Build persistent interactive demo access
-
-**Included module: Build persistent interactive demo access**
-
-- Provide reviewer access through open registration and, if needed, dedicated accounts configured outside source control.
-- Do not add fictional record seeding or reset jobs. Reviewers can create records through the product, and their changes persist.
-- Keep reviewer access usable without disclosing credentials or granting access to other users' private data.
-- **Done when:** a reviewer can sign in, create the records needed, and complete the end-to-end journey; their changes persist between sessions.
-
-**Status:** Not started.
-
-### T-18 — Harden and review the MVP
+### T-17 — Harden and review the MVP
 
 **Included module: Harden and review the MVP**
 
@@ -347,14 +336,14 @@ This task groups the initial technical foundation into modules so each part keep
 - Compare implementation with the PRD, APP_FLOW, DESIGN, ARCHITECTURE, and SCHEMA; resolve consequential mismatches.
 - **Done when:** the end-to-end journey works and security/privacy checks have documented results.
 
-**Status:** Not started.
+**Status:** In progress (2026-10-22). Added a visible Sign out button to the signed-in mobile header, client-side navigation for internal links, and a bounded in-memory cache for discovery results, filter catalogs, and signed media URLs. Cache entries are cleared when the signed-in identity changes and relevant discovery data is invalidated after edits. Private chat and authorization decisions are not cached. Continued screen-by-screen UI review with consistent content widths and spacing, a compact Collabspace split view, responsive profile and opportunity forms, flat comment replies, and compact notification rows. Continue the security, accessibility, responsive, and error-state review before closing T-17.
 
-### T-19 — Deploy and verify the reviewer journey
+### T-18 — Deploy and verify the reviewer journey
 
 **Included module: Deploy and verify the reviewer journey**
 
 - Deploy the frontend and configure the selected Supabase project, auth redirects, Brevo email, and reviewer access.
-- Verify registration/sign-in, discovery, likes/comments, join request, chosen acceptance route, private/project collaboration, task/milestone use, and showcase publication using the deployed app.
+- Verify registration/sign-in, discovery, likes/comments, collab request, chosen acceptance route, private/Collabspace collaboration, task/milestone use, and showcase publication using the deployed app.
 - **Done when:** the deployed reviewer journey is usable on mobile and desktop and setup/known limitations are documented in `README.md`.
 
 **Status:** Not started.

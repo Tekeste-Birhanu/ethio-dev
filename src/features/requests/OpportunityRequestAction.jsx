@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { navigateTo } from "../../lib/clientNavigation.js";
 import { supabase } from "../../lib/supabaseClient.js";
 
 function signInHref(path) {
@@ -8,7 +9,7 @@ function signInHref(path) {
 function errorMessage(error, fallback) {
   const message = error?.message ?? "";
   if (/verify your email/i.test(message))
-    return "Verify your email before requesting to join.";
+    return "Verify your email before sending a collab request.";
   if (/unavailable for requests/i.test(message))
     return "This opportunity is no longer accepting requests.";
   if (/duplicate key|unique constraint/i.test(message))
@@ -23,8 +24,6 @@ export function OpportunityRequestAction({ opportunity, user }) {
     data: null,
     error: "",
   });
-  const [message, setMessage] = useState("");
-  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [destinationId, setDestinationId] = useState("");
@@ -44,7 +43,7 @@ export function OpportunityRequestAction({ opportunity, user }) {
     let active = true;
     supabase
       .from("collaboration_requests")
-      .select("id, message, status, acceptance_path")
+      .select("id, status, acceptance_path")
       .eq("opportunity_id", opportunity.id)
       .eq("applicant_id", user.id)
       .maybeSingle()
@@ -92,22 +91,22 @@ export function OpportunityRequestAction({ opportunity, user }) {
   }, [opportunity.id, request]);
 
   async function submitRequest(event) {
-    event.preventDefault();
+    event?.preventDefault();
     if (!user) {
-      window.location.assign(
+      navigateTo(
         signInHref(`${window.location.pathname}${window.location.search}`),
       );
       return;
     }
     if (!user.email_confirmed_at) {
-      setError("Verify your email before requesting to join.");
+      setError("Verify your email before sending a collab request.");
       return;
     }
     setBusy(true);
     setError("");
     const { data, error: submitError } = await supabase.rpc("request_to_join", {
       p_opportunity_id: opportunity.id,
-      p_message: message.trim() || null,
+      p_message: null,
     });
     if (submitError) {
       setError(
@@ -117,11 +116,9 @@ export function OpportunityRequestAction({ opportunity, user }) {
       setRequestLookup({
         userId: user.id,
         opportunityStatus: opportunity.status,
-        data: { id: data, message: message.trim() || null, status: "pending" },
+        data: { id: data, status: "pending" },
         error: "",
       });
-      setOpen(false);
-      setMessage("");
     }
     setBusy(false);
   }
@@ -156,14 +153,14 @@ export function OpportunityRequestAction({ opportunity, user }) {
   } else if (request?.status === "pending") {
     action = (
       <>
-        <span className="request-status">Request pending</span>
+        <span className="request-status">Collab request pending</span>
         <button
           className="text-button request-withdraw"
           type="button"
           disabled={busy}
           onClick={withdrawRequest}
         >
-          {busy ? "Withdrawing…" : "Withdraw request"}
+          {busy ? "Withdrawing…" : "Withdraw collab request"}
         </button>
       </>
     );
@@ -174,7 +171,9 @@ export function OpportunityRequestAction({ opportunity, user }) {
         <span className="request-status">
           {conversationEnded
             ? "Collaboration ended"
-            : `Accepted · ${isChat ? "Private chat" : "Project"}`}
+            : isChat
+              ? "Accepted"
+              : "Accepted · Collabspace"}
         </span>
         {destinationId && !conversationEnded && (
           <a
@@ -185,7 +184,7 @@ export function OpportunityRequestAction({ opportunity, user }) {
                 : `/projects/${encodeURIComponent(destinationId)}`
             }
           >
-            {isChat ? "Open private chat" : "Open project"}
+            {isChat ? "Open chat" : "Open Collabspace"}
           </a>
         )}
       </>
@@ -198,56 +197,15 @@ export function OpportunityRequestAction({ opportunity, user }) {
           : "Request withdrawn"}
       </span>
     );
-  } else if (open) {
-    action = (
-      <form className="request-form" onSubmit={submitRequest}>
-        <label className="field-label">
-          Message to the creator <span className="muted-small">(optional)</span>
-          <textarea
-            className="field-control request-message"
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            maxLength={2000}
-            rows={3}
-          />
-        </label>
-        <div className="request-form-actions">
-          <button
-            className="button button-primary"
-            type="submit"
-            disabled={busy}
-          >
-            {busy ? "Sending…" : "Send request"}
-          </button>
-          <button
-            className="text-button"
-            type="button"
-            disabled={busy}
-            onClick={() => setOpen(false)}
-          >
-            Cancel
-          </button>
-        </div>
-      </form>
-    );
   } else {
     action = (
       <button
-        className="button button-secondary"
+        className="button button-primary"
         type="button"
-        onClick={() => {
-          if (!user) {
-            window.location.assign(
-              signInHref(
-                `${window.location.pathname}${window.location.search}`,
-              ),
-            );
-            return;
-          }
-          setOpen(true);
-        }}
+        disabled={busy}
+        onClick={submitRequest}
       >
-        Request to join
+        {busy ? "Sending…" : "Send collab request"}
       </button>
     );
   }
