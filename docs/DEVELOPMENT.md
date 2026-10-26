@@ -1,4 +1,4 @@
-﻿# Local development
+# Local development
 
 ## Requirements
 
@@ -17,13 +17,15 @@ npm.cmd --prefix server install
 
 ## Configure the server
 
-Copy the example environment file when you want to override the default port:
+If `server/.env` does not exist, copy the example:
 
 ```powershell
 Copy-Item server/.env.example server/.env
 ```
 
-The example sets `PORT=3000`. The server defaults to port 3000 if you skip this step. Do not commit `server/.env` or put secrets in `.env.example`.
+Set `DATABASE_URL` in `server/.env` to your local PostgreSQL connection. Replace the password placeholder and keep the real credentials private. URL-encode special characters in the password. `PORT` defaults to `3000` and `CLIENT_ORIGIN` defaults to `http://localhost:5173`.
+
+For Google sign-in, create a **Web application** OAuth client. Add `http://localhost:3000/api/auth/google/callback` as an authorized redirect URI. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_CALLBACK_URL` in `server/.env`; the callback URL must exactly match the URI in Google Cloud Console. If the consent screen is in testing mode, add your Google account as a test user. Keep the downloaded client-secret JSON outside the repository. Do not commit `server/.env` or put secrets in `.env.example`.
 
 ## Run locally
 

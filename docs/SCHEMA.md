@@ -13,8 +13,8 @@
 ### User
 
 - **Purpose:** Authentication identity and public developer profile.
-- **Fields:** `id`; private, unique `email`; unique `username`; `name`; nullable `passwordHash`; nullable unique `googleSubject`; optional `city`, `experience`, and `description`; `createdAt`; `updatedAt`.
-- **Constraints:** Name and username are required before a profile is complete. Username uniqueness is case-insensitive. Experience is Beginner, Junior, Intermediate, or Senior. At least one authentication method must be configured. Skills are stored through UserSkill rows, not as a list on User. Email is never returned in public profile data.
+- **Fields:** `id`; private, unique `email`; nullable unique `username` until Google profile setup is complete; `name`; nullable `passwordHash`; nullable unique `googleSubject`; optional `city`, `experience`, and `description`; `profileDetailsPromptPending` (default false); `createdAt`; `updatedAt`. Skills relate through `UserSkill` to reusable `Skill` records.
+- **Constraints:** Name and username are required before a profile is complete. A null username identifies a Google-authenticated account that must finish username setup before using the product. `profileDetailsPromptPending` is set for newly created accounts and cleared when the member saves or skips the optional post-sign-in profile prompt. Username uniqueness is case-insensitive. Experience is Beginner, Junior, Intermediate, or Senior. At least one authentication method must be configured. Skills are stored through UserSkill rows, not as a list on User. Email is never returned in public profile data.
 - **Sensitive data:** Email and password hash are private. Store only a secure password hash; never store plaintext passwords or OAuth tokens.
 - **Related requirements:** F-01, F-02.
 

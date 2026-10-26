@@ -14,8 +14,8 @@ Public entry
   │   ├── Opportunities tab → Opportunity post → Owner profile / collaboration request
   │   └── Developers tab → Developer profile → Chat request
   └── Sign in / register
-      ├── Email/password registration (Full name, Username, Email, Password) → Discover
-      ├── Google sign-in (first time) → Choose username → Discover
+      ├── Email/password registration (Full name, Username, Email, Password) → Sign in → Optional profile details (can skip) → Discover
+      ├── Google sign-in (first time) → Create account with verified Google identity → Choose username → Optional profile details (can skip) → Discover
       └── Returning member sign-in → Discover
 
 Signed-in navigation
@@ -30,7 +30,8 @@ Signed-in navigation
       ├── Requests → Outgoing requests and invitations
       ├── My Opportunities → Opportunity post / owner controls
       ├── Saved → Private saved opportunities
-      └── Settings → Edit profile / Change password
+      ├── Edit profile
+      └── Settings → Change password (password accounts only)
 
 Discover → Create opportunity → Publish → Owner's post → Create Collabspace → Linked Collabspace
 ```
@@ -123,11 +124,11 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 ### J-06 — Manage profile and password settings
 
 - **Actor / role:** Signed-in member
-- **Entry point:** Own Profile → Settings
+- **Entry point:** Own Profile → Edit profile or Settings
 - **Steps:**
-  1. Edit profile details such as name, username, city, experience, skills, and description.
-  2. Members whose account has a password credential can change their password. Accounts without one do not show a password-change action.
-- **Success outcome:** Profile changes are saved, and members with a password credential can update it.
+  1. Edit profile details from the own profile page: name, username, city, experience, skills, and description.
+  2. In Settings, members whose account has a password credential can change their password. Accounts without one do not show a password-change action.
+- **Success outcome:** Profile changes are saved, and members with a password credential can update it in Settings.
 - **Scope note:** Email changes are not available in the MVP.
 - **Related requirements:** F-01
 
@@ -135,25 +136,25 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 
 Names below are product destinations; implementation URLs are not yet specified.
 
-| Screen / destination | Purpose | Who can access it | Related journeys |
-|---|---|---|---|
-| Discover — Opportunities | Browse public collaboration posts | Everyone | J-01, J-02, J-05 |
-| Discover — Developers | Browse public developer profiles | Everyone | J-03 |
-| Search | Search opportunities and developers with filters and result tabs | Everyone; sign-in required for actions | J-01, J-03 |
-| Opportunity post | Read and expand the post inline, open comments, save/share, and request collaboration | Everyone; signed-in for interactions | J-01, J-02, J-05 |
-| Create / edit opportunity | Publish or edit the owner's post | Signed-in completed-profile member for creation; owner for editing | J-02 |
-| Create Collabspace dialog | Name and create a Collabspace linked to the current opportunity | Opportunity owner | J-02, J-04 |
-| Developer profile | View public profile and send a chat request | Everyone; signed-in to send request | J-01, J-03 |
-| Own profile — Requests | Track outgoing requests and invitations in one chronological list; withdraw pending items and review resolved history | Profile owner only | J-01, J-02, J-03, J-04 |
-| Own profile — My Opportunities | View and manage the owner's opportunity posts across all statuses | Everyone can view; owner can manage | J-02, J-05 |
-| Own profile — Saved | Revisit and unsave saved opportunities, ordered by most recent save | Profile owner only | J-01, J-05 |
-| Profile settings | Edit profile details and change password for password-based accounts | Signed-in member; password change only for password-based accounts | J-06 |
-| Request / invitation review | Review the sender's profile and request context, then take the actions available for that request type | Signed-in recipient | J-01, J-02, J-03, J-04 |
-| Chat | View private conversations, unread counts, and messages | Signed-in member; conversation participants only | J-03 |
-| Collabspaces | View the member's Collabspaces and open a space or its linked opportunity | Signed-in member | J-01, J-02, J-04, J-05 |
-| Collabspace | Use group chat, membership controls, and taskboard | Current members; archived read-only access for members present at archival | J-02, J-04, J-05 |
-| Notifications | Review incoming requests/invitations and private-message alerts in one chronological list; unread items are indicated and each item opens its relevant context | Signed-in member | J-01, J-02, J-03, J-04 |
-| Sign in / profile setup | Authenticate with email/username and password or Google; email/password registration collects all required fields in one form, while first-time Google sign-in asks for a username | Signed-out visitor / new member | J-01, J-02, J-03 |
+| Screen / destination           | Purpose                                                                                                                                                                            | Who can access it                                                          | Related journeys       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------- |
+| Discover — Opportunities       | Browse public collaboration posts                                                                                                                                                  | Everyone                                                                   | J-01, J-02, J-05       |
+| Discover — Developers          | Browse public developer profiles                                                                                                                                                   | Everyone                                                                   | J-03                   |
+| Search                         | Search opportunities and developers with filters and result tabs                                                                                                                   | Everyone; sign-in required for actions                                     | J-01, J-03             |
+| Opportunity post               | Read and expand the post inline, open comments, save/share, and request collaboration                                                                                              | Everyone; signed-in for interactions                                       | J-01, J-02, J-05       |
+| Create / edit opportunity      | Publish or edit the owner's post                                                                                                                                                   | Signed-in completed-profile member for creation; owner for editing         | J-02                   |
+| Create Collabspace dialog      | Name and create a Collabspace linked to the current opportunity                                                                                                                    | Opportunity owner                                                          | J-02, J-04             |
+| Developer profile              | View public profile and send a chat request                                                                                                                                        | Everyone; signed-in to send request                                        | J-01, J-03             |
+| Own profile — Requests         | Track outgoing requests and invitations in one chronological list; withdraw pending items and review resolved history                                                              | Profile owner only                                                         | J-01, J-02, J-03, J-04 |
+| Own profile — My Opportunities | View and manage the owner's opportunity posts across all statuses                                                                                                                  | Everyone can view; owner can manage                                        | J-02, J-05             |
+| Own profile — Saved            | Revisit and unsave saved opportunities, ordered by most recent save                                                                                                                | Profile owner only                                                         | J-01, J-05             |
+| Profile settings               | Change password for password-based accounts                                                                                                                                       | Signed-in member; password change only for password-based accounts         | J-06                   |
+| Request / invitation review    | Review the sender's profile and request context, then take the actions available for that request type                                                                             | Signed-in recipient                                                        | J-01, J-02, J-03, J-04 |
+| Chat                           | View private conversations, unread counts, and messages                                                                                                                            | Signed-in member; conversation participants only                           | J-03                   |
+| Collabspaces                   | View the member's Collabspaces and open a space or its linked opportunity                                                                                                          | Signed-in member                                                           | J-01, J-02, J-04, J-05 |
+| Collabspace                    | Use group chat, membership controls, and taskboard                                                                                                                                 | Current members; archived read-only access for members present at archival | J-02, J-04, J-05       |
+| Notifications                  | Review incoming requests/invitations and private-message alerts in one chronological list; unread items are indicated and each item opens its relevant context                     | Signed-in member                                                           | J-01, J-02, J-03, J-04 |
+| Sign in / profile setup        | Register with required account fields, then invite the signed-in member to add optional city, experience, skills, and description; the invitation can be skipped | Signed-out visitor / new member                                            | J-01, J-02, J-03       |
 
 ## 5. Shared states and edge cases
 
@@ -178,7 +179,7 @@ Names below are product destinations; implementation URLs are not yet specified.
 - The Chat destination contains private conversations only. Collabspace group chat is accessed from inside its Collabspace. Joining a Collabspace does not remove an existing private conversation.
 - A member's unread count belongs to its individual chat list item. Muting a chat suppresses its message alerts while unread counts continue to change.
 - A member can view public profiles and opportunities without signing in. Protected actions require authentication; collaboration requests also require a completed profile.
-- The member's own Profile destination contains Settings for editing profile details and changing the password on password-based accounts. Email changes are unavailable in the MVP.
+- The member edits profile details from their own Profile destination. Settings contains password change for password-based accounts; email changes are unavailable in the MVP.
 - Opportunity statuses govern available actions: Open accepts new requests/invitations; Paused and Filled stop new ones but allow pending requests to be reviewed; Completed closes pending requests/invitations and is included in Discover only when selected by a filter; Archived is excluded from active Discover results but remains on the owner's profile and can be unarchived. My Opportunities shows the owner's posts across all statuses.
 - Leaving or being removed from a Collabspace ends access immediately. The owner remains in their own Collabspace. An archived Collabspace is read-only for members who belonged to it at archive time.
 - Deleting an opportunity archives its linked Collabspace if one exists and cancels pending requests and invitations. Existing private chats remain available unless a participant deletes the chat.

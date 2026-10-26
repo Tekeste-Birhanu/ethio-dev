@@ -31,7 +31,7 @@
 |---|---|---|
 | Primary sidebar | Navigate the product and start an opportunity | Contains Discover, Collabspaces, Chat, Notifications, Profile, and Post opportunity. No Search destination. |
 | Account menu | Provide current-account actions | Bottom-left avatar/name opens a small menu containing Log out. Profile navigation remains a separate sidebar destination. |
-| Profile settings | Let members edit their profile and account password | Keep settings under the member's own Profile destination. Include profile editing and Change password when the account has a password credential; do not offer email change in the MVP. |
+| Profile settings | Let members change their account password | Keep Settings under the member's own Profile destination. Show Change password only when the account has a password credential; do not offer email change in the MVP. Profile editing is a separate action on the own profile. |
 | Discover tabs | Switch the Discover content type | Opportunities and Developers; selected tab is visually clear. |
 | Opportunity post card | Browse collaboration opportunities in a social feed | Author identity, time, text, optional inline metadata, and post actions. Long text expands in place. |
 | Developer profile card | Browse public developer profiles | Identity, city, experience, short description, skills, and a View profile action; show only available profile information. |
@@ -101,7 +101,7 @@
 - **Profile content:** Show avatar, name, username, city, experience, skills, and flexible description when provided. Never show email.
 - **Primary action:** Place Send chat request near the profile identity. It is available to signed-in visitors; opening it sends a request without a note. The recipient must accept before a private chat opens.
 - **Content below the profile:** Show the developer's My Opportunities list. Each opportunity uses the same post presentation and interactions as in Discover.
-- **Privacy and ownership:** Visitors see public profile information and My Opportunities only. Requests, Saved, and Settings appear only to the profile owner; Settings is for editing profile details and changing a password when the account has one.
+- **Privacy and ownership:** Visitors see public profile information and My Opportunities only. Requests, Saved, Edit profile, and Settings appear only to the profile owner; Settings is for changing a password when the account has one.
 - **Content:** Do not add follower/following counts, activity or stats tabs, achievement metrics, charts, or decorative subtitles. Avoid follow controls, a public activity feed, and unrelated profile actions.
 - **Related flow:** J-03 in `APP_FLOW.md`.
 
@@ -119,11 +119,10 @@
 
 ### Own profile settings
 
-- **Purpose:** Let a member maintain their public developer profile and password-based account credentials.
+- **Purpose:** Let a member change password-based account credentials.
 - **Entry:** Open Settings from the member's own Profile destination. Keep settings private and separate from the public profile visitors see.
-- **Profile editing:** Use one focused form with fields for name, username, city, experience, skills, and flexible description, followed by a clear Save changes action. Email is private and is not editable in the MVP.
-- **Password:** Put password change in a separate section. Show it only when the account has an EthioDev password credential.
-- **Content:** Keep the screen focused on the edit form and password action. Avoid decorative subtitles and unrelated settings.
+- **Password:** Show password change only when the account has an EthioDev password credential. Require the current password and confirmation of the new password.
+- **Content:** Keep the screen focused on password change. Profile editing is a separate action on the own profile; email changes are outside MVP scope.
 - **Related flow:** J-06 in `APP_FLOW.md`.
 
 ### Create opportunity

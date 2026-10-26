@@ -1,7 +1,13 @@
-﻿import express from 'express'
+import express from 'express'
+import authRouter from './routes/auth.routes.js'
+import profileRouter from './routes/profile.routes.js'
 
 const app = express()
 const port = process.env.PORT ?? 3000
+
+app.use(express.json({ limit: '16kb' }))
+app.use('/api/auth', authRouter)
+app.use('/api/profiles', profileRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })

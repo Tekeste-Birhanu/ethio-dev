@@ -18,8 +18,8 @@
 
 | Milestone | Outcome | Depends on | Status |
 | --- | --- | --- | --- |
-| M1. Project setup and requirements | A documented, runnable foundation | — | In progress |
-| M2. Accounts and developer profiles | Users can register, sign in, and maintain profiles | M1 | Not started |
+| M1. Project setup and requirements | A documented, runnable foundation | — | Done |
+| M2. Accounts and developer profiles | Users can register, sign in, and maintain profiles | M1 | In progress |
 | M3. Opportunity posts | Users can publish and manage collaboration opportunities | M2 | Not started |
 | M4. Discover and search | Users can browse opportunities and developers | M3 | Not started |
 | M5. Private chat | Accepted chat requests create one-to-one conversations | M2 | Not started |
@@ -46,12 +46,12 @@
 
 **Outcome:** Users can create accounts, authenticate, and present a complete developer profile.
 
-- [ ] **T-09 — Set up the PostgreSQL and Prisma connection.** Configure the server's database connection and migration workflow.
-- [ ] **T-10 — Implement email and password registration.** Validate credentials, hash passwords securely, and enforce unique email and username values.
-- [ ] **T-11 — Implement sign-in and session handling.** Add secure cookie-based authentication and sign-out.
-- [ ] **T-12 — Add Google OAuth sign-in.** Support Google authentication and route first-time users to required profile setup.
-- [ ] **T-13 — Complete a new user's profile.** Require name and username; collect the profile fields agreed in the PRD, including skills and city where applicable.
-- [ ] **T-14 — Build profile viewing and editing.** Show public profile information while keeping email private; let users edit their profile and change their password where supported.
+- [x] **T-09 — Set up the PostgreSQL and Prisma connection.** Configure the server's database connection and migration workflow.
+- [x] **T-10 — Implement email and password registration.** Validate credentials, hash passwords securely, and enforce unique email and username values.
+- [x] **T-11 — Implement sign-in and session handling.** Add secure cookie-based authentication and sign-out.
+- [x] **T-12 — Add Google OAuth sign-in.** Support Google authentication and route first-time users to required profile setup.
+- [x] **T-13 — Complete a new user's profile.** Keep registration focused on required account fields, then invite signed-in new members to add optional profile details or skip for now.
+- [x] **T-14 — Build profile viewing and editing.** Show public profile information while keeping email private; let users edit their profile and change their password where supported.
 
 ## M3. Opportunity posts
 
