@@ -21,8 +21,8 @@
 ### Opportunity
 
 - **Purpose:** Public, title-free collaboration post and record of the resulting project.
-- **Fields:** `id`; `ownerId`; required `description`; optional `experienceSought`, `collaboratorTarget`, `workSetup`, and `workCity`; `status`; `commentsEnabled` (default true); `createdAt`; `updatedAt`; nullable `deletedAt`.
-- **Constraints:** One owner per opportunity; a user may own many. Categories and sought skills are stored in related rows, not as lists on Opportunity. Work setup is Remote, In-person, or Hybrid; work city is only used for In-person or Hybrid. Status is Open, Paused, Filled, Completed, or Archived. Collaborator target is informational and does not change status. `deletedAt` distinguishes deletion from the Archived status so deleted posts can leave discovery while a linked Collabspace retains its history.
+- **Fields:** `id`; `ownerId`; required `description`; optional `experienceSought`, `workSetup`, and `workCity`; `status`; `commentsEnabled` (default true); `createdAt`; `updatedAt`; nullable `deletedAt`.
+- **Constraints:** One owner per opportunity; a user may own many. Categories and sought skills are stored in related rows, not as lists on Opportunity. Work setup is Remote, In-person, or Hybrid; work city is only used for In-person or Hybrid. Status is Open, Paused, Filled, Completed, or Archived. `deletedAt` distinguishes deletion from the Archived status so deleted posts can leave discovery while a linked Collabspace retains its history.
 - **Related requirements:** F-03–F-07, F-10–F-12, F-18.
 
 ### Collabspace (`Workspace` in the data model)
@@ -84,7 +84,7 @@ These records support the main entities without changing their ownership model:
 - **UserSkill:** Composite key `(userId, skillId)`; no duplicate skill assignment to the same user.
 - **OpportunitySkill:** Composite key `(opportunityId, skillId)`; no duplicate sought skill on the same opportunity.
 - **OpportunityCategory:** Composite key `(opportunityId, category)`, with category drawn from the fixed approved set; no duplicate category on the same opportunity.
-- **Comment:** `id`, `opportunityId`, `authorId`, `text`, and timestamps. Comments are flat; deleting one does not delete other comments.
+- **Comment:** `id`, `opportunityId`, `authorId`, `text` (up to 1,000 characters), and `createdAt`. Comments are flat; deleting one does not delete other comments. Deleting an opportunity cascades to its comments; deleting a user who authored comments is restricted.
 - **SavedOpportunity:** `userId`, `opportunityId`, and `savedAt`; unique per user/opportunity. Saves are private to the saver.
 - **OpportunityLink:** `id`, `opportunityId`, `label`, `url`, and `position`; multiple optional links may be added to completed work.
 - **Notification:** `id`, `recipientId`, `type`, optional `requestId` / `messageId`, `createdAt`, and nullable `readAt`. Represents incoming requests/invitations, acceptance alerts, and private-message alerts. A check constraint requires the source reference appropriate to the notification type. Collabspace group messages and comments do not create notifications. A muted private chat suppresses its message alerts but not its unread count.

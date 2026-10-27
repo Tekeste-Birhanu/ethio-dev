@@ -36,7 +36,7 @@ Signed-in navigation
 Discover → Create opportunity → Publish → Owner's post → Create Collabspace → Linked Collabspace
 ```
 
-Discover is one page with Opportunities and Developers tabs. Search opens as a full-screen view within the app from Discover, has both result tabs, and defaults to the tab the member was viewing. Closing Search returns to that Discover tab and preserves the prior feed position. Search is not a sidebar destination. Chat remains visibly accessible as a primary destination. The owner's profile has Requests, My Opportunities, and Saved tabs; Requests and Saved are private. Other visitors see the public profile and My Opportunities only.
+Discover is one page with Opportunities and Developers tabs. The Post opportunity action is in the Discover page header, not the sidebar. Search opens as a full-screen view within the app from Discover, has both result tabs, and defaults to the tab the member was viewing. Closing Search returns to that Discover tab and preserves the prior feed position. Search is not a sidebar destination. Chat remains visibly accessible as a primary destination. The owner's profile has Requests, My Opportunities, and Saved tabs; Requests and Saved are private. Other visitors see the public profile and My Opportunities only.
 
 Requests are organized by direction. The Requests tab lists requests and invitations the member has sent in one chronological list. Each item identifies the recipient, related opportunity or Collabspace, and status. Pending items can be withdrawn; resolved items remain as history without further actions. Notifications is one chronological list of incoming requests, invitations, and private-message alerts, with unread items clearly indicated. Requests and invitations open their review context; message alerts open the relevant private chat. Comments do not create notifications.
 
@@ -50,7 +50,7 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 - **Steps:**
   1. Browse the newest opportunities, or open Search and enter keywords or filters such as city, skills, experience, or work setup.
   2. Search results can be switched between Opportunities and Developers. Opportunity posts stay in the results: expand long text inline, open comments in a dialog, and open the owner's profile separately.
-  3. Optionally save or share the post, or add a comment if comments are enabled.
+  3. Optionally save the post to the member's private Saved profile tab, share its stable `/opportunities/:id` URL, or add a comment if comments are enabled.
   4. Send a collaboration request with an optional message. The sent request appears in the member's private Requests tab as Pending.
   5. The owner receives an incoming notification. Opening it shows the request and applicant profile before the owner chooses to accept into a private chat, add directly to the Collabspace, or decline.
   6. Acceptance into a private chat opens the private conversation for both members; the applicant is not added to the Collabspace. The owner may invite them to the Collabspace later.
@@ -65,13 +65,13 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 - **Entry point:** Discover → Create opportunity
 - **Preconditions / access:** Signed in with email/username and password or Google OAuth, and has a completed profile (name and username).
 - **Steps:**
-  1. Enter a required description and optionally choose categories, skills or experience sought, a collaborator target, and work setup.
+  1. Compose a title-free opportunity post with a description. Skill tags, categories, experience sought, and work setup are visible as optional controls beneath the post; the owner may publish with description only.
   2. Publish the opportunity. It appears in Discover; no Collabspace is created yet.
   3. From the owner's opportunity post, use Create Collabspace to open a focused dialog, enter a name, and create the space. The app explicitly links it to that opportunity. Cancel closes the dialog without creating a space; the owner can later open a created space from the opportunity.
   4. The owner receives incoming collaboration requests through Notifications. Opening a request shows the applicant profile and opportunity context before a decision.
   5. For each request, the owner can accept into private chat, add the applicant to the opportunity's linked Collabspace, or decline. If no linked space exists, choosing Add to Collabspace guides the owner to enter a name and create it, then adds the applicant. Canceling keeps the request pending.
   6. The owner may also invite a developer to private chat or directly to the existing linked Collabspace. The recipient must accept a direct invitation before the chat opens or membership begins.
-  7. The owner can find and manage posts in My Opportunities under their profile. The post card has a three-dot actions menu for editing, pausing/reopening, marking Filled or Completed, and archiving/unarchiving. Deletion remains a separate confirmed owner action, not part of this menu.
+  7. The owner can find and manage posts in My Opportunities under their profile. The post card has a three-dot actions menu for editing, pausing/reopening, marking Filled or Completed, archiving/unarchiving, and deleting. Choosing Delete opens a confirmation before the post is removed.
 - **Success outcome:** A public opportunity is available for discovery. Its owner can create a named, linked Collabspace when ready to organize team work.
 - **Failure and recovery:** Validation errors keep the owner in the creation flow with entered content available to correct. Paused and Filled opportunities stop new requests and invitations while pending requests remain reviewable. Completing the opportunity closes pending requests and invitations. Archiving removes the opportunity from active Discover results while retaining it on the owner's profile with an Archived tag; the owner can unarchive it. Deleting it requires confirmation; if it has a linked Collabspace, that space is archived as read-only for members who have access at that time.
 - **Related requirements:** F-01, F-05, F-07, F-09, F-10, F-12, F-18

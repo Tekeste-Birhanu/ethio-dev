@@ -16,18 +16,18 @@
 
 ## Milestone overview
 
-| Milestone | Outcome | Depends on | Status |
-| --- | --- | --- | --- |
-| M1. Project setup and requirements | A documented, runnable foundation | — | Done |
-| M2. Accounts and developer profiles | Users can register, sign in, and maintain profiles | M1 | In progress |
-| M3. Opportunity posts | Users can publish and manage collaboration opportunities | M2 | Not started |
-| M4. Discover and search | Users can browse opportunities and developers | M3 | Not started |
-| M5. Private chat | Accepted chat requests create one-to-one conversations | M2 | Not started |
-| M6. Collabspaces and group chat | Teams have a linked shared space and group conversation | M3, M5 | Not started |
-| M7. Collaboration requests and invitations | Owners can review requests and invite developers | M3, M4, M5, M6 | Not started |
-| M8. Shared taskboard | Members coordinate work with tasks and assignees | M6 | Not started |
-| M9. Release readiness | Core flows are polished and ready for release | M1–M8 | Not started |
-| M10. Production and deployment | The app is deployed and operational | M9 | Not started |
+| Milestone                                  | Outcome                                                  | Depends on     | Status      |
+| ------------------------------------------ | -------------------------------------------------------- | -------------- | ----------- |
+| M1. Project setup and requirements         | A documented, runnable foundation                        | —              | Done        |
+| M2. Accounts and developer profiles        | Users can register, sign in, and maintain profiles       | M1             | Done        |
+| M3. Opportunity posts                      | Users can publish and manage collaboration opportunities | M2             | Done        |
+| M4. Discover and search                    | Users can browse opportunities and developers            | M3             | Not started |
+| M5. Private chat                           | Accepted chat requests create one-to-one conversations   | M2             | Not started |
+| M6. Collabspaces and group chat            | Teams have a linked shared space and group conversation  | M3, M5         | Not started |
+| M7. Collaboration requests and invitations | Owners can review requests and invite developers         | M3, M4, M5, M6 | Not started |
+| M8. Shared taskboard                       | Members coordinate work with tasks and assignees         | M6             | Not started |
+| M9. Release readiness                      | Core flows are polished and ready for release            | M1–M8          | Not started |
+| M10. Production and deployment             | The app is deployed and operational                      | M9             | Not started |
 
 ## M1. Project setup and requirements
 
@@ -57,13 +57,13 @@
 
 **Outcome:** A signed-in developer can publish and manage a public post seeking collaborators.
 
-- [ ] **T-15 — Create the opportunity data model and API.** Support the approved post fields, categories, skills, experience, location/work setup, and open/closed state.
-- [ ] **T-16 — Build the create-opportunity form.** Provide clear validation for required and optional fields.
-- [ ] **T-17 — Build opportunity cards.** Display the post text and key matching information in the social feed style.
-- [ ] **T-18 — Add long-post expansion.** Let users expand and collapse long post text inline.
-- [ ] **T-19 — Add opportunity editing and deletion.** Allow only the owner to edit or delete their opportunity, with a confirmation before deletion.
-- [ ] **T-20 — Add comments and replies.** Support flat comments and replies according to the approved comment rules, including owner-controlled comments on an opportunity.
-- [ ] **T-21 — Add save and share actions.** Let users save opportunities and share a stable link that opens the original post.
+- [x] **T-15 — Create the opportunity data model and API.** Support the approved post fields, categories, skills, experience, location/work setup, and open/closed state.
+- [x] **T-16 — Build the create-opportunity composer.** Require only a description; keep skill tags and other metadata visible and optional.
+- [x] **T-17 — Build opportunity cards.** Display the post text and key matching information in the social feed style.
+- [x] **T-18 — Add long-post expansion.** Let users expand and collapse long post text inline.
+- [x] **T-19 — Add opportunity editing and deletion.** Allow only the owner to edit or delete their opportunity, with a confirmation before deletion.
+- [x] **T-20 — Add opportunity comments.** Let signed-in members add flat comments; let authors edit or delete their comments, let opportunity owners delete comments, and let owners turn comments on or off.
+- [x] **T-21 — Add save and share actions.** Let signed-in users save and revisit private saved opportunities, and let anyone share a stable link that opens the original post.
 
 ## M4. Discover and search
 

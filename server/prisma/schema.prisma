@@ -14,27 +14,56 @@ enum Experience {
   SENIOR
 }
 
+enum OpportunityStatus {
+  OPEN
+  PAUSED
+  FILLED
+  COMPLETED
+  ARCHIVED
+}
+
+enum WorkSetup {
+  REMOTE
+  IN_PERSON
+  HYBRID
+}
+
+enum OpportunityCategoryValue {
+  WEB
+  MOBILE
+  DESKTOP
+  DATA_AI
+  GAMES
+  DEVELOPER_TOOLS_OPEN_SOURCE
+  HARDWARE_IOT
+  OTHER
+}
+
 model User {
-  id            String     @id @default(cuid())
-  email         String     @unique
-  username      String?    @unique
-  name          String
-  passwordHash  String?
-  googleSubject String?    @unique
-  city          String?
-  experience    Experience?
-  description   String?    @db.Text
-  profileDetailsPromptPending Boolean @default(false)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  sessions      Session[]
-  skills        UserSkill[]
+  id                          String        @id @default(cuid())
+  email                       String        @unique
+  username                    String?       @unique
+  name                        String
+  passwordHash                String?
+  googleSubject               String?       @unique
+  city                        String?
+  experience                  Experience?
+  description                 String?       @db.Text
+  profileDetailsPromptPending Boolean       @default(false)
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+  sessions                    Session[]
+  skills                      UserSkill[]
+  opportunities               Opportunity[]
+  comments                    Comment[]
+  savedOpportunities           SavedOpportunity[]
 }
 
 model Skill {
-  id    String      @id @default(cuid())
-  name  String      @unique
-  users UserSkill[]
+  id            String             @id @default(cuid())
+  name          String             @unique
+  users         UserSkill[]
+  opportunities OpportunitySkill[]
 }
 
 model UserSkill {
@@ -57,4 +86,70 @@ model Session {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model Opportunity {
+  id                 String                @id @default(cuid())
+  ownerId            String
+  description        String                @db.Text
+  experienceSought   Experience?
+  workSetup          WorkSetup?
+  workCity           String?
+  status             OpportunityStatus     @default(OPEN)
+  commentsEnabled    Boolean               @default(true)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  deletedAt          DateTime?
+  owner              User                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  categories         OpportunityCategory[]
+  skillsSought       OpportunitySkill[]
+  comments           Comment[]
+  savedBy            SavedOpportunity[]
+
+  @@index([status, createdAt])
+  @@index([ownerId, createdAt])
+}
+
+model OpportunityCategory {
+  opportunityId String
+  category      OpportunityCategoryValue
+  opportunity   Opportunity              @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@id([opportunityId, category])
+  @@index([category])
+}
+
+model OpportunitySkill {
+  opportunityId String
+  skillId       String
+  createdAt     DateTime    @default(now())
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  skill         Skill       @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@id([opportunityId, skillId])
+  @@index([skillId])
+}
+
+model Comment {
+  id            String      @id @default(cuid())
+  opportunityId String
+  authorId      String
+  text          String      @db.VarChar(1000)
+  createdAt     DateTime    @default(now())
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  author        User        @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([opportunityId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+model SavedOpportunity {
+  userId        String
+  opportunityId String
+  savedAt       DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@id([userId, opportunityId])
+  @@index([userId, savedAt])
 }

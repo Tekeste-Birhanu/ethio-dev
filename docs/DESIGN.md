@@ -29,13 +29,13 @@
 
 | Component / pattern | Purpose | Relevant behavior / variants |
 |---|---|---|
-| Primary sidebar | Navigate the product and start an opportunity | Contains Discover, Collabspaces, Chat, Notifications, Profile, and Post opportunity. No Search destination. |
+| Primary sidebar | Navigate the product | Contains Discover, Collabspaces, Chat, Notifications, and Profile. No Search or Post opportunity destination. |
 | Account menu | Provide current-account actions | Bottom-left avatar/name opens a small menu containing Log out. Profile navigation remains a separate sidebar destination. |
 | Profile settings | Let members change their account password | Keep Settings under the member's own Profile destination. Show Change password only when the account has a password credential; do not offer email change in the MVP. Profile editing is a separate action on the own profile. |
 | Discover tabs | Switch the Discover content type | Opportunities and Developers; selected tab is visually clear. |
 | Opportunity post card | Browse collaboration opportunities in a social feed | Author identity, time, text, optional inline metadata, and post actions. Long text expands in place. |
 | Developer profile card | Browse public developer profiles | Identity, city, experience, short description, skills, and a View profile action; show only available profile information. |
-| Opportunity metadata chips | Show optional opportunity attributes without a data-table appearance | Compact labels for category, skills sought, experience sought, collaborator target, work setup, and status; display only values supplied on the post. |
+| Opportunity metadata chips | Show optional opportunity attributes without a data-table appearance | Compact labels for category, skills sought, experience sought, work setup, and status; display only values supplied on the post. |
 | Comments dialog | Read and add flat comments without leaving the feed context | Centered dialog on desktop and a full-screen sheet on mobile. Show a clear close control and preserve the prior feed position. |
 | Collaboration request form | Send a request with an optional message | Opens from the post's collaboration action. Shows the opportunity context, an optional message field, and Send request / Cancel actions. |
 
@@ -43,19 +43,19 @@
 
 ### App shell and navigation
 
-- **Desktop:** Use a persistent left sidebar with the EthioDev mark, a prominent Post opportunity action, and the primary destinations in this order: Discover, Collabspaces, Chat, Notifications, Profile. Keep Chat easy to spot. Highlight the current destination with the green accent; use clear icons with text labels.
+- **Desktop:** Use a persistent left sidebar with the EthioDev mark and primary destinations in this order: Discover, Collabspaces, Chat, Notifications, Profile. Keep Chat easy to spot. Highlight the current destination with the green accent; use clear icons with text labels. Put Post opportunity in the Discover page header, not the sidebar.
 - **Main content:** Give each page one focused content area with a comfortable reading width. Do not add a right rail, dashboard metrics, or promotional panels.
 - **Account menu:** Anchor the signed-in member's avatar and name at the bottom of the sidebar. Clicking it opens a small menu with Log out. Keep Profile as its own navigation destination.
-- **Mobile:** Replace the sidebar with a compact bottom navigation for Discover, Collabspaces, Chat, Notifications, and Profile. Keep Post opportunity available from Discover without adding it as a sixth navigation destination. Search remains available from Discover and is not a global navigation item.
+- **Mobile:** Replace the sidebar with a compact bottom navigation for Discover, Collabspaces, Chat, Notifications, and Profile. Keep Post opportunity available in the Discover page header without adding it as a sixth navigation destination. Search remains available from Discover and is not a global navigation item.
 - **Related guidance:** Use the same shell across signed-in destinations; the selected destination and keyboard focus must remain visible and clear.
 
 ### Discover — Opportunities
 
 - **Purpose:** Browse public collaboration opportunities and begin engaging with their owners.
 - **Layout and hierarchy:** Use the persistent left sidebar and one centered feed column. The main content begins with a Discover heading, a search control, Opportunities and Developers tabs, and a compact Filters control. Opportunities is selected for this view. Do not show a right rail.
-- **Primary action:** Send collaboration request on an opportunity post. Post opportunity is a prominent action in the sidebar.
+- **Primary action:** Place Post opportunity beside the Discover heading. Opportunity cards provide collaboration actions as those features are implemented.
 - **Feed cards:** Use a social-post hierarchy: author avatar/name/username and timestamp, then title-free post text, optional metadata chips, and a simple action row. Keep the post text as the main content. Show Comment, Save, and Share, plus an inline Read more control for long posts. The full post remains in the feed; there is no separate opportunity details page or View details link.
-- **Opportunity fields:** Use only the agreed categories: Web, Mobile, Desktop, Data/AI, Games, Developer Tools/Open Source, Hardware/IoT, and Other. Skills are flexible text. Experience uses Beginner, Junior, Intermediate, or Senior. Work setup is Remote, in-person in a city, or Hybrid in a city. Show a collaborator target as natural text, such as “Looking for 2 collaborators.” Use the product status labels Open, Paused, Filled, and Completed when relevant. Omit missing optional fields.
+- **Opportunity fields:** Use only the agreed categories: Web, Mobile, Desktop, Data/AI, Games, Developer Tools/Open Source, Hardware/IoT, and Other. Skills are flexible text. Experience uses Beginner, Junior, Intermediate, or Senior. Work setup is Remote, in-person in a city, or Hybrid in a city. Use the product status labels Open, Paused, Filled, and Completed when relevant. Omit missing optional fields.
 - **Search and filters:** Search is opened from Discover and supports opportunities and developers. It starts on the Discover tab the member was viewing and closing it returns to that tab and feed context. Do not add Search to the sidebar. Opportunity filters may include city, skills, experience, and work setup.
 - **Comments:** Comment opens a dialog with a clear Comments heading, the post's flat comment list, and a composer at the bottom. Show each comment's author, time, and text. A comment author can delete their own comment; the opportunity owner can delete any comment. On mobile, present the dialog as a full-screen sheet. If comments are disabled for a post, show that state and omit the composer. Closing the dialog returns to the same feed position.
 - **Collaboration request:** Open a compact dialog from Send collaboration request. Show enough opportunity context to confirm what the member is requesting to join, an optional message field, and clear Send request and Cancel actions. Do not add unrelated profile fields or extra steps. Keep the owner's profile review and accept/decline actions in the owner's incoming request flow.
@@ -128,8 +128,9 @@
 ### Create opportunity
 
 - **Purpose:** Let a member publish a collaboration opportunity in a simple, post-first composer.
-- **Post:** Start with a prominent required text area for the opportunity description. Do not add a title field.
-- **Optional details:** Keep categories, skills sought, experience sought, collaborator target, and work setup behind an Add details control. Show selected details compactly and leave unset fields out of the published post.
+- **Post:** Use one simple, title-free post composer with a prominent description text area. Do not turn it into a long labeled form.
+- **Skills:** Show Skills directly below the text area as removable tags. Explain that tags help developers find the opportunity.
+- **Metadata:** Show categories, experience sought, and work setup as compact controls below the skill tags. These are optional; do not hide them behind a disclosure. Allow publishing with only a description.
 - **Publish:** Use a clear Publish opportunity action. Publishing creates only the opportunity; do not add attachments or a separate preview step.
 - **After publishing:** Return the owner to Discover with the new post visible. On the owner's post, show Create Collabspace until one is created; then show Open Collabspace. Creating the space requires a name and links it explicitly to that opportunity.
 - **Adding members:** In request review, Add to Collabspace adds the accepted applicant directly when the linked space exists. If it does not, guide the owner to name and create the linked space, then add the applicant. Canceling leaves the request pending. Do not show a space picker in an opportunity request flow.
