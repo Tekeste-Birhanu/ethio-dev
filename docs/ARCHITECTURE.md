@@ -12,7 +12,7 @@
 
 | Area | Choice | Notes |
 |---|---|---|
-| Frontend | React, JavaScript, Tailwind CSS | Located in `client/`; deployed as a static site. |
+| Frontend | React, JavaScript, Tailwind CSS v4 | Located in `client/`; component styling uses Tailwind utilities in JSX, with shared controls and modal pieces in `src/components/ui.jsx`. `src/index.css` imports Tailwind and defines shared theme tokens and base styles. Deployed as a static site. |
 | Backend | Node.js, Express, JavaScript | Located in `server/`; modular monolith with REST, real-time chat, and taskboard events on the same application. |
 | API | REST over HTTP | JSON requests and responses for ordinary application operations. |
 | Real-time | WebSocket connection hosted by Express | Used for live chat and taskboard updates; library remains an implementation choice. Changes are persisted in PostgreSQL before they are broadcast. |

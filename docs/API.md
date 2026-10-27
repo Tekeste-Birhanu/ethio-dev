@@ -8,9 +8,9 @@ The API is served by Express under `/api`. State-changing requests use the signe
 
 `GET /api/opportunities`
 
-Public. Returns the 30 newest non-deleted opportunities whose status is Open, Paused, or Filled, including each post's public owner identity and matching metadata. Completed and Archived opportunities are omitted from the default feed.
+Public. Returns up to 20 non-deleted opportunities whose status is Open, Paused, or Filled, including each post's public owner identity and matching metadata. Results are ordered newest first, with IDs as a stable tie-breaker. Completed and Archived opportunities are omitted from the default feed. Pass the previous response's `nextCursor` as the `cursor` query parameter to load the next page. An optional case-insensitive `q` parameter (up to 100 characters) searches post text, owner name and username, owner or opportunity city, and owner or requested skills. Optional `skill` and `city` parameters (up to 60 characters) filter requested skills and work city; `experience` accepts `BEGINNER`, `JUNIOR`, `INTERMEDIATE`, or `SENIOR` and filters the experience sought. Filters combine with `q` and `cursor`; invalid experience values return `400`.
 
-Success returns `200` with `{ "opportunities": [...] }`. A server error returns `500`.
+Success returns `200` with `{ "opportunities": [...], "hasMore": true, "nextCursor": "..." }`. `nextCursor` is `null` when there are no more results. A server error returns `500`.
 
 ### Create an opportunity
 
@@ -40,6 +40,14 @@ Success returns `201` with `{ "opportunity": ... }`. Validation errors return `4
 Requires a signed-in member. Returns all of the member's non-deleted opportunities, including paused, filled, completed, and archived posts, ordered newest first.
 
 Success returns `200` with `{ "opportunities": [...] }`; unauthenticated requests return `401`.
+
+### List a developer’s opportunities
+
+`GET /api/opportunities/user/:username`
+
+Public. Returns all non-deleted opportunities posted by the named developer, including paused, filled, completed, and archived posts, ordered newest first. Unknown usernames return `404`.
+
+Success returns `200` with `{ "opportunities": [...] }`.
 
 ### List saved opportunities
 
@@ -124,3 +132,13 @@ Requires the comment author. Accepts `{ "text": "..." }` with non-empty text up 
 `PATCH /api/opportunities/:id/comments`
 
 Requires the opportunity owner. Accepts `{ "commentsEnabled": true }` or `{ "commentsEnabled": false }`. Success returns `200` with the updated setting; invalid values return `400`; unauthenticated requests return `401`; deleted, unknown, or non-owned opportunities return `404`.
+
+## Profiles
+
+### List public developer profiles
+
+`GET /api/profiles?q=...&cursor=...`
+
+Public. Returns up to 20 developer profiles with a username, including only public fields: name, username, city, experience, description (bio), skills, and profile creation date. An optional case-insensitive `q` parameter (up to 100 characters) searches name, username, city, and skills. Optional `skill` and `city` parameters (up to 60 characters) filter profile skills and city; `experience` accepts `BEGINNER`, `JUNIOR`, `INTERMEDIATE`, or `SENIOR` and filters experience. Filters combine with `q` and `cursor`; invalid experience values return `400`. Bio and opportunity content are not searched. Use the optional `cursor` from the previous response to fetch the next page with the same search and filters. Email and authentication data are never included.
+
+Success returns `200` with `{ "profiles": [...], "hasMore": true, "nextCursor": "..." }`. `nextCursor` is `null` when there are no more profiles. A server error returns `500`.

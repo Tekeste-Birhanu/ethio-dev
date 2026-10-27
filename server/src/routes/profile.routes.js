@@ -33,6 +33,57 @@ const publicProfileSelect = {
   skills: { select: { skill: { select: { name: true } } } },
 }
 
+router.get('/', async (req, res) => {
+  try {
+    const query = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : ''
+    const skill = typeof req.query.skill === 'string' ? req.query.skill.trim().slice(0, 60) : ''
+    const city = typeof req.query.city === 'string' ? req.query.city.trim().slice(0, 60) : ''
+    const experience = typeof req.query.experience === 'string'
+      ? req.query.experience.trim().toUpperCase()
+      : ''
+    const experienceValues = ['BEGINNER', 'JUNIOR', 'INTERMEDIATE', 'SENIOR']
+    if (experience && !experienceValues.includes(experience)) {
+      return res.status(400).json({
+        error: { code: 'INVALID_FILTER', message: 'Choose a valid experience level.' },
+      })
+    }
+    const cursor = typeof req.query.cursor === 'string' ? req.query.cursor : undefined
+    const pageSize = 20
+    const users = await prisma.user.findMany({
+      where: {
+        username: { not: null },
+        ...(query ? {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { username: { contains: query, mode: 'insensitive' } },
+            { city: { contains: query, mode: 'insensitive' } },
+            { skills: { some: { skill: { name: { contains: query, mode: 'insensitive' } } } } },
+          ],
+        } : {}),
+        ...(skill ? { skills: { some: { skill: { name: { contains: skill, mode: 'insensitive' } } } } } : {}),
+        ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
+        ...(experience ? { experience } : {}),
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: pageSize + 1,
+      select: publicProfileSelect,
+    })
+    const hasMore = users.length > pageSize
+    const profiles = users.slice(0, pageSize)
+    return res.json({
+      profiles: profiles.map(toProfile),
+      hasMore,
+      nextCursor: hasMore ? profiles.at(-1)?.id ?? null : null,
+    })
+  } catch {
+    console.error('Public developer profiles could not be loaded')
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Could not load developer profiles.' },
+    })
+  }
+})
+
 router.get('/me', authenticate, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({

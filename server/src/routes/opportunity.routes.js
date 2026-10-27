@@ -101,19 +101,56 @@ router.post('/', requireSameOrigin, authenticate, async (req, res) => {
   }
 })
 
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
+    const query = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 100) : ''
+    const skill = typeof req.query.skill === 'string' ? req.query.skill.trim().slice(0, 60) : ''
+    const city = typeof req.query.city === 'string' ? req.query.city.trim().slice(0, 60) : ''
+    const experience = typeof req.query.experience === 'string'
+      ? req.query.experience.trim().toUpperCase()
+      : ''
+    const experienceValues = ['BEGINNER', 'JUNIOR', 'INTERMEDIATE', 'SENIOR']
+    if (experience && !experienceValues.includes(experience)) {
+      return res.status(400).json({
+        error: { code: 'INVALID_FILTER', message: 'Choose a valid experience level.' },
+      })
+    }
+    const cursor = typeof req.query.cursor === 'string' && req.query.cursor.length > 0
+      ? req.query.cursor
+      : undefined
+    const pageSize = 20
     const opportunities = await prisma.opportunity.findMany({
       where: {
         deletedAt: null,
         status: { in: ['OPEN', 'PAUSED', 'FILLED'] },
+        ...(query ? {
+          OR: [
+            { description: { contains: query, mode: 'insensitive' } },
+            { workCity: { contains: query, mode: 'insensitive' } },
+            { owner: { name: { contains: query, mode: 'insensitive' } } },
+            { owner: { username: { contains: query, mode: 'insensitive' } } },
+            { owner: { city: { contains: query, mode: 'insensitive' } } },
+            { owner: { skills: { some: { skill: { name: { contains: query, mode: 'insensitive' } } } } } },
+            { skillsSought: { some: { skill: { name: { contains: query, mode: 'insensitive' } } } } },
+          ],
+        } : {}),
+        ...(skill ? { skillsSought: { some: { skill: { name: { contains: skill, mode: 'insensitive' } } } } } : {}),
+        ...(city ? { workCity: { contains: city, mode: 'insensitive' } } : {}),
+        ...(experience ? { experienceSought: experience } : {}),
       },
-      orderBy: { createdAt: 'desc' },
-      take: 30,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      take: pageSize + 1,
       select: opportunitySelect,
     })
 
-    return res.json({ opportunities: opportunities.map(toOpportunity) })
+    const hasMore = opportunities.length > pageSize
+    const page = opportunities.slice(0, pageSize)
+    return res.json({
+      opportunities: page.map(toOpportunity),
+      hasMore,
+      nextCursor: hasMore ? page.at(-1).id : null,
+    })
   } catch {
     console.error('Opportunities could not be loaded')
     return res.status(500).json({
@@ -204,6 +241,35 @@ router.get('/mine', authenticate, async (req, res) => {
     console.error('Member opportunities could not be loaded')
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Could not load your opportunities.' },
+    })
+  }
+})
+
+router.get('/user/:username', async (req, res) => {
+  try {
+    const username = req.params.username.trim().toLowerCase()
+    const owner = await prisma.user.findUnique({
+      where: { username },
+      select: { id: true },
+    })
+
+    if (!owner) {
+      return res.status(404).json({
+        error: { code: 'PROFILE_NOT_FOUND', message: 'This profile could not be found.' },
+      })
+    }
+
+    const opportunities = await prisma.opportunity.findMany({
+      where: { ownerId: owner.id, deletedAt: null },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: opportunitySelect,
+    })
+
+    return res.json({ opportunities: opportunities.map(toOpportunity) })
+  } catch {
+    console.error('Public profile opportunities could not be loaded')
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Could not load this developer’s opportunities.' },
     })
   }
 })

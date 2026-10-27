@@ -4,7 +4,7 @@
 
 - Work on one task at a time, in order, unless a dependency requires otherwise.
 - Each task should produce a useful, understandable increment. Explain what it builds and why before starting it.
-- Complete each milestone as one coherent feature and make one Git commit for that milestone.
+- Complete each milestone as one coherent feature.
 - Mark a task complete only after its acceptance criteria and applicable verification are satisfied.
 - After finishing a task, state the next task.
 
@@ -21,7 +21,7 @@
 | M1. Project setup and requirements         | A documented, runnable foundation                        | —              | Done        |
 | M2. Accounts and developer profiles        | Users can register, sign in, and maintain profiles       | M1             | Done        |
 | M3. Opportunity posts                      | Users can publish and manage collaboration opportunities | M2             | Done        |
-| M4. Discover and search                    | Users can browse opportunities and developers            | M3             | Not started |
+| M4. Discover and search                    | Users can browse opportunities and developers            | M3             | Done        |
 | M5. Private chat                           | Accepted chat requests create one-to-one conversations   | M2             | Not started |
 | M6. Collabspaces and group chat            | Teams have a linked shared space and group conversation  | M3, M5         | Not started |
 | M7. Collaboration requests and invitations | Owners can review requests and invite developers         | M3, M4, M5, M6 | Not started |
@@ -38,7 +38,7 @@
 - [x] **T-03 — Choose the technical architecture.** Record the client/server split, API approach, authentication approach, database, and deployment direction.
 - [x] **T-04 — Define the initial data schema.** Document the main entities, relationships, constraints, and normalization approach.
 - [x] **T-05 — Plan milestones and implementation tasks.** Organize the build into milestones with small, ordered tasks.
-- [x] **T-06 — Establish repository conventions.** Use the documented `client/`, `server/`, and `docs/` layout; follow JavaScript and React naming conventions; use Prettier for formatting and ESLint for code checks. Work on `main` for M1, M9, and M10. Use one branch per milestone for M2–M8, with one commit per milestone.
+- [x] **T-06 — Establish repository conventions.** Use the documented `client/`, `server/`, and `docs/` layout; follow JavaScript and React naming conventions; use Prettier for formatting and ESLint for code checks. Work on `main` for M1, M9, and M10.
 - [x] **T-07 — Create the client and server project skeletons.** Set up the React/Tailwind client and JavaScript/Express server in the agreed repository structure.
 - [x] **T-08 — Add local development configuration.** Add environment examples and the minimum instructions needed to install and run the app locally.
 
@@ -69,10 +69,10 @@
 
 **Outcome:** Users can discover opportunities and developers through one Discover area.
 
-- [ ] **T-22 — Build the opportunity feed.** Show public opportunities with pagination or incremental loading and sensible empty/loading/error states.
-- [ ] **T-23 — Build the Developers tab.** Show developer cards with profile details relevant to discovery and a link to each profile.
-- [ ] **T-24 — Add search across opportunities and developers.** Match the agreed searchable fields, such as post text, name, username, skills, and city.
-- [ ] **T-25 — Add relevant filters.** Filter the active Discover tab using supported fields such as skill, city, and experience.
+- [x] **T-22 — Build the opportunity feed.** Show public opportunities with pagination or incremental loading and sensible empty/loading/error states.
+- [x] **T-23 — Build developer discovery and profiles.** Show developer cards with useful profile details, link to each public profile, and show that developer’s opportunity posts there.
+- [x] **T-24 — Add search across opportunities and developers.** Search post text, owner and developer names/usernames, skills, and city from the active Discover tab.
+- [x] **T-25 — Add relevant filters.** Filter the active Discover tab using supported fields such as skill, city, and experience.
 
 ## M5. Private chat
 

@@ -27,17 +27,17 @@
 
 ## 4. Components and patterns
 
-| Component / pattern | Purpose | Relevant behavior / variants |
-|---|---|---|
-| Primary sidebar | Navigate the product | Contains Discover, Collabspaces, Chat, Notifications, and Profile. No Search or Post opportunity destination. |
-| Account menu | Provide current-account actions | Bottom-left avatar/name opens a small menu containing Log out. Profile navigation remains a separate sidebar destination. |
-| Profile settings | Let members change their account password | Keep Settings under the member's own Profile destination. Show Change password only when the account has a password credential; do not offer email change in the MVP. Profile editing is a separate action on the own profile. |
-| Discover tabs | Switch the Discover content type | Opportunities and Developers; selected tab is visually clear. |
-| Opportunity post card | Browse collaboration opportunities in a social feed | Author identity, time, text, optional inline metadata, and post actions. Long text expands in place. |
-| Developer profile card | Browse public developer profiles | Identity, city, experience, short description, skills, and a View profile action; show only available profile information. |
-| Opportunity metadata chips | Show optional opportunity attributes without a data-table appearance | Compact labels for category, skills sought, experience sought, work setup, and status; display only values supplied on the post. |
-| Comments dialog | Read and add flat comments without leaving the feed context | Centered dialog on desktop and a full-screen sheet on mobile. Show a clear close control and preserve the prior feed position. |
-| Collaboration request form | Send a request with an optional message | Opens from the post's collaboration action. Shows the opportunity context, an optional message field, and Send request / Cancel actions. |
+| Component / pattern        | Purpose                                                              | Relevant behavior / variants                                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Primary sidebar            | Navigate the product                                                 | Contains Discover, Collabspaces, Chat, Notifications, and Profile. No Search or Post opportunity destination.                                                                                                                  |
+| Account menu               | Provide current-account actions                                      | Bottom-left avatar/name opens a small menu containing Log out. Profile navigation remains a separate sidebar destination.                                                                                                      |
+| Profile settings           | Let members change their account password                            | Keep Settings under the member's own Profile destination. Show Change password only when the account has a password credential; do not offer email change in the MVP. Profile editing is a separate action on the own profile. |
+| Discover tabs              | Switch the Discover content type                                     | Opportunities and Developers; selected tab is visually clear.                                                                                                                                                                  |
+| Opportunity post card      | Browse collaboration opportunities in a social feed                  | Author identity, time, text, optional inline metadata, and post actions. Long text expands in place.                                                                                                                           |
+| Developer profile card     | Browse public developer profiles                                     | Identity, city, experience, short description, skills, and a View profile action; show only available profile information.                                                                                                     |
+| Opportunity metadata chips | Show optional opportunity attributes without a data-table appearance | Compact labels for category, skills sought, experience sought, work setup, and status; display only values supplied on the post.                                                                                               |
+| Comments dialog            | Read and add flat comments without leaving the feed context          | Centered dialog on desktop and a full-screen sheet on mobile. Show a clear close control and preserve the prior feed position.                                                                                                 |
+| Collaboration request form | Send a request with an optional message                              | Opens from the post's collaboration action. Shows the opportunity context, an optional message field, and Send request / Cancel actions.                                                                                       |
 
 ## 5. Screen-specific guidance
 
