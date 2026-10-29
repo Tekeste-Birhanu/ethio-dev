@@ -57,7 +57,7 @@
 
 **Outcome:** A signed-in developer can publish and manage a public post seeking collaborators.
 
-- [x] **T-15 — Create the opportunity data model and API.** Support the approved post fields, categories, skills, experience, location/work setup, and open/closed state.
+- [x] **T-15 — Create the opportunity data model and API.** Support the approved post fields, categories, skills, experience, optional collaboration city, and lifecycle status.
 - [x] **T-16 — Build the create-opportunity composer.** Require only a description; keep skill tags and other metadata visible and optional.
 - [x] **T-17 — Build opportunity cards.** Display the post text and key matching information in the social feed style.
 - [x] **T-18 — Add long-post expansion.** Let users expand and collapse long post text inline.
@@ -73,6 +73,10 @@
 - [x] **T-23 — Build developer discovery and profiles.** Show developer cards with useful profile details, link to each public profile, and show that developer’s opportunity posts there.
 - [x] **T-24 — Add search across opportunities and developers.** Search post text, owner and developer names/usernames, skills, and city from the active Discover tab.
 - [x] **T-25 — Add relevant filters.** Filter the active Discover tab using supported fields such as skill, city, and experience.
+
+## M3/M4 follow-up — Opportunity lifecycle
+
+- [x] **T-25a — Add minimal opportunity lifecycle controls.** Let owners pause, resume a paused opportunity, or complete it after confirmation; show completed posts in Discover.
 
 ## M5. Private chat
 
@@ -100,12 +104,12 @@
 **Outcome:** Opportunity owners can review collaboration requests and add accepted developers to the right Collabspace.
 
 - [ ] **T-37 — Create collaboration request records and API.** Associate each request with its opportunity and requester; allow an optional message.
-- [ ] **T-38 — Add the Send collaboration request action.** Require a completed profile and prevent duplicate pending requests.
+- [ ] **T-38 — Add the Send collaboration request action.** Require a completed profile, allow requests only for Open opportunities in both UI and API, and prevent duplicate pending requests.
 - [ ] **T-39 — Build outgoing request tracking.** Show a user's sent requests and their current status in the profile's Requests area.
-- [ ] **T-40 — Build incoming request review.** Show pending requests with the requester's profile available to the owner.
-- [ ] **T-41 — Add accept and decline actions.** Let the opportunity owner decide; acceptance notifies the requester and decline does not.
+- [ ] **T-40 — Build incoming request review.** Show pending requests with the requester's profile available to the owner, including requests on Paused opportunities.
+- [ ] **T-41 — Add accept and decline actions.** Let the opportunity owner decide; acceptance notifies the requester and decline does not. Completing an opportunity closes its pending requests.
 - [ ] **T-42 — Add accepted-request routing.** The owner can accept into private chat or add directly to the linked Collabspace. If the opportunity has no Collabspace, guide the owner to create one before adding the person.
-- [ ] **T-43 — Add owner invitations to developers.** Let an owner invite a developer to request a private chat or join the opportunity's Collabspace; the invitee must accept before the relevant access is granted.
+- [ ] **T-43 — Add owner invitations to developers.** Let an owner invite a developer from an Open opportunity to request a private chat or join the opportunity's Collabspace; the invitee must accept before the relevant access is granted. Completing an opportunity closes its pending invitations.
 
 ## M8. Shared taskboard
 

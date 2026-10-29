@@ -20,6 +20,7 @@ export default function DiscoverPage(props) {
     handleDeleteOpportunity,
     handleDiscoverFilterChange,
     handleEditOpportunity,
+    handleOpportunityStatusChange,
     handleLoadMoreDevelopers,
     handleLoadMoreOpportunities,
     handleOpenOpportunityComposer,
@@ -378,6 +379,7 @@ export default function DiscoverPage(props) {
                         }
                         onEdit={handleEditOpportunity}
                         onDelete={handleDeleteOpportunity}
+                        onStatusChange={handleOpportunityStatusChange}
                         onComments={setActiveCommentsOpportunity}
                         onToggleComments={handleToggleOpportunityComments}
                         onSave={handleSaveOpportunity}
@@ -502,6 +504,7 @@ export default function DiscoverPage(props) {
                               )}
                               onEdit={handleEditOpportunity}
                               onDelete={handleDeleteOpportunity}
+                              onStatusChange={handleOpportunityStatusChange}
                               onComments={setActiveCommentsOpportunity}
                               onToggleComments={handleToggleOpportunityComments}
                               isSaved={savedOpportunities.some(

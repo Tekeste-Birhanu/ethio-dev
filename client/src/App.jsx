@@ -115,7 +115,11 @@ function getDiscoverRequestParams(query, filters, cursor) {
   return params;
 }
 
-const emptyDiscoverFilters = { skill: "", city: "", experience: "" };
+const emptyDiscoverFilters = {
+  skill: "",
+  city: "",
+  experience: "",
+};
 
 function App() {
   const [initialRoute] = useState(readAppRoute);
@@ -230,6 +234,10 @@ function App() {
     useState(null);
   const [isDeletingOpportunity, setIsDeletingOpportunity] = useState(false);
   const [deleteOpportunityError, setDeleteOpportunityError] = useState("");
+  const [pendingCompleteOpportunity, setPendingCompleteOpportunity] =
+    useState(null);
+  const [isCompletingOpportunity, setIsCompletingOpportunity] = useState(false);
+  const [completeOpportunityError, setCompleteOpportunityError] = useState("");
 
   useEffect(() => {
     writeDiscoverUrlState(initialDiscoverUrl.tab);
@@ -241,7 +249,8 @@ function App() {
       !isOpportunityComposerOpen &&
       !isSettingsOpen &&
       !activeCommentsOpportunity &&
-      !pendingDeleteOpportunity
+      !pendingDeleteOpportunity &&
+      !pendingCompleteOpportunity
     )
       return undefined;
     const previousOverflow = document.body.style.overflow;
@@ -255,6 +264,7 @@ function App() {
     isSettingsOpen,
     activeCommentsOpportunity,
     pendingDeleteOpportunity,
+    pendingCompleteOpportunity,
   ]);
 
   useEffect(() => {
@@ -294,6 +304,16 @@ function App() {
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [pendingDeleteOpportunity, isDeletingOpportunity]);
+
+  useEffect(() => {
+    if (!pendingCompleteOpportunity) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !isCompletingOpportunity)
+        setPendingCompleteOpportunity(null);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [pendingCompleteOpportunity, isCompletingOpportunity]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -902,9 +922,6 @@ function App() {
       setOpportunityForm((current) => ({
         ...current,
         [name]: value,
-        ...(name === "workSetup" && (!value || value === "REMOTE")
-          ? { workCity: "" }
-          : {}),
       }));
     }
 
@@ -969,12 +986,7 @@ function App() {
             categories: opportunityForm.categories,
             skillsSought,
             experienceSought: opportunityForm.experienceSought || null,
-            workSetup: opportunityForm.workSetup || null,
-            workCity: ["IN_PERSON", "HYBRID"].includes(
-              opportunityForm.workSetup,
-            )
-              ? opportunityForm.workCity.trim()
-              : null,
+            city: opportunityForm.city.trim() || null,
           }),
         },
       );
@@ -1040,8 +1052,7 @@ function App() {
       categories: opportunity.categories,
       skillsSought: opportunity.skillsSought,
       experienceSought: opportunity.experienceSought ?? "",
-      workSetup: opportunity.workSetup ?? "",
-      workCity: opportunity.workCity ?? "",
+      city: opportunity.city ?? "",
     });
     setOpportunitySkillDraft("");
     setOpportunityReturnPage(page === "discover" ? "discover" : "profile");
@@ -1060,9 +1071,63 @@ function App() {
         : opportunity;
     setOpportunities((current) => current.map(update));
     setMyOpportunities((current) => current.map(update));
+    setSavedOpportunities((current) => current.map(update));
+    setSharedOpportunity((current) =>
+      current?.id === opportunityId ? { ...current, ...changes } : current,
+    );
     setActiveCommentsOpportunity((current) =>
       current?.id === opportunityId ? { ...current, ...changes } : current,
     );
+  }
+
+  async function handleOpportunityStatusChange(
+    opportunity,
+    status,
+    confirmed = false,
+  ) {
+    if (status === "COMPLETED" && !confirmed) {
+      setCompleteOpportunityError("");
+      setPendingCompleteOpportunity(opportunity);
+      return false;
+    }
+    try {
+      const response = await fetch(
+        `/api/opportunities/${encodeURIComponent(opportunity.id)}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(
+          result.error?.message ?? "Could not update the opportunity status.",
+        );
+      updateOpportunityInLists(opportunity.id, result.opportunity);
+      setOpportunitiesRetry((retry) => retry + 1);
+      setMessage("");
+      return true;
+    } catch (error) {
+      if (status === "COMPLETED") setCompleteOpportunityError(error.message);
+      setMessage(
+        error.message ||
+          "Could not reach the server. Check your connection and try again.",
+      );
+      return false;
+    }
+  }
+
+  async function confirmCompleteOpportunity() {
+    if (!pendingCompleteOpportunity) return;
+    setIsCompletingOpportunity(true);
+    const completed = await handleOpportunityStatusChange(
+      pendingCompleteOpportunity,
+      "COMPLETED",
+      true,
+    );
+    if (completed) setPendingCompleteOpportunity(null);
+    setIsCompletingOpportunity(false);
   }
 
   function handleCommentCountChange(opportunityId, commentCount) {
@@ -1598,6 +1663,8 @@ function App() {
       addOpportunitySkill,
       areDiscoverFiltersOpen,
       confirmDeleteOpportunity,
+      confirmCompleteOpportunity,
+      completeOpportunityError,
       debouncedDiscoverQuery,
       deleteOpportunityError,
       developersError,
@@ -1611,6 +1678,7 @@ function App() {
       handleAppNavigation,
       handleClearDiscoverFilters,
       handleDeleteOpportunity,
+      handleOpportunityStatusChange,
       handleDiscoverFilterChange,
       handleEditOpportunity,
       handleLoadMoreDevelopers,
@@ -1629,6 +1697,7 @@ function App() {
       hasMoreDevelopers,
       hasMoreOpportunities,
       isDeletingOpportunity,
+      isCompletingOpportunity,
       isEditProfileOpen,
       isLoadingMoreDevelopers,
       isLoadingMoreOpportunities,
@@ -1653,6 +1722,7 @@ function App() {
       page,
       passwordForm,
       pendingDeleteOpportunity,
+      pendingCompleteOpportunity,
       profileData,
       profileForm,
       profileTab,
@@ -1686,6 +1756,7 @@ function App() {
       setOpportunityForm,
       setOpportunitySkillDraft,
       setPendingDeleteOpportunity,
+      setPendingCompleteOpportunity,
       setProfileTab,
       shareCopiedOpportunityId,
       sharedOpportunity,
@@ -1797,6 +1868,77 @@ function App() {
                     {isDeletingOpportunity
                       ? "Deleting..."
                       : "Delete opportunity"}
+                  </Button>
+                </ModalFooter>
+              </section>
+            </div>
+          )}
+          {pendingCompleteOpportunity && (
+            <div
+              className="profile-modal-backdrop confirmation-backdrop [position:fixed] [z-index:50] [inset:0] [display:grid] [place-items:center] [overflow:hidden] [padding:16px] [background:rgb(3_8_10_/_78%)]"
+              onMouseDown={(event) => {
+                if (
+                  event.target === event.currentTarget &&
+                  !isCompletingOpportunity
+                )
+                  setPendingCompleteOpportunity(null);
+              }}
+            >
+              <section
+                className="profile-edit-modal confirmation-modal [display:flex] [width:min(100%,_420px)] [height:auto] [max-height:80dvh] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)]"
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="complete-opportunity-heading"
+                aria-describedby="complete-opportunity-description"
+              >
+                <ModalHeader>
+                  <h2
+                    className="max-[600px]:[font-size:21px]"
+                    id="complete-opportunity-heading"
+                  >
+                    Mark this opportunity as completed?
+                  </h2>
+                  <ModalCloseButton
+                    type="button"
+                    label="Close confirmation"
+                    onClick={() => setPendingCompleteOpportunity(null)}
+                    disabled={isCompletingOpportunity}
+                  >
+                    &times;
+                  </ModalCloseButton>
+                </ModalHeader>
+                <div className="profile-modal-scroll confirmation-content [min-height:0] [flex:1_1_auto] [overflow-y:auto] [padding:16px_20px]">
+                  <p
+                    className="[margin:0] [color:#c0cece] [line-height:1.6]"
+                    id="complete-opportunity-description"
+                  >
+                    This ends recruiting and closes pending requests. You
+                    cannot reopen the opportunity afterward. It will remain on
+                    your profile and in Discover as completed work.
+                  </p>
+                  {completeOpportunityError && (
+                    <p className="form-message [color:#ffaaaa] [font-size:13px] [line-height:1.45] [margin:18px_0_0]" role="alert">
+                      {completeOpportunityError}
+                    </p>
+                  )}
+                </div>
+                <ModalFooter>
+                  <Button
+                    variant="secondary"
+                    type="button"
+                    onClick={() => setPendingCompleteOpportunity(null)}
+                    disabled={isCompletingOpportunity}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={confirmCompleteOpportunity}
+                    disabled={isCompletingOpportunity}
+                  >
+                    {isCompletingOpportunity
+                      ? "Completing..."
+                      : "Mark completed"}
                   </Button>
                 </ModalFooter>
               </section>

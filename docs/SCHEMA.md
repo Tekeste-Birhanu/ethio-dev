@@ -21,8 +21,8 @@
 ### Opportunity
 
 - **Purpose:** Public, title-free collaboration post and record of the resulting project.
-- **Fields:** `id`; `ownerId`; required `description`; optional `experienceSought`, `workSetup`, and `workCity`; `status`; `commentsEnabled` (default true); `createdAt`; `updatedAt`; nullable `deletedAt`.
-- **Constraints:** One owner per opportunity; a user may own many. Categories and sought skills are stored in related rows, not as lists on Opportunity. Work setup is Remote, In-person, or Hybrid; work city is only used for In-person or Hybrid. Status is Open, Paused, Filled, Completed, or Archived. `deletedAt` distinguishes deletion from the Archived status so deleted posts can leave discovery while a linked Collabspace retains its history.
+- **Fields:** `id`; `ownerId`; required `description`; optional `experienceSought` and `city`; `status`; `commentsEnabled` (default true); `createdAt`; `updatedAt`; nullable `deletedAt`.
+- **Constraints:** One owner per opportunity; a user may own many. Categories and sought skills are stored in related rows, not as lists on Opportunity. Optional city gives local collaboration context. The supported status transitions are Open, Paused, and Completed; Completed is terminal. Deleted posts are hidden from public lists and stable URLs while a linked Collabspace retains its separate history rules.
 - **Related requirements:** F-03–F-07, F-10–F-12, F-18.
 
 ### Collabspace (`Workspace` in the data model)

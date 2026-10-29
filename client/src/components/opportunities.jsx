@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, ModalCloseButton, ModalFooter, ModalHeader } from "./ui.jsx";
-import { experienceOptions, opportunityCategoryOptions, opportunityWorkSetupOptions } from "../constants.js";
+import { experienceOptions, opportunityCategoryOptions } from "../constants.js";
 
 function formatPostTime(dateString) {
   const postDate = new Date(dateString);
@@ -33,6 +33,7 @@ function OpportunityCard({
   isLinkCopied,
   onEdit,
   onDelete,
+  onStatusChange,
   onComments,
   onToggleComments,
   onSave,
@@ -52,9 +53,12 @@ function OpportunityCard({
     ? opportunity.experienceSought[0] +
       opportunity.experienceSought.slice(1).toLowerCase()
     : null;
-  const workSetup = opportunity.workSetup
-    ? `${opportunity.workSetup === "IN_PERSON" ? "In-person" : opportunity.workSetup[0] + opportunity.workSetup.slice(1).toLowerCase()}${opportunity.workCity ? ` · ${opportunity.workCity}` : ""}`
-    : null;
+  const city = opportunity.city;
+  const statusActions = {
+    OPEN: [["PAUSED", "Pause"], ["COMPLETED", "Mark as completed"]],
+    PAUSED: [["OPEN", "Resume"], ["COMPLETED", "Mark as completed"]],
+    COMPLETED: [],
+  }[opportunity.status] ?? [];
 
   useEffect(() => {
     const descriptionElement = descriptionRef.current;
@@ -150,6 +154,19 @@ function OpportunityCard({
               >
                 Edit
               </button>
+              {statusActions.map(([status, label]) => (
+                <button
+                  className="cursor-pointer whitespace-nowrap rounded-md border-0 bg-transparent px-2.5 py-[9px] text-left text-[#e1e8e8] hover:bg-[#222b2f]"
+                  type="button"
+                  key={status}
+                  onClick={() => {
+                    ownerMenuRef.current.open = false;
+                    onStatusChange(opportunity, status);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
               <button
                 className="cursor-pointer whitespace-nowrap rounded-md border-0 bg-transparent px-2.5 py-[9px] text-left text-[#e1e8e8] hover:bg-[#222b2f]"
                 type="button"
@@ -197,7 +214,7 @@ function OpportunityCard({
       {(categories.length > 0 ||
         opportunity.skillsSought.length > 0 ||
         experience ||
-        workSetup) && (
+        city) && (
         <div
           className="opportunity-card-metadata mt-[15px] flex min-w-0 flex-wrap items-center gap-y-2 [&>*+*]:ml-3 [&>*+*]:border-l [&>*+*]:border-[#394447] [&>*+*]:pl-3 max-[420px]:items-start max-[420px]:gap-x-2 max-[420px]:gap-y-[10px] max-[420px]:[&>*+*]:ml-0 max-[420px]:[&>*+*]:border-l-0 max-[420px]:[&>*+*]:pl-0"
           aria-label="Opportunity details"
@@ -230,16 +247,16 @@ function OpportunityCard({
               </ul>
             </div>
           )}
-          {(experience || workSetup) && (
+          {(experience || city) && (
             <div className="flex flex-wrap items-center gap-[7px] max-w-full">
               {experience && (
                 <span className="rounded-full border border-[#303a3d] bg-[#20292c] px-[9px] py-[5px] text-xs text-[#d0dbdc]">
                   {experience}
                 </span>
               )}
-              {workSetup && (
+              {city && (
                 <span className="rounded-full border border-[#303a3d] bg-[#20292c] px-[9px] py-[5px] text-xs text-[#d0dbdc]">
-                  {workSetup}
+                  City: {city}
                 </span>
               )}
             </div>
@@ -700,18 +717,18 @@ function CommentsDialog({
                 Write a comment
               </label>
               <textarea
-                className="focus:[outline:2px_solid_#19c990] focus:[outline-offset:1px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="focus:[outline:2px_solid_#19c990] focus:[outline-offset:1px] w-auto min-w-0 min-h-10 flex-1 resize-y py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 id="new-opportunity-comment"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 maxLength={1000}
-                rows={2}
+                rows={1}
                 placeholder="Write a comment…"
                 disabled={isSubmitting}
               />
               <Button
                 variant="primary"
-                className="[width:auto] [flex:0_0_auto] [min-width:92px] [min-height:44px] [margin:0] max-[600px]:[min-width:78px] max-[600px]:[padding-inline:12px]"
+                className="w-auto! [flex:0_0_auto] [min-width:92px] [min-height:44px] [margin:0] max-[600px]:[min-width:78px] max-[600px]:[padding-inline:12px]"
                 type="submit"
                 disabled={!draft.trim() || isSubmitting}
               >
@@ -967,58 +984,27 @@ function OpportunityComposer({
                   <div className="form-field [&_input::placeholder]:text-[#788588] [&_input[aria-invalid=true]]:border-[#f27a7a] [&_select[aria-invalid=true]]:border-[#f27a7a] [&_textarea[aria-invalid=true]]:border-[#f27a7a] [display:grid] [gap:8px] [margin-bottom:18px] [min-width:0] [align-content:start] [margin-bottom:0]">
                     <label
                       className="[color:#d9e1e2] [font-size:14px] [font-weight:600] [min-height:20px] [line-height:20px]"
-                      htmlFor="opportunity-work-setup"
+                      htmlFor="opportunity-city"
                     >
-                      Work setup
+                      City (optional)
                     </label>
-                    <select
-                      className="[display:block] [width:100%] [height:48px] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [padding:0_40px_0_14px] [appearance:none] [background-color:#0d1215] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2] focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
-                      id="opportunity-work-setup"
-                      name="workSetup"
-                      value={opportunityForm.workSetup}
+                    <input
+                      className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+                      id="opportunity-city"
+                      name="city"
+                      type="text"
+                      maxLength={100}
+                      value={opportunityForm.city}
                       onChange={handleOpportunityFormChange}
-                      aria-invalid={Boolean(fieldErrors.workSetup)}
-                    >
-                      {opportunityWorkSetupOptions.map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                    {fieldErrors.workSetup && (
+                      aria-invalid={Boolean(fieldErrors.city)}
+                      placeholder="For local collaboration"
+                    />
+                    {fieldErrors.city && (
                       <span className="field-error [color:#ffaaaa] [font-size:13px] [line-height:1.45]">
-                        {fieldErrors.workSetup}
+                        {fieldErrors.city}
                       </span>
                     )}
                   </div>
-                  {["IN_PERSON", "HYBRID"].includes(
-                    opportunityForm.workSetup,
-                  ) && (
-                    <div className="form-field [&_input::placeholder]:text-[#788588] [&_input[aria-invalid=true]]:border-[#f27a7a] [&_select[aria-invalid=true]]:border-[#f27a7a] [&_textarea[aria-invalid=true]]:border-[#f27a7a] [display:grid] [gap:8px] [margin-bottom:18px] [min-width:0] [align-content:start] [margin-bottom:0]">
-                      <label
-                        className="[color:#d9e1e2] [font-size:14px] [font-weight:600] [min-height:20px] [line-height:20px]"
-                        htmlFor="opportunity-work-city"
-                      >
-                        City
-                      </label>
-                      <input
-                        className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
-                        id="opportunity-work-city"
-                        name="workCity"
-                        type="text"
-                        maxLength={100}
-                        value={opportunityForm.workCity}
-                        onChange={handleOpportunityFormChange}
-                        aria-invalid={Boolean(fieldErrors.workCity)}
-                        required
-                      />
-                      {fieldErrors.workCity && (
-                        <span className="field-error [color:#ffaaaa] [font-size:13px] [line-height:1.45]">
-                          {fieldErrors.workCity}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             </section>
@@ -1034,7 +1020,7 @@ function OpportunityComposer({
           <ModalFooter className="[flex-wrap:wrap] [align-items:center]">
             <Button
               variant="primary"
-              className="[width:auto] [min-width:150px] [min-height:42px] [margin:0] [padding-inline:16px] [flex:0_0_auto] [min-width:188px] max-[600px]:[min-width:0]"
+              className="w-auto! [min-width:150px] [min-height:46px] [margin:0] [padding-inline:16px] [flex:0_0_auto]"
               type="submit"
               disabled={isSubmitting}
             >
@@ -1048,6 +1034,7 @@ function OpportunityComposer({
             </Button>
             <Button
               variant="secondary"
+              className="min-h-12 px-6 text-base"
               type="button"
               onClick={onClose}
               disabled={isSubmitting}

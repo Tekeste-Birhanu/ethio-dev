@@ -17,15 +17,7 @@ enum Experience {
 enum OpportunityStatus {
   OPEN
   PAUSED
-  FILLED
   COMPLETED
-  ARCHIVED
-}
-
-enum WorkSetup {
-  REMOTE
-  IN_PERSON
-  HYBRID
 }
 
 enum OpportunityCategoryValue {
@@ -40,23 +32,23 @@ enum OpportunityCategoryValue {
 }
 
 model User {
-  id                          String        @id @default(cuid())
-  email                       String        @unique
-  username                    String?       @unique
+  id                          String             @id @default(cuid())
+  email                       String             @unique
+  username                    String?            @unique
   name                        String
   passwordHash                String?
-  googleSubject               String?       @unique
+  googleSubject               String?            @unique
   city                        String?
   experience                  Experience?
-  description                 String?       @db.Text
-  profileDetailsPromptPending Boolean       @default(false)
-  createdAt                   DateTime      @default(now())
-  updatedAt                   DateTime      @updatedAt
+  description                 String?            @db.Text
+  profileDetailsPromptPending Boolean            @default(false)
+  createdAt                   DateTime           @default(now())
+  updatedAt                   DateTime           @updatedAt
   sessions                    Session[]
   skills                      UserSkill[]
   opportunities               Opportunity[]
   comments                    Comment[]
-  savedOpportunities           SavedOpportunity[]
+  savedOpportunities          SavedOpportunity[]
 }
 
 model Skill {
@@ -89,22 +81,21 @@ model Session {
 }
 
 model Opportunity {
-  id                 String                @id @default(cuid())
-  ownerId            String
-  description        String                @db.Text
-  experienceSought   Experience?
-  workSetup          WorkSetup?
-  workCity           String?
-  status             OpportunityStatus     @default(OPEN)
-  commentsEnabled    Boolean               @default(true)
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  deletedAt          DateTime?
-  owner              User                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
-  categories         OpportunityCategory[]
-  skillsSought       OpportunitySkill[]
-  comments           Comment[]
-  savedBy            SavedOpportunity[]
+  id               String                @id @default(cuid())
+  ownerId          String
+  description      String                @db.Text
+  experienceSought Experience?
+  city             String?
+  status           OpportunityStatus     @default(OPEN)
+  commentsEnabled  Boolean               @default(true)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  deletedAt        DateTime?
+  owner            User                  @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  categories       OpportunityCategory[]
+  skillsSought     OpportunitySkill[]
+  comments         Comment[]
+  savedBy          SavedOpportunity[]
 
   @@index([status, createdAt])
   @@index([ownerId, createdAt])

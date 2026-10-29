@@ -8,7 +8,7 @@ The API is served by Express under `/api`. State-changing requests use the signe
 
 `GET /api/opportunities`
 
-Public. Returns up to 20 non-deleted opportunities whose status is Open, Paused, or Filled, including each post's public owner identity and matching metadata. Results are ordered newest first, with IDs as a stable tie-breaker. Completed and Archived opportunities are omitted from the default feed. Pass the previous response's `nextCursor` as the `cursor` query parameter to load the next page. An optional case-insensitive `q` parameter (up to 100 characters) searches post text, owner name and username, owner or opportunity city, and owner or requested skills. Optional `skill` and `city` parameters (up to 60 characters) filter requested skills and work city; `experience` accepts `BEGINNER`, `JUNIOR`, `INTERMEDIATE`, or `SENIOR` and filters the experience sought. Filters combine with `q` and `cursor`; invalid experience values return `400`.
+Public. Returns up to 20 non-deleted opportunities in any status (Open, Paused, or Completed), including each post's public owner identity and matching metadata. Results are ordered newest first, with IDs as a stable tie-breaker. Pass the previous response's `nextCursor` as the `cursor` query parameter to load the next page. An optional case-insensitive `q` parameter (up to 100 characters) searches post text, owner name and username, owner or opportunity city, and owner or requested skills. Optional `skill` and `city` parameters (up to 60 characters) filter requested skills and opportunity city; `experience` accepts `BEGINNER`, `JUNIOR`, `INTERMEDIATE`, or `SENIOR` and filters the experience sought. Filters combine with `q` and `cursor`; invalid experience values return `400`.
 
 Success returns `200` with `{ "opportunities": [...], "hasMore": true, "nextCursor": "..." }`. `nextCursor` is `null` when there are no more results. A server error returns `500`.
 
@@ -24,12 +24,11 @@ Requires a signed-in member with a name and username. The server assigns the own
   "categories": ["WEB", "MOBILE"],
   "skillsSought": ["react", "typescript"],
   "experienceSought": "JUNIOR",
-  "workSetup": "REMOTE",
-  "workCity": null
+  "city": "Addis Ababa"
 }
 ```
 
-Only `description` is required. `categories` and `skillsSought` default to empty arrays; experience sought and work setup may be omitted or set to `null`. Supported category values are `WEB`, `MOBILE`, `DESKTOP`, `DATA_AI`, `GAMES`, `DEVELOPER_TOOLS_OPEN_SOURCE`, `HARDWARE_IOT`, and `OTHER`. Experience values are `BEGINNER`, `JUNIOR`, `INTERMEDIATE`, and `SENIOR`. Work setup values are `REMOTE`, `IN_PERSON`, and `HYBRID`; in-person or hybrid work requires `workCity`.
+Only `description` is required. `categories` and `skillsSought` default to empty arrays; experience sought and city may be omitted or set to `null`. City is optional and provides local collaboration context. Supported category values are `WEB`, `MOBILE`, `DESKTOP`, `DATA_AI`, `GAMES`, `DEVELOPER_TOOLS_OPEN_SOURCE`, `HARDWARE_IOT`, and `OTHER`. Experience values are `BEGINNER`, `JUNIOR`, `INTERMEDIATE`, and `SENIOR`.
 
 Success returns `201` with `{ "opportunity": ... }`. Validation errors return `400` with field errors; unauthenticated requests return `401`; incomplete profiles return `403`.
 
@@ -37,7 +36,7 @@ Success returns `201` with `{ "opportunity": ... }`. Validation errors return `4
 
 `GET /api/opportunities/mine`
 
-Requires a signed-in member. Returns all of the member's non-deleted opportunities, including paused, filled, completed, and archived posts, ordered newest first.
+Requires a signed-in member. Returns all of the member's non-deleted opportunities, ordered newest first.
 
 Success returns `200` with `{ "opportunities": [...] }`; unauthenticated requests return `401`.
 
@@ -45,7 +44,7 @@ Success returns `200` with `{ "opportunities": [...] }`; unauthenticated request
 
 `GET /api/opportunities/user/:username`
 
-Public. Returns all non-deleted opportunities posted by the named developer, including paused, filled, completed, and archived posts, ordered newest first. Unknown usernames return `404`.
+Public. Returns all non-deleted opportunities posted by the named developer, ordered newest first. Unknown usernames return `404`.
 
 Success returns `200` with `{ "opportunities": [...] }`.
 
@@ -81,6 +80,14 @@ Requires the opportunity owner. Accepts the same fields and validation rules as 
 
 Success returns `200` with `{ "opportunity": ... }`; validation errors return `400`; unauthenticated requests return `401`.
 
+### Change an opportunity status
+
+`PATCH /api/opportunities/:id/status`
+
+Requires the opportunity owner. Send `{ "status": "PAUSED" }`, `{ "status": "OPEN" }`, or `{ "status": "COMPLETED" }` for an allowed status transition. Completion is terminal and must be confirmed in the client; the server rejects attempts to reopen a completed opportunity and all status changes to a deleted post.
+
+Success returns `200` with `{ "opportunity": ... }`; invalid statuses or transitions return `400`; unauthenticated requests return `401`; unknown, deleted, or non-owned opportunities return `404`.
+
 ### Delete an opportunity
 
 `DELETE /api/opportunities/:id`
@@ -93,7 +100,7 @@ Success returns `204`; unauthenticated requests return `401`.
 
 `GET /api/opportunities/:id`
 
-Public. Returns the opportunity, its categories and sought skills, and the owner's public name and username. Deleted opportunities return `404`; archived opportunities remain readable by their stable URL.
+Public. Returns the opportunity, its categories and sought skills, and the owner's public name and username. Deleted opportunities return `404`.
 
 Success returns `200` with `{ "opportunity": ... }`. An unknown or deleted opportunity returns `404`.
 

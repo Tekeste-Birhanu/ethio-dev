@@ -48,7 +48,7 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 - **Entry point:** Discover → Opportunities tab
 - **Preconditions / access:** Anyone can browse public opportunities. A signed-in member with a completed profile can request collaboration.
 - **Steps:**
-  1. Browse the newest opportunities, or open Search and enter keywords or filters such as city, skills, experience, or work setup.
+  1. Browse the newest opportunities, or open Search and enter keywords or filters such as city, skills, or experience.
   2. Search results can be switched between Opportunities and Developers. Opportunity posts stay in the results: expand long text inline, open comments in a dialog, and open the owner's profile separately.
   3. Optionally save the post to the member's private Saved profile tab, share its stable `/opportunities/:id` URL, or add a comment if comments are enabled.
   4. Send a collaboration request with an optional message. The sent request appears in the member's private Requests tab as Pending.
@@ -56,7 +56,7 @@ Requests are organized by direction. The Requests tab lists requests and invitat
   6. Acceptance into a private chat opens the private conversation for both members; the applicant is not added to the Collabspace. The owner may invite them to the Collabspace later.
   7. Acceptance directly into the Collabspace adds the applicant as a member immediately. No second acceptance is required.
 - **Success outcome:** The developer starts a private conversation with the owner or joins the project Collabspace.
-- **Failure and recovery:** A pending request can be withdrawn from Requests. After withdrawal, the developer may submit another request. After decline, they cannot request again for that opportunity, though the owner may invite them. If the opportunity is Paused or Filled, no new requests can be sent, but pending requests remain reviewable. Completed opportunities do not accept new requests.
+- **Failure and recovery:** A pending request can be withdrawn from Requests. After withdrawal, the developer may submit another request. After decline, they cannot request again for that opportunity, though the owner may invite them. If the opportunity is Paused, no new requests can be sent, but pending requests remain reviewable. Completed opportunities do not accept new requests.
 - **Related requirements:** F-02, F-04, F-06, F-07, F-10, F-12, F-17
 
 ### J-02 — Publish an opportunity and build a team
@@ -65,15 +65,15 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 - **Entry point:** Discover → Create opportunity
 - **Preconditions / access:** Signed in with email/username and password or Google OAuth, and has a completed profile (name and username).
 - **Steps:**
-  1. Compose a title-free opportunity post with a description. Skill tags, categories, experience sought, and work setup are visible as optional controls beneath the post; the owner may publish with description only.
+  1. Compose a title-free opportunity post with a description. Skill tags, categories, experience sought, and an optional collaboration city are visible as controls beneath the post; the owner may publish with description only.
   2. Publish the opportunity. It appears in Discover; no Collabspace is created yet.
   3. From the owner's opportunity post, use Create Collabspace to open a focused dialog, enter a name, and create the space. The app explicitly links it to that opportunity. Cancel closes the dialog without creating a space; the owner can later open a created space from the opportunity.
   4. The owner receives incoming collaboration requests through Notifications. Opening a request shows the applicant profile and opportunity context before a decision.
   5. For each request, the owner can accept into private chat, add the applicant to the opportunity's linked Collabspace, or decline. If no linked space exists, choosing Add to Collabspace guides the owner to enter a name and create it, then adds the applicant. Canceling keeps the request pending.
   6. The owner may also invite a developer to private chat or directly to the existing linked Collabspace. The recipient must accept a direct invitation before the chat opens or membership begins.
-  7. The owner can find and manage posts in My Opportunities under their profile. The post card has a three-dot actions menu for editing, pausing/reopening, marking Filled or Completed, archiving/unarchiving, and deleting. Choosing Delete opens a confirmation before the post is removed.
+  7. The owner can find and manage posts in My Opportunities under their profile. The post card has a three-dot actions menu for editing, pausing/resuming, marking Completed, and deleting. Marking a post Completed opens a warning and confirmation. Choosing Delete opens a separate confirmation before the post is removed.
 - **Success outcome:** A public opportunity is available for discovery. Its owner can create a named, linked Collabspace when ready to organize team work.
-- **Failure and recovery:** Validation errors keep the owner in the creation flow with entered content available to correct. Paused and Filled opportunities stop new requests and invitations while pending requests remain reviewable. Completing the opportunity closes pending requests and invitations. Archiving removes the opportunity from active Discover results while retaining it on the owner's profile with an Archived tag; the owner can unarchive it. Deleting it requires confirmation; if it has a linked Collabspace, that space is archived as read-only for members who have access at that time.
+- **Failure and recovery:** Validation errors keep the owner in the creation flow with entered content available to correct. Paused opportunities stop new requests and invitations while pending requests remain reviewable. Completing the opportunity requires confirmation and closes pending requests and invitations. Deleting it requires confirmation; if it has a linked Collabspace, that space is archived as read-only for members who have access at that time.
 - **Related requirements:** F-01, F-05, F-07, F-09, F-10, F-12, F-18
 
 ### J-03 — Find and contact a developer
@@ -116,7 +116,7 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 - **Steps:**
   1. Mark the opportunity Completed when the project is finished.
   2. Add one or more project, demo, or repository links if available.
-  3. Share the completed opportunity post. The post remains visible in the owner's public My Opportunities list and can be found in Discover when Completed opportunities are included by a filter.
+  3. Share the completed opportunity post. The post remains visible in the owner's public My Opportunities list and in Discover with its Completed status.
 - **Success outcome:** The opportunity serves as a public record of completed work and can help developers discover project ideas and collaborators.
 - **Failure and recovery:** Completion closes pending collaboration requests and invitations. The Collabspace remains available to its members for continued access to team work.
 - **Related requirements:** F-10, F-11
@@ -180,7 +180,7 @@ Discover uses `/`; a public developer profile uses `/profile/:username`; the sig
 - A member's unread count belongs to its individual chat list item. Muting a chat suppresses its message alerts while unread counts continue to change.
 - A member can view public profiles and opportunities without signing in. Protected actions require authentication; collaboration requests also require a completed profile.
 - The member edits profile details from their own Profile destination. Settings contains password change for password-based accounts; email changes are unavailable in the MVP.
-- Opportunity statuses govern available actions: Open accepts new requests/invitations; Paused and Filled stop new ones but allow pending requests to be reviewed; Completed closes pending requests/invitations and is included in Discover only when selected by a filter; Archived is excluded from active Discover results but remains on the owner's profile and can be unarchived. My Opportunities shows the owner's posts across all statuses.
+- Opportunity statuses govern available actions: Open accepts new requests/invitations; Paused stops new ones but allows pending requests to be reviewed; Completed closes pending requests/invitations, remains visible in Discover, and cannot be reopened. Completing requires confirmation. My Opportunities shows the owner's posts across all statuses.
 - Leaving or being removed from a Collabspace ends access immediately. The owner remains in their own Collabspace. An archived Collabspace is read-only for members who belonged to it at archive time.
 - Deleting an opportunity archives its linked Collabspace if one exists and cancels pending requests and invitations. Existing private chats remain available unless a participant deletes the chat.
 - The app interface is English; user-authored profile and opportunity content may be English or Amharic.

@@ -10,8 +10,7 @@ const opportunitySelect = {
   id: true,
   description: true,
   experienceSought: true,
-  workSetup: true,
-  workCity: true,
+  city: true,
   status: true,
   commentsEnabled: true,
   createdAt: true,
@@ -67,8 +66,7 @@ router.post('/', requireSameOrigin, authenticate, async (req, res) => {
           ownerId: req.auth.user.id,
           description: input.description,
           experienceSought: input.experienceSought,
-          workSetup: input.workSetup,
-          workCity: input.workCity,
+          city: input.city,
           categories: { create: input.categories.map((category) => ({ category })) },
         },
         select: { id: true },
@@ -122,11 +120,11 @@ router.get('/', async (req, res) => {
     const opportunities = await prisma.opportunity.findMany({
       where: {
         deletedAt: null,
-        status: { in: ['OPEN', 'PAUSED', 'FILLED'] },
+        status: { in: ['OPEN', 'PAUSED', 'COMPLETED'] },
         ...(query ? {
           OR: [
             { description: { contains: query, mode: 'insensitive' } },
-            { workCity: { contains: query, mode: 'insensitive' } },
+            { city: { contains: query, mode: 'insensitive' } },
             { owner: { name: { contains: query, mode: 'insensitive' } } },
             { owner: { username: { contains: query, mode: 'insensitive' } } },
             { owner: { city: { contains: query, mode: 'insensitive' } } },
@@ -135,7 +133,7 @@ router.get('/', async (req, res) => {
           ],
         } : {}),
         ...(skill ? { skillsSought: { some: { skill: { name: { contains: skill, mode: 'insensitive' } } } } } : {}),
-        ...(city ? { workCity: { contains: city, mode: 'insensitive' } } : {}),
+        ...(city ? { city: { contains: city, mode: 'insensitive' } } : {}),
         ...(experience ? { experienceSought: experience } : {}),
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -293,8 +291,7 @@ router.patch('/:id', requireSameOrigin, authenticate, async (req, res) => {
         data: {
           description: input.description,
           experienceSought: input.experienceSought,
-          workSetup: input.workSetup,
-          workCity: input.workCity,
+          city: input.city,
         },
       })
 
@@ -337,6 +334,67 @@ router.patch('/:id', requireSameOrigin, authenticate, async (req, res) => {
     console.error('Opportunity update failed')
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Could not update the opportunity.' },
+    })
+  }
+})
+
+router.patch('/:id/status', requireSameOrigin, authenticate, async (req, res) => {
+  const { status } = req.body ?? {}
+  const validStatuses = ['OPEN', 'PAUSED', 'COMPLETED']
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({
+      error: { code: 'VALIDATION_ERROR', message: 'Choose a valid opportunity status action.' },
+    })
+  }
+
+  try {
+    const opportunity = await prisma.$transaction(async (transaction) => {
+      const current = await transaction.opportunity.findFirst({
+        where: { id: req.params.id, ownerId: req.auth.user.id, deletedAt: null },
+        select: { status: true },
+      })
+      if (!current) return null
+
+      const allowedTransitions = {
+        OPEN: ['PAUSED', 'COMPLETED'],
+        PAUSED: ['OPEN', 'COMPLETED'],
+        COMPLETED: [],
+      }
+      if (!allowedTransitions[current.status]?.includes(status)) {
+        return { invalidTransition: true }
+      }
+      const updated = await transaction.opportunity.updateMany({
+        where: {
+          id: req.params.id,
+          ownerId: req.auth.user.id,
+          deletedAt: null,
+          status: current.status,
+        },
+        data: { status },
+      })
+      if (updated.count === 0) return { invalidTransition: true }
+
+      return transaction.opportunity.findUnique({
+        where: { id: req.params.id },
+        select: opportunitySelect,
+      })
+    })
+
+    if (!opportunity) {
+      return res.status(404).json({
+        error: { code: 'OPPORTUNITY_NOT_FOUND', message: 'This opportunity could not be found.' },
+      })
+    }
+    if (opportunity.invalidTransition) {
+      return res.status(400).json({
+        error: { code: 'INVALID_STATUS_TRANSITION', message: 'That status change is not available.' },
+      })
+    }
+    return res.json({ opportunity: toOpportunity(opportunity) })
+  } catch {
+    console.error('Opportunity status could not be updated')
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Could not update the opportunity status.' },
     })
   }
 })
