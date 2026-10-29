@@ -16,13 +16,6 @@ export const opportunityCategoryOptions = [
   ["OTHER", "Other"],
 ];
 
-export const opportunityWorkSetupOptions = [
-  ["", "Any work setup"],
-  ["REMOTE", "Remote"],
-  ["IN_PERSON", "In-person"],
-  ["HYBRID", "Hybrid"],
-];
-
 export const emptyProfileFields = {
   city: "",
   experience: "",
@@ -34,6 +27,5 @@ export const emptyOpportunityForm = {
   categories: [],
   skillsSought: [],
   experienceSought: "",
-  workSetup: "",
-  workCity: "",
+  city: "",
 };

@@ -9,16 +9,14 @@ export const opportunityCategories = [
   'OTHER',
 ]
 
-export const opportunityWorkSetups = ['REMOTE', 'IN_PERSON', 'HYBRID']
 export const experienceLevels = ['BEGINNER', 'JUNIOR', 'INTERMEDIATE', 'SENIOR']
 
 export function parseOpportunityInput(body) {
   const errors = {}
   const description = typeof body.description === 'string' ? body.description.trim() : ''
   const experienceSought = body.experienceSought ?? null
-  const workSetup = body.workSetup ?? null
-  const rawWorkCity = body.workCity ?? ''
-  const workCity = typeof rawWorkCity === 'string' ? rawWorkCity.trim() : ''
+  const rawCity = body.city ?? ''
+  const city = typeof rawCity === 'string' ? rawCity.trim() : ''
   const rawCategories = body.categories ?? []
   const rawSkills = body.skillsSought ?? []
 
@@ -28,16 +26,8 @@ export function parseOpportunityInput(body) {
     errors.experienceSought = 'Choose a listed experience level.'
   }
 
-  if (workSetup !== null && !opportunityWorkSetups.includes(workSetup)) {
-    errors.workSetup = 'Choose Remote, In-person, or Hybrid.'
-  }
-
-  if (typeof rawWorkCity !== 'string' || workCity.length > 100) {
-    errors.workCity = 'City must be 100 characters or fewer.'
-  } else if (['IN_PERSON', 'HYBRID'].includes(workSetup) && !workCity) {
-    errors.workCity = 'Enter a city for in-person or hybrid work.'
-  } else if (workSetup !== 'IN_PERSON' && workSetup !== 'HYBRID' && workCity) {
-    errors.workCity = 'City is only used for in-person or hybrid work.'
+  if (typeof rawCity !== 'string' || city.length > 100) {
+    errors.city = 'City must be 100 characters or fewer.'
   }
 
   const categories = []
@@ -80,8 +70,7 @@ export function parseOpportunityInput(body) {
     opportunity: {
       description,
       experienceSought,
-      workSetup,
-      workCity: workCity || null,
+      city: city || null,
       categories,
       skillsSought,
     },
