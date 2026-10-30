@@ -22,7 +22,7 @@
 | M2. Accounts and developer profiles        | Users can register, sign in, and maintain profiles       | M1             | Done        |
 | M3. Opportunity posts                      | Users can publish and manage collaboration opportunities | M2             | Done        |
 | M4. Discover and search                    | Users can browse opportunities and developers            | M3             | Done        |
-| M5. Private chat                           | Accepted chat requests create one-to-one conversations   | M2             | Not started |
+| M5. Private chat                           | Accepted chat requests create one-to-one conversations   | M2             | Done        |
 | M6. Collabspaces and group chat            | Teams have a linked shared space and group conversation  | M3, M5         | Not started |
 | M7. Collaboration requests and invitations | Owners can review requests and invite developers         | M3, M4, M5, M6 | Not started |
 | M8. Shared taskboard                       | Members coordinate work with tasks and assignees         | M6             | Not started |
@@ -82,12 +82,12 @@
 
 **Outcome:** Users can request a private conversation and communicate after the recipient accepts.
 
-- [ ] **T-26 — Create private chat and message records.** Model a two-person conversation and its message history.
-- [ ] **T-27 — Add request-chat action and incoming request handling.** Let a user request a chat; the recipient can accept or decline. Declining sends no notification to the requester.
-- [ ] **T-28 — Open chat after acceptance.** Acceptance creates or opens the private conversation and notifies the requester.
-- [ ] **T-29 — Build the private chat list and conversation view.** Make Chat clearly accessible and show unread message counts per conversation.
-- [ ] **T-30 — Support sending and receiving messages.** Provide the agreed real-time behavior and preserve message history.
-- [ ] **T-31 — Add private-chat deletion.** Let either participant delete the private chat with a clear warning; deletion applies to both participants as agreed for MVP.
+- [x] **T-26 — Create private chat and message records.** Model a two-person conversation and its message history.
+- [x] **T-27 — Add request-chat action and incoming request handling.** Let a user request a chat; the recipient can accept or decline. Declining sends no notification to the requester.
+- [x] **T-28 — Open chat after acceptance.** Acceptance creates or opens the private conversation and notifies the requester.
+- [x] **T-29 — Build the private chat list and conversation view.** Make Chat clearly accessible, show unread message counts per conversation, support direct links to participant-only conversations, return to the list from Chat navigation, and provide the documented per-chat mute control. Mute state belongs to one participant; muted conversations still receive messages and accrue unread counts.
+- [x] **T-30 — Support sending and receiving messages.** Provide the agreed real-time behavior and persisted history. Let each sender edit or delete their own messages; broadcast changes to both participants and refresh the preview and unread count after deletion.
+- [x] **T-31 — Add private-chat deletion.** Let either participant delete the private chat with a clear warning; deletion applies to both participants as agreed for MVP.
 
 ## M6. Collabspaces and group chat
 
@@ -139,6 +139,10 @@
 - [ ] **T-55 — Deploy the client and API.** Deploy the client to Cloudflare Pages and the Express API to Render.
 - [ ] **T-56 — Provision and migrate the production database.** Configure Neon PostgreSQL, run Prisma migrations, and verify connectivity.
 - [ ] **T-57 — Verify the live release and document operations.** Check authentication, core user journeys, logs, and recovery steps; document how to release updates.
+
+## Planned follow-up outside M5
+
+- [ ] **T-58 — Build the shared Notifications screen.** After request and invitation flows are available, show activity in one chronological list with unread state and links to each review or chat destination. Until then, M5 acceptance and private-message alerts appear as temporary Chat toasts using polling.
 
 ## Deferred from MVP
 

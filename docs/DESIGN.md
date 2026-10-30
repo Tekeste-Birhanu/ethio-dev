@@ -180,7 +180,7 @@
 ### Request review
 
 - **Purpose:** Let a recipient review the sender and relevant context before accepting or declining an incoming request or invitation.
-- **Entry:** Open a pending item from Notifications. Do not put accept/decline controls directly on the notification row.
+- **Entry:** For M5 profile chat requests, open the pending item in Chat. Later request types open from Notifications. Do not put accept/decline controls directly on a notification row.
 - **Context:** Show the sender's profile with a way to view the full profile, plus the relevant context: opportunity and optional message for a collaboration request, profile for a chat request, or Collabspace and linked opportunity for a Collabspace invitation. Reuse the same layout while varying context and actions by request type.
 - **Collaboration request actions:** Offer Accept into private chat, Add to Collabspace, and Decline. Adding to the linked Collabspace immediately grants membership. If no Collabspace exists, guide the opportunity owner to name and create it, then add the requester; canceling leaves the request pending.
 - **Chat request actions:** Offer Accept and Decline. Acceptance opens the private conversation.
@@ -192,11 +192,11 @@
 ### Chat
 
 - **Purpose:** Let members continue accepted one-to-one private conversations.
-- **Layout:** Use Telegram's familiar two-pane conversation layout within the EthioDev app shell. On desktop, show the conversation list beside the selected private chat; on mobile, show the list first and open a conversation as its own view with a back action.
-- **Conversation list:** Include private chats only. Show the other member's avatar and name, the latest message preview and time, and that chat's unread count. Collabspace group chats are accessed inside their Collabspace and do not appear here.
-- **Conversation view:** Show the other member's identity, chronological messages, and a text composer that supports messages and links. Do not include attachment controls. Keep message edit/delete actions available according to the agreed permissions.
+- **Layout:** Use Telegram's familiar two-pane conversation layout within the EthioDev app shell. On desktop, enclose the conversation list and selected private chat in one shared outer border with a divider between the panes. At narrower widths, show one pane at a time inside that same shared frame. Give each selected conversation a direct `/chat?conversation=:id` link. Clicking Chat navigation returns to `/chat`. Let the chat area fill the available page height; do not cap it or leave unused space above mobile navigation.
+- **Conversation list:** Include active private chats only. Show the other member's name beside the latest message time and that chat's unread count; do not show a message text preview. Order by recent activity. Collabspace group chats are accessed inside their Collabspace and do not appear here.
+- **Conversation view:** Show the other member's identity and chronological persisted messages, with a way to load older history. Opening a chat marks the messages shown as read. The text composer supports messages and links without attachment controls. Each sender can edit or delete their own messages; edits are marked, and deletion removes the message for both participants while refreshing the chat preview and unread count.
 - **Conversation settings:** Put per-chat mute and Delete chat in the conversation header menu. Deleting requires a warning that the conversation is removed for both participants and ends the chat; do not offer a delete-for-me option.
-- **Requests:** Incoming chat requests stay in Notifications. A conversation appears in Chat after the request is accepted.
+- **Requests:** During M5, incoming chat requests appear as selectable rows in Chat. Selecting a request shows its sender and Accept / Decline actions in the conversation pane; accepting replaces the request view with the new conversation. The shared Notifications screen is planned outside M5 as T-58.
 - **Related flows:** J-01, J-02, and J-03 in `APP_FLOW.md`.
 
 ## 6. Interaction and UI states

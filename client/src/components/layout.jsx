@@ -57,6 +57,16 @@ function AppSidebar({
         </button>
         {user && (
           <button
+            className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "chat" ? " is-active bg-accent-dark text-accent-light" : ""}`}
+            type="button"
+            onClick={() => onNavigate("chat")}
+            aria-current={activePage === "chat" ? "page" : undefined}
+          >
+            Chat
+          </button>
+        )}
+        {user && (
+          <button
             className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "profile" ? " is-active bg-accent-dark text-accent-light" : ""}`}
             type="button"
             onClick={() => onNavigate("profile")}

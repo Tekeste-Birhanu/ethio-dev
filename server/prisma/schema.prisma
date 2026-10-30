@@ -31,24 +31,54 @@ enum OpportunityCategoryValue {
   OTHER
 }
 
+enum ConversationType {
+  PRIVATE
+  COLLABSPACE
+}
+
+enum RequestType {
+  COLLABORATION_REQUEST
+  CHAT_REQUEST
+  CHAT_INVITATION
+  COLLABSPACE_INVITATION
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+  CANCELED
+}
+
+enum NotificationType {
+  CHAT_REQUEST_ACCEPTED
+  PRIVATE_MESSAGE_RECEIVED
+}
+
 model User {
-  id                          String             @id @default(cuid())
-  email                       String             @unique
-  username                    String?            @unique
-  name                        String
-  passwordHash                String?
-  googleSubject               String?            @unique
-  city                        String?
-  experience                  Experience?
-  description                 String?            @db.Text
-  profileDetailsPromptPending Boolean            @default(false)
-  createdAt                   DateTime           @default(now())
-  updatedAt                   DateTime           @updatedAt
-  sessions                    Session[]
-  skills                      UserSkill[]
-  opportunities               Opportunity[]
-  comments                    Comment[]
-  savedOpportunities          SavedOpportunity[]
+  id                              String                           @id @default(cuid())
+  email                           String                           @unique
+  username                        String?                          @unique
+  name                            String
+  passwordHash                    String?
+  googleSubject                   String?                          @unique
+  city                            String?
+  experience                      Experience?
+  description                     String?                          @db.Text
+  profileDetailsPromptPending     Boolean                          @default(false)
+  createdAt                       DateTime                         @default(now())
+  updatedAt                       DateTime                         @updatedAt
+  sessions                        Session[]
+  skills                          UserSkill[]
+  opportunities                   Opportunity[]
+  comments                        Comment[]
+  savedOpportunities              SavedOpportunity[]
+  privateConversationParticipants PrivateConversationParticipant[]
+  sentMessages                    Message[]                        @relation("MessageSender")
+  sentRequests                    Request[]                        @relation("RequestSender")
+  receivedRequests                Request[]                        @relation("RequestRecipient")
+  notifications                   Notification[]
 }
 
 model Skill {
@@ -96,6 +126,7 @@ model Opportunity {
   skillsSought     OpportunitySkill[]
   comments         Comment[]
   savedBy          SavedOpportunity[]
+  requests         Request[]
 
   @@index([status, createdAt])
   @@index([ownerId, createdAt])
@@ -143,4 +174,79 @@ model SavedOpportunity {
 
   @@id([userId, opportunityId])
   @@index([userId, savedAt])
+}
+
+model Conversation {
+  id           String                           @id @default(cuid())
+  type         ConversationType                 @default(PRIVATE)
+  workspaceId  String?                          @unique
+  createdAt    DateTime                         @default(now())
+  endedAt      DateTime?
+  participants PrivateConversationParticipant[]
+  messages     Message[]
+}
+
+model PrivateConversationParticipant {
+  conversationId String
+  userId         String
+  lastReadAt     DateTime?
+  mutedAt        DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id              String        @id @default(cuid())
+  conversationId  String
+  senderId        String
+  clientMessageId String?
+  content         String        @db.Text
+  createdAt       DateTime      @default(now())
+  editedAt        DateTime?
+  conversation    Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender          User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  notification    Notification?
+
+  @@unique([senderId, clientMessageId])
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+model Request {
+  id            String        @id @default(cuid())
+  senderId      String
+  recipientId   String
+  type          RequestType
+  status        RequestStatus @default(PENDING)
+  opportunityId String?
+  message       String?       @db.VarChar(1000)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  resolvedAt    DateTime?
+  sender        User          @relation("RequestSender", fields: [senderId], references: [id], onDelete: Restrict)
+  recipient     User          @relation("RequestRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  opportunity   Opportunity?  @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  notification  Notification?
+
+  @@index([recipientId, status, createdAt])
+  @@index([senderId, createdAt])
+  @@index([opportunityId])
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  recipientId String
+  type        NotificationType
+  requestId   String?          @unique
+  messageId   String?          @unique
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  request     Request?         @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  message     Message?         @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, readAt, createdAt])
 }

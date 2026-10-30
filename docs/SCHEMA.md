@@ -43,7 +43,7 @@
 
 - **Purpose:** One record for collaboration requests, profile chat requests, and owner invitations.
 - **Fields:** `id`; `senderId`; `recipientId`; `type` (CollaborationRequest, ChatRequest, ChatInvitation, CollabspaceInvitation); `status` (Pending, Accepted, Declined, Withdrawn, Canceled); optional `opportunityId`; optional `message`; `createdAt`; `updatedAt`; nullable `resolvedAt`.
-- **Constraints:** Collaboration requests and opportunity-owner invitations reference their opportunity. A Collabspace invitation's destination is resolved through the opportunity's unique Collabspace link; do not store a redundant `workspaceId` here. Profile chat requests do not require an opportunity. Chat requests have no note; collaboration requests and invitations may have an optional note. Only the intended recipient accepts or declines; the sender may withdraw while pending. Keep resolved rows as history. A declined collaboration request cannot be repeated for that opportunity; a declined invitation cannot be repeated for that recipient and destination. A declined chat request may be sent again. Withdrawal allows a new request or invitation. Prevent duplicate pending requests/invitations to the same recipient and destination; enforce cross-record lifecycle rules in trusted server logic and transactions.
+- **Constraints:** Collaboration requests and opportunity-owner invitations reference their opportunity. A Collabspace invitation's destination is resolved through the opportunity's unique Collabspace link; do not store a redundant `workspaceId` here. Profile chat requests do not require an opportunity or message. Only the intended recipient accepts or declines; the sender may withdraw while pending. Keep resolved rows as history. A declined collaboration request cannot be repeated for that opportunity; a declined invitation cannot be repeated for that recipient and destination. A declined chat request may be sent again. Withdrawal allows a new request or invitation. Prevent duplicate pending requests to the same user pair, regardless of which user sent the request; enforce cross-record lifecycle rules in trusted server logic and transactions.
 - **Related requirements:** F-07–F-09, F-17, F-18.
 
 ### Conversation
@@ -52,6 +52,8 @@
 - **Fields:** `id`; `type` (Private or Collabspace); optional unique `workspaceId` (required for Collabspace conversations); `createdAt`; nullable `endedAt`.
 - **Constraints:** Private participants are stored as separate PrivateConversationParticipant rows, not as two participant columns. A private conversation has exactly two distinct participant rows and at most one active conversation per pair. A Collabspace conversation is linked to exactly one Collabspace and is accessible only through current membership (or the documented archived read-only access). Chat deletion ends the private conversation for both participants. Group chat remains inside its Collabspace.
 - **Related requirements:** F-13–F-15, F-17, F-18.
+
+The initial M5 migration creates the private-conversation and message tables. `workspaceId` is reserved for the Collabspace conversation relationship introduced in M6; M5 creates private conversations only. The server must create exactly two distinct participant rows in a transaction and permit access only to those participants. `lastReadAt` supports per-conversation unread counts, while `mutedAt` supports later notification behavior.
 
 ### Milestone and Task
 
@@ -64,8 +66,8 @@
 ### Message
 
 - **Purpose:** Persisted text or link sent to a private or Collabspace conversation.
-- **Fields:** `id`; `conversationId`; `senderId`; `content`; `createdAt`; nullable `editedAt`.
-- **Constraints:** Content is text or a link; attachments are out of scope. A sender may edit or delete their own message. Collabspace admins may delete group messages. Deleting a private conversation removes its messages. Persist before broadcasting over WebSocket.
+- **Fields:** `id`; `conversationId`; `senderId`; optional `clientMessageId` (unique per sender for safe retry); `content`; `createdAt`; nullable `editedAt`.
+- **Constraints:** Content is text or a link up to 5,000 characters; attachments are out of scope. A sender may edit or delete their own message. Collabspace admins may delete group messages. Deleting a private conversation removes its messages. Persist before broadcasting over WebSocket.
 - **Related requirements:** F-14, F-15, F-17.
 
 ### Skill and opportunity category
@@ -80,14 +82,14 @@
 
 These records support the main entities without changing their ownership model:
 
-- **PrivateConversationParticipant:** Composite key `(conversationId, userId)`, plus `lastReadAt` and nullable `mutedAt`. Used for the two private-chat participants, unread counts, and per-chat mute. Collabspace group access remains governed by Membership.
+- **PrivateConversationParticipant:** Composite key `(conversationId, userId)`, plus nullable `lastReadAt` and `mutedAt`. Used for private-chat participants, unread counts, and per-chat mute. Collabspace group access remains governed by Membership.
 - **UserSkill:** Composite key `(userId, skillId)`; no duplicate skill assignment to the same user.
 - **OpportunitySkill:** Composite key `(opportunityId, skillId)`; no duplicate sought skill on the same opportunity.
 - **OpportunityCategory:** Composite key `(opportunityId, category)`, with category drawn from the fixed approved set; no duplicate category on the same opportunity.
 - **Comment:** `id`, `opportunityId`, `authorId`, `text` (up to 1,000 characters), and `createdAt`. Comments are flat; deleting one does not delete other comments. Deleting an opportunity cascades to its comments; deleting a user who authored comments is restricted.
 - **SavedOpportunity:** `userId`, `opportunityId`, and `savedAt`; unique per user/opportunity. Saves are private to the saver.
 - **OpportunityLink:** `id`, `opportunityId`, `label`, `url`, and `position`; multiple optional links may be added to completed work.
-- **Notification:** `id`, `recipientId`, `type`, optional `requestId` / `messageId`, `createdAt`, and nullable `readAt`. Represents incoming requests/invitations, acceptance alerts, and private-message alerts. A check constraint requires the source reference appropriate to the notification type. Collabspace group messages and comments do not create notifications. A muted private chat suppresses its message alerts but not its unread count.
+- **Notification:** `id`, `recipientId`, `type`, optional `requestId` / `messageId`, `createdAt`, and nullable `readAt`. Chat-request acceptance alerts link uniquely to their request; private-message alerts link uniquely to their message. The source check requires the matching source reference and disallows the other. Collabspace group messages and comments do not create notifications. A muted private chat suppresses its message alerts but not its unread count.
 - **Session:** `id` (store a hash of the opaque session identifier), `userId`, `createdAt`, and `expiresAt`. Session values are private authentication data and are not exposed to the client beyond the secure HttpOnly cookie.
 
 ## 4. Relationships
@@ -147,7 +149,7 @@ Add search-specific indexes only after choosing the search implementation and co
 
 - **Ownership / boundaries:** Opportunity owner controls opportunity data. Collabspace membership controls space data. Conversation participants control private chat data. Notification and saved-post records are private to their user.
 - **Read / write permissions:** Public visitors can read public profiles and non-deleted opportunities. Protected actions require authentication. Enforce all role and membership checks in Express, including WebSocket actions.
-- **Deletion / archival:** Opportunity deletion removes the post from public discovery and cancels its pending requests/invitations. Retain the opportunity record as a non-public tombstone while its linked Collabspace is archived read-only. Private-chat deletion ends the chat for both participants and removes its messages. Comment deletion removes only the selected comment. Removing a member ends access but retains team conversation and task history.
+- **Deletion / archival:** Opportunity deletion removes the post from public discovery and cancels its pending requests/invitations. Retain the opportunity record as a non-public tombstone while its linked Collabspace is archived read-only. Private-chat deletion ends the chat for both participants and removes its messages while retaining the resolved request history; either member may send a new request afterward. Comment deletion removes only the selected comment. Removing a member ends access but retains team conversation and task history.
 - **Privacy:** Email is authentication-only. Password hashes, session identifiers, and OAuth secrets remain private. Saved posts and notifications are visible only to their owner.
 - **Audit history:** Keep resolved Request rows for the Requests history. No separate general audit log is required by the current MVP scope.
 

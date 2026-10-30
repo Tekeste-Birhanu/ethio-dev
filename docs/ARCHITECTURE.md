@@ -89,6 +89,7 @@ This is an initial boundary proposal for the new application. Add folders when i
 - **ADR-05 - No attachment storage in MVP:** Do not add R2 or another file-storage service. Chat messages support text and links as specified in the product requirements.
 - **ADR-06 - Free portfolio deployment:** Use Cloudflare Pages, Render, and Neon for the initial public demo. Design for service sleep, restarts, and WebSocket reconnects; do not treat the free deployment as a production reliability commitment.
 - **ADR-07 - Explicit opportunity-to-Collabspace link:** An opportunity may have no Collabspace after publication. When its owner uses Create Collabspace on that opportunity, persist an explicit one-to-one association (`workspace.opportunityId` referencing the opportunity ID, unique and required once created). Member addition and invitations resolve the linked space through that association, never by name.
+- **ADR-08 - WebSocket library:** Use the `ws` library on the existing Express HTTP server for authenticated chat delivery. REST remains the source of truth for conversation history and unread state; the server persists each message before broadcasting it. The browser reconnects and reconciles uncertain sends using a per-sender client message ID.
 
 ## 7. Data and integration flow
 
@@ -135,6 +136,4 @@ Express identifies the member from the session, loads the relevant opportunity/C
   - **Impact:** OAuth callback configuration, cookie `SameSite`/`Secure` settings, CORS, CSRF protection, and whether to add a custom domain or same-origin proxy.
   - **Blocking:** Resolve and verify before implementing production sign-in against the deployed frontend/API. Local development can proceed with a documented local cookie/CORS setup.
 
-- **Question:** Which WebSocket library and test tools should the implementation use?
-  - **Impact:** Chat event API, reconnect behavior, and test setup.
-  - **Blocking:** Not blocking the architecture direction; decide while establishing the server foundation, before implementing chat.
+- **Decision:** The WebSocket library is `ws` (ADR-08). Test-tool selection is deferred until the project adds a configured test suite.

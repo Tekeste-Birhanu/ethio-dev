@@ -44,6 +44,9 @@ export default function ProfilePage(props) {
     passwordForm,
     pendingDeleteOpportunity,
     profileData,
+    profileChatRequest,
+    isSendingChatRequest,
+    handleSendChatRequest,
     profileForm,
     profileTab,
     savedOpportunities,
@@ -63,6 +66,8 @@ export default function ProfilePage(props) {
     shareCopiedOpportunityId,
     user,
   } = props;
+  const hasLoadedChatRequest = profileChatRequest?.username === profileData?.username;
+  const currentChatRequest = hasLoadedChatRequest ? profileChatRequest : { status: "NONE", direction: "" };
 
   return (
     <section
@@ -530,6 +535,34 @@ export default function ProfilePage(props) {
                                 </div>
                               )}
                             </header>
+                            {!isOwnProfile && user && (
+                              <div className="mt-5 flex flex-wrap items-center gap-3">
+                                <Button
+                                  type="button"
+                                  variant={currentChatRequest.status === "PENDING" && currentChatRequest.direction === "OUTGOING" ? "secondary" : "primary"}
+                                  className="[width:auto]"
+                                  disabled={Boolean(!hasLoadedChatRequest || isSendingChatRequest || (currentChatRequest.status === "PENDING" && currentChatRequest.direction === "OUTGOING"))}
+                                  onClick={currentChatRequest.status === "ACCEPTED"
+                                    ? () => handleAppNavigation("chat")
+                                    : currentChatRequest.status === "PENDING" && currentChatRequest.direction === "INCOMING"
+                                      ? () => handleAppNavigation("chat")
+                                      : handleSendChatRequest}
+                                >
+                                  {!hasLoadedChatRequest
+                                    ? "Checking request..."
+                                    : isSendingChatRequest
+                                      ? "Sending..."
+                                      : currentChatRequest.status === "PENDING"
+                                        ? currentChatRequest.direction === "INCOMING" ? "Review chat request" : "Request pending"
+                                        : currentChatRequest.status === "ACCEPTED"
+                                          ? "Open chat"
+                                          : "Send chat request"}
+                                </Button>
+                                {currentChatRequest.status === "DECLINED" && (
+                                  <span className="text-sm text-muted">You can send another request.</span>
+                                )}
+                              </div>
+                            )}
                             {profileData.description && (
                               <p className="profile-description mt-6 max-w-[72ch] whitespace-pre-wrap text-[16px] leading-[1.65] text-[#d9e1e2] [overflow-wrap:anywhere]">
                                 {profileData.description}

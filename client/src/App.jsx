@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import DiscoverPage from "./pages/DiscoverPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import ChatPage from "./pages/ChatPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import { emptyOpportunityForm, emptyProfileFields } from "./constants.js";
 import { AppSidebar } from "./components/layout.jsx";
@@ -52,11 +53,16 @@ function readDiscoverUrlState() {
 
 function readAppRoute() {
   const pathname = window.location.pathname.replace(/\/+$/, "") || "/";
+  const chatConversationId = new URLSearchParams(window.location.search).get("conversation") ?? "";
   const profileMatch = pathname.match(/^\/profile\/([^/]+)$/);
   const opportunityMatch = pathname.match(/^\/opportunities\/([^/]+)$/);
 
   if (pathname === "/profile") {
     return { page: "profile", publicUsername: "", sharedOpportunityId: "" };
+  }
+
+  if (pathname === "/chat") {
+    return { page: "chat", publicUsername: "", sharedOpportunityId: "", chatConversationId };
   }
 
   if (profileMatch) {
@@ -196,6 +202,8 @@ function App() {
   const [savedOpportunitiesUserId, setSavedOpportunitiesUserId] = useState("");
   const [savedOpportunitiesError, setSavedOpportunitiesError] = useState("");
   const [profileTab, setProfileTab] = useState("opportunities");
+  const [profileChatRequest, setProfileChatRequest] = useState({ username: "", status: "NONE", direction: "" });
+  const [isSendingChatRequest, setIsSendingChatRequest] = useState(false);
   const [shareCopiedOpportunityId, setShareCopiedOpportunityId] = useState("");
   const [profileForm, setProfileForm] = useState({
     name: "",
@@ -224,6 +232,21 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [user, setUser] = useState(null);
+  const [chatAlertToast, setChatAlertToast] = useState(null);
+  const [requestedChatConversationId, setRequestedChatConversationId] = useState(initialRoute.chatConversationId ?? "");
+  const seenChatAlerts = useRef(new Set());
+  const updateChatConversationUrl = useCallback((conversationId, historyMethod = "pushState") => {
+    const url = new URL(window.location.href);
+    url.pathname = "/chat";
+    url.search = "";
+    url.hash = "";
+    if (conversationId) url.searchParams.set("conversation", conversationId);
+    const nextUrl = `${url.pathname}${url.search}`;
+    if (`${window.location.pathname}${window.location.search}` !== nextUrl) {
+      window.history[historyMethod](window.history.state, "", nextUrl);
+    }
+    setRequestedChatConversationId(conversationId);
+  }, []);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isOpportunityComposerOpen, setIsOpportunityComposerOpen] =
     useState(false);
@@ -238,6 +261,45 @@ function App() {
     useState(null);
   const [isCompletingOpportunity, setIsCompletingOpportunity] = useState(false);
   const [completeOpportunityError, setCompleteOpportunityError] = useState("");
+
+  useEffect(() => {
+    if (!user?.id || isCheckingSession) return undefined;
+    let active = true;
+    let isPolling = false;
+    const pollChatAlerts = async () => {
+      if (isPolling) return;
+      isPolling = true;
+      try {
+        const response = await fetch("/api/chat/notifications/chat-alert");
+        if (!response.ok) return;
+        const { notification } = await response.json();
+        if (!active || !notification || seenChatAlerts.current.has(notification.id)) return;
+        seenChatAlerts.current.add(notification.id);
+        setChatAlertToast(notification);
+        await fetch(`/api/chat/notifications/${encodeURIComponent(notification.id)}/read`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+      } catch {
+        // Keep polling; a temporary alert failure should not interrupt the app.
+      } finally {
+        isPolling = false;
+      }
+    };
+    pollChatAlerts();
+    const intervalId = window.setInterval(pollChatAlerts, 10000);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, [user?.id, isCheckingSession]);
+
+  useEffect(() => {
+    if (!chatAlertToast) return undefined;
+    const timeoutId = window.setTimeout(() => setChatAlertToast(null), 8000);
+    return () => window.clearTimeout(timeoutId);
+  }, [chatAlertToast]);
 
   useEffect(() => {
     writeDiscoverUrlState(initialDiscoverUrl.tab);
@@ -327,22 +389,29 @@ function App() {
       );
     }
 
-    fetch("/api/auth/me")
-      .then(async (response) => {
+    async function checkSession() {
+      try {
+        let response;
+        try {
+          response = await fetch("/api/auth/me");
+        } catch {
+          await new Promise((resolve) => window.setTimeout(resolve, 350));
+          response = await fetch("/api/auth/me");
+        }
         if (response.ok) {
           const result = await response.json();
           if (isCurrent) setUser(result.user);
         }
-      })
-      .catch(() => {
+      } catch {
         if (isCurrent)
           setMessage(
             "Could not reach the server. Check your connection and try again.",
           );
-      })
-      .finally(() => {
+      } finally {
         if (isCurrent) setIsCheckingSession(false);
-      });
+      }
+    }
+    void checkSession();
 
     return () => {
       isCurrent = false;
@@ -405,6 +474,7 @@ function App() {
       const route = readAppRoute();
       const nextState = readDiscoverUrlState();
       setPage(route.page);
+      setRequestedChatConversationId(route.chatConversationId ?? "");
       setPublicUsername(route.publicUsername);
       setSharedOpportunityId(route.sharedOpportunityId);
       setSharedOpportunity(null);
@@ -650,6 +720,22 @@ function App() {
     };
   }, [page, publicUsername, user?.id, user?.username, isCheckingSession]);
 
+  useEffect(() => {
+    if (page !== "public-profile" || !user?.id || !profileData?.username || user.username === profileData.username) return undefined;
+    const username = profileData.username;
+    let isCurrent = true;
+    fetch(`/api/chat/requests/with/${encodeURIComponent(username)}`)
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message ?? "Could not check the chat request.");
+        if (isCurrent) setProfileChatRequest({ username, status: result.status ?? "NONE", direction: result.direction ?? "" });
+      })
+      .catch(() => {
+        if (isCurrent) setProfileChatRequest({ username, status: "NONE", direction: "" });
+      });
+    return () => { isCurrent = false; };
+  }, [page, user?.id, user?.username, profileData?.username]);
+
   function handleRegistrationChange(event) {
     const { name, value } = event.target;
     setRegistration((current) => ({ ...current, [name]: value }));
@@ -672,13 +758,28 @@ function App() {
     const isRegistration = mode === "register";
     const endpoint = isRegistration ? "register" : "login";
     const body = isRegistration ? registration : credentials;
+    const requestOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    };
 
     try {
-      const response = await fetch(`/api/auth/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      let response;
+      try {
+        response = await fetch(`/api/auth/${endpoint}`, requestOptions);
+      } catch (error) {
+        if (isRegistration) throw error;
+
+        await new Promise((resolve) => window.setTimeout(resolve, 350));
+        try {
+          const existingSession = await fetch("/api/auth/me");
+          if (existingSession.ok) response = existingSession;
+        } catch {
+          // The retry below will surface a connection error if the server is still unavailable.
+        }
+        if (!response) response = await fetch(`/api/auth/${endpoint}`, requestOptions);
+      }
       const result = await response.json();
 
       if (!response.ok) {
@@ -1405,7 +1506,27 @@ function App() {
     }
   }
 
-  function handleAppNavigation(destination) {
+  function handleAppNavigation(destination, chatConversationId = "") {
+    if (destination === "chat") {
+      if (!user) {
+        setMode("login");
+        setMessage("Sign in to view chat requests.");
+        setPage("auth");
+        return;
+      }
+      setPublicUsername("");
+      setSharedOpportunityId("");
+      setRequestedChatConversationId(chatConversationId);
+      setPage("chat");
+      const chatPath = chatConversationId
+        ? `/chat?conversation=${encodeURIComponent(chatConversationId)}`
+        : "/chat";
+      if (`${window.location.pathname}${window.location.search}` !== chatPath) {
+        window.history.pushState(window.history.state, "", chatPath);
+      }
+      return;
+    }
+
     if (destination === "profile") {
       const alreadyOnOwnProfile =
         page === "profile" &&
@@ -1460,6 +1581,30 @@ function App() {
         alreadyAtDiscover ? "replaceState" : "pushState",
         "/",
       );
+    }
+  }
+
+  async function handleSendChatRequest() {
+    if (!user || !profileData?.id || isSendingChatRequest) return;
+    setIsSendingChatRequest(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/chat/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: profileData.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not send the chat request.");
+      setProfileChatRequest({ username: profileData.username, status: "PENDING", direction: "OUTGOING" });
+      setMessage("");
+    } catch (error) {
+      setMessage(error.message || "Could not reach the server. Try again.");
+      if (error.message?.includes("already pending")) {
+        setProfileChatRequest({ username: profileData.username, status: "PENDING", direction: "OUTGOING" });
+      }
+    } finally {
+      setIsSendingChatRequest(false);
     }
   }
 
@@ -1724,6 +1869,9 @@ function App() {
       pendingDeleteOpportunity,
       pendingCompleteOpportunity,
       profileData,
+      profileChatRequest,
+      isSendingChatRequest,
+      handleSendChatRequest,
       profileForm,
       profileTab,
       savedOpportunities,
@@ -1775,7 +1923,9 @@ function App() {
           <AppSidebar
             user={user}
             activePage={
-              page === "discover" ||
+              page === "chat"
+                ? "chat"
+                : page === "discover" ||
               page === "public-profile" ||
               (page === "create-opportunity" &&
                 opportunityReturnPage === "discover")
@@ -1793,8 +1943,43 @@ function App() {
             }}
             onSignOut={handleSignOut}
           />
+          {chatAlertToast && (
+            <div
+              className="fixed bottom-6 right-6 z-[60] flex max-w-[min(92vw,_420px)] items-center gap-4 rounded-xl border border-[#354044] bg-[#141a1e] px-5 py-4 text-[#e9f1f4] shadow-xl"
+              role="status"
+              aria-live="polite"
+            >
+              <span>
+                {chatAlertToast.type === "CHAT_REQUEST_ACCEPTED"
+                  ? `Your chat request was accepted by ${chatAlertToast.request?.recipient?.name ?? "a developer"}.`
+                  : `New message from ${chatAlertToast.message?.sender?.name ?? "a developer"}.`}
+              </span>
+              <button
+                className="shrink-0 text-[#38e6b0] hover:text-white"
+                onClick={() => {
+                  setChatAlertToast(null);
+                  handleAppNavigation("chat", chatAlertToast.conversationId ?? chatAlertToast.message?.conversationId ?? "");
+                }}
+              >
+                Open Chat
+              </button>
+              <button
+                className="shrink-0 text-[#aab8bf] hover:text-white"
+                aria-label="Dismiss chat alert"
+                onClick={() => setChatAlertToast(null)}
+              >
+                ×
+              </button>
+            </div>
+          )}
           {page === "discover" ? (
             <DiscoverPage {...pageProps} />
+          ) : page === "chat" ? (
+            <ChatPage
+              user={user}
+              requestedConversationId={requestedChatConversationId}
+              onConversationUrlChange={updateChatConversationUrl}
+            />
           ) : (
             <ProfilePage {...pageProps} />
           )}

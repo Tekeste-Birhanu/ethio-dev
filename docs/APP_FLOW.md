@@ -22,7 +22,7 @@ Signed-in navigation
   ├── Discover (Opportunities | Developers)
   │   └── Search → Results (Opportunities | Developers)
   │       └── Opportunity post expands inline; comments open in a dialog
-  ├── Chat → Private conversations only
+  ├── Chat → Private conversation list → Conversation history
   ├── Collabspaces → Collabspace → Group chat / Members / Taskboard
   ├── Notifications → Incoming request or invitation → Review context → Accept / Decline
   └── My profile
@@ -85,8 +85,10 @@ Requests are organized by direction. The Requests tab lists requests and invitat
   1. Browse developers or search by name, username, skills, or city; apply relevant filters.
   2. Open a developer profile and review its public information.
   3. Send a chat request without a note. The outgoing request appears in Requests as Pending.
-  4. The recipient sees an incoming notification. Opening it shows the sender profile and request context before the recipient accepts or declines.
-  5. If accepted, a private conversation opens for both members and the requester receives an acceptance notification.
+  4. The recipient sees the incoming request in Chat. Selecting it shows the sender and request actions in the conversation pane, where the recipient accepts or declines.
+  5. If accepted, a private conversation opens for both members. The requester receives a saved unread alert, shown as a temporary Chat toast when they next poll while signed in.
+  6. Either participant can choose Delete chat. After a warning, confirming ends the conversation for both and removes its messages; connected participants are notified and the chat disappears from their lists.
+  7. After deletion, either member can start a new chat request from the other's profile; the other member must accept it before a new conversation opens.
 - **Success outcome:** The members can communicate in a private chat after the recipient accepts.
 - **Failure and recovery:** A declined request sends no notification to the requester; its Requests row changes to Declined. The requester may send another chat request later, which appears as a new Requests row. A chat request does not create Collabspace membership.
 - **Related requirements:** F-02, F-04, F-08, F-17
@@ -150,7 +152,7 @@ Discover uses `/`; a public developer profile uses `/profile/:username`; the sig
 | Own profile — Saved            | Revisit and unsave saved opportunities, ordered by most recent save                                                                                              | Profile owner only                                                         | J-01, J-05             |
 | Profile settings               | Change password for password-based accounts                                                                                                                      | Signed-in member; password change only for password-based accounts         | J-06                   |
 | Request / invitation review    | Review the sender's profile and request context, then take the actions available for that request type                                                           | Signed-in recipient                                                        | J-01, J-02, J-03, J-04 |
-| Chat                           | View private conversations, unread counts, and messages                                                                                                          | Signed-in member; conversation participants only                           | J-03                   |
+| Chat                           | Review incoming profile chat requests, view private conversations and message history, and see per-chat unread counts                                               | Signed-in member; requests are recipient-only and conversations participant-only | J-03              |
 | Collabspaces                   | View the member's Collabspaces and open a space or its linked opportunity                                                                                        | Signed-in member                                                           | J-01, J-02, J-04, J-05 |
 | Collabspace                    | Use group chat, membership controls, and taskboard                                                                                                               | Current members; archived read-only access for members present at archival | J-02, J-04, J-05       |
 | Notifications                  | Review incoming requests/invitations and private-message alerts in one chronological list; unread items are indicated and each item opens its relevant context   | Signed-in member                                                           | J-01, J-02, J-03, J-04 |
@@ -172,11 +174,11 @@ Discover uses `/`; a public developer profile uses `/profile/:username`; the sig
 - Discover has Opportunities and Developers tabs. Search offers both result tabs and defaults to the Discover tab from which it was opened. Closing Search returns to that prior Discover tab.
 - A public profile shows its profile card and My Opportunities across all statuses. The owner's profile has Requests, My Opportunities, and Saved tabs. Requests shows outgoing requests and invitations; Saved shows only that member's saved opportunities.
 - Saved opportunities are private to their saver, appear in most-recently-saved order, and can be unsaved from the Saved tab.
-- Incoming requests and invitations appear in Notifications. Opening one first shows the relevant context; users make the accept or decline decision there, not directly in the notification item. Private-message alerts open the relevant chat. Comments do not create notifications.
+- For M5, incoming profile chat requests appear in Chat; the recipient reviews the sender's profile and accepts or declines there. Accepted private conversations appear in each participant's list. Opening one loads persisted message history and marks the messages shown as read. Members exchange text and links over an authenticated WebSocket; messages are saved before delivery and history reloads after reconnect. Each sender can edit or delete their own messages, with updates delivered to both participants; deleting a message refreshes the preview and unread count. Acceptance and private-message alerts appear as temporary Chat toasts using polling; the shared Notifications screen is planned outside M5 in T-58. Comments do not create notifications.
 - Acceptance notifies the sender. Decline sends no notification; the sender sees the declined status in Requests. Withdrawal removes the incoming item silently.
 - Any sender can withdraw an outgoing pending request or invitation from Requests. A new request after withdrawal creates a new Requests row. Declined chat requests may be sent again as new rows; declined collaboration requests and declined invitations cannot be repeated.
 - Accepting a collaboration request into a private chat opens the chat immediately and does not add the applicant to the Collabspace. Accepting a collaboration request into the Collabspace adds the applicant immediately. A separate private-chat or Collabspace invitation requires recipient acceptance.
-- The Chat destination contains private conversations only. Collabspace group chat is accessed from inside its Collabspace. Joining a Collabspace does not remove an existing private conversation.
+- The Chat destination contains private conversations only. Each active private conversation has a `/chat?conversation=:id` link; opening it loads the chat only for one of its two participants. Clicking Chat navigation returns to `/chat`. Collabspace group chat is accessed from inside its Collabspace. Joining a Collabspace does not remove an existing private conversation.
 - A member's unread count belongs to its individual chat list item. Muting a chat suppresses its message alerts while unread counts continue to change.
 - A member can view public profiles and opportunities without signing in. Protected actions require authentication; collaboration requests also require a completed profile.
 - The member edits profile details from their own Profile destination. Settings contains password change for password-based accounts; email changes are unavailable in the MVP.
