@@ -577,9 +577,8 @@ export default function ChatPage({ user, requestedConversationId, onConversation
     onConversationUrlChange?.("");
   }
 
-  async function toggleConversationMute() {
-    if (!selectedConversation || isUpdatingMute) return;
-    const conversation = selectedConversation;
+  async function toggleConversationMute(conversation = selectedConversation) {
+    if (!conversation || isUpdatingMute) return;
     const muted = !conversation.isMuted;
     setIsUpdatingMute(true);
     setMessage("");
@@ -602,9 +601,8 @@ export default function ChatPage({ user, requestedConversationId, onConversation
     }
   }
 
-  async function deleteConversation() {
-    if (!selectedConversation || isDeletingConversation) return;
-    const conversation = selectedConversation;
+  async function deleteConversation(conversation = selectedConversation) {
+    if (!conversation || isDeletingConversation) return;
     if (conversationMenuRef.current) conversationMenuRef.current.open = false;
     const confirmed = window.confirm(
       `Delete your chat with ${conversation.participant.name}? This removes the conversation and all its messages for both participants, and ends the chat. This cannot be undone.`,
@@ -623,13 +621,15 @@ export default function ChatPage({ user, requestedConversationId, onConversation
       }
       setConversations((current) => current.filter((item) => item.id !== conversation.id));
       updatePendingMessages((current) => current.filter((item) => item.conversationId !== conversation.id));
-      messageLoadId.current += 1;
-      setSelectedConversation(null);
-      onConversationUrlChange?.("");
-      setMessages([]);
-      setMessagesHaveMore(false);
-      setMessagesError("");
-      setMessage("Conversation deleted for both participants.");
+      if (selectedConversationRef.current?.id === conversation.id) {
+        messageLoadId.current += 1;
+        setSelectedConversation(null);
+        onConversationUrlChange?.("");
+        setMessages([]);
+        setMessagesHaveMore(false);
+        setMessagesError("");
+        setMessage("Conversation deleted for both participants.");
+      }
     } catch (error) {
       setMessage(error.message || "Could not reach the server. Try again.");
     } finally {
@@ -654,8 +654,8 @@ export default function ChatPage({ user, requestedConversationId, onConversation
   const hasSelectedChatItem = Boolean(selectedConversation || selectedRequest);
 
   return (
-    <section className={`app-main-content min-w-0 px-8 pb-0 pt-[42px] max-[760px]:h-[calc(100dvh-68px-env(safe-area-inset-bottom))] max-[760px]:px-0 max-[760px]:pt-2`} aria-label="Chat">
-      <div className="mx-auto h-full w-full max-w-[1120px] max-[760px]:max-w-none">
+    <section className="app-page app-page--chat app-main-content" aria-label="Chat">
+      <div className="h-full w-full">
         {loadError ? (
           <div className={`${panelClass} grid place-items-center rounded-2xl border border-[#252d31] p-6 text-center max-[760px]:rounded-none max-[760px]:border-x-0`} role="alert">
             <div>
@@ -664,18 +664,22 @@ export default function ChatPage({ user, requestedConversationId, onConversation
             </div>
           </div>
         ) : (
-          <div className={`grid h-[calc(100dvh-84px)] overflow-hidden rounded-2xl border border-[#252d31] bg-[#111719] ${hasSidebarContent ? "grid-cols-[minmax(240px,_320px)_minmax(0,_1fr)]" : "grid-cols-1"} max-[1100px]:grid-cols-1 max-[760px]:h-full max-[760px]:rounded-none max-[760px]:border-x-0`}>
+          <div className={`grid h-[calc(100dvh-32px)] overflow-hidden rounded-2xl border border-[#252d31] bg-[#111719] ${hasSidebarContent ? "grid-cols-[minmax(240px,_320px)_minmax(0,_1fr)]" : "grid-cols-1"} max-[1100px]:grid-cols-1 max-[760px]:h-full max-[760px]:rounded-none max-[760px]:border-x-0`}>
             <aside className={`${panelClass} overflow-hidden border-r border-[#252d31] max-[1100px]:border-r-0 ${hasSelectedChatItem ? "max-[1100px]:hidden" : "max-[1100px]:bg-transparent"} ${hasSidebarContent ? "" : "hidden"}`} aria-label="Chats and incoming requests">
+              <h1 className="m-0 border-b border-[#252d31] px-5 py-4 text-lg font-semibold text-ink">Chats</h1>
               {message && <p className="m-0 border-b border-[#252d31] px-5 py-3 text-sm text-[#aebabb]" role="status">{message}</p>}
               {isLoading ? (
                 <p className="p-5 text-sm text-[#aebabb]" role="status">Loading conversations...</p>
               ) : conversations.length > 0 && (
                 <ul className="m-0 list-none p-0">
                   {conversations.map((conversation) => (
-                    <li key={conversation.id}>
+                    <li
+                      className={`flex items-center border-b border-[#252d31] ${selectedConversation?.id === conversation.id ? "bg-[#182023]" : ""}`}
+                      key={conversation.id}
+                    >
                       <button
                         type="button"
-                        className={`flex w-full items-center gap-3 border-b border-[#252d31] px-5 py-4 text-left hover:bg-[#182023] ${selectedConversation?.id === conversation.id ? "bg-[#182023]" : ""}`}
+                        className="flex min-w-0 flex-1 items-center gap-3 py-4 pl-5 pr-1 text-left hover:bg-[#182023]"
                         onClick={() => openConversation(conversation)}
                         aria-current={selectedConversation?.id === conversation.id ? "true" : undefined}
                       >
@@ -691,6 +695,9 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                               </time>
                             )}
                           </span>
+                          <span className="mt-1 block truncate text-xs text-[#aebabb]">
+                            @{conversation.participant.username}
+                          </span>
                         </span>
                         {conversation.unreadCount > 0 && (
                           <span className="grid min-w-6 place-items-center rounded-full bg-[#38e6b0] px-2 py-1 text-xs font-bold text-[#0b1113]" aria-label={`${conversation.unreadCount} unread messages`}>
@@ -698,6 +705,46 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                           </span>
                         )}
                       </button>
+                      <details className="relative mr-2 shrink-0">
+                        <summary
+                          className="grid size-9 cursor-pointer list-none place-items-center rounded-full text-[#aebabb] hover:bg-[#222d31] hover:text-ink focus-visible:outline-2 focus-visible:outline-[#38e6b0] [&::-webkit-details-marker]:hidden"
+                          aria-label={`Actions for ${conversation.participant.name}`}
+                        >
+                          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5" fill="currentColor">
+                            <circle cx="5" cy="12" r="1.7" />
+                            <circle cx="12" cy="12" r="1.7" />
+                            <circle cx="19" cy="12" r="1.7" />
+                          </svg>
+                        </summary>
+                        <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-[#303a3e] bg-[#171f23] p-1.5 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
+                          <button
+                            className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60"
+                            type="button"
+                            disabled={isUpdatingMute || isDeletingConversation}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details").open = false;
+                              void toggleConversationMute(conversation);
+                            }}
+                          >
+                            {isUpdatingMute
+                              ? "Updating…"
+                              : conversation.isMuted
+                                ? "Unmute notifications"
+                                : "Mute notifications"}
+                          </button>
+                          <button
+                            className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60"
+                            type="button"
+                            disabled={isDeletingConversation}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details").open = false;
+                              void deleteConversation(conversation);
+                            }}
+                          >
+                            {isDeletingConversation ? "Deleting…" : "Delete chat"}
+                          </button>
+                        </div>
+                      </details>
                     </li>
                   ))}
                 </ul>

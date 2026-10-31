@@ -20,7 +20,7 @@ export default function AuthPage(props) {
   const isRegistration = mode === "register";
 
   return (
-    <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0d1114]">
+    <main className="auth-page [min-height:100dvh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0d1114]">
       <button
         className="back-button auth-back-button [position:absolute] [top:20px] [left:20px] [display:inline-flex] [min-height:42px] [align-items:center] [padding:0_15px] [border:1px_solid_#303a3e] [border-radius:10px] [background:#1b2327] [color:#edf3f4] [cursor:pointer] [font-weight:600] [text-decoration:none] hover:[border-color:#59696c] hover:[background:#222d31] [margin-bottom:18px]"
         type="button"

@@ -70,7 +70,7 @@ export default function DiscoverPage(props) {
 
   return (
     <section
-                  className="discover-content mx-auto w-full max-w-[790px] min-w-0 px-7 pb-16 pt-[42px] max-[760px]:max-w-full max-[760px]:px-4 max-[760px]:pb-[calc(104px+env(safe-area-inset-bottom))] max-[760px]:pt-2"
+      className="app-page discover-content mx-auto w-full max-w-[1440px]"
                   aria-label={sharedOpportunityId ? undefined : "Discover"}
                   aria-labelledby={
                     sharedOpportunityId ? "discover-heading" : undefined

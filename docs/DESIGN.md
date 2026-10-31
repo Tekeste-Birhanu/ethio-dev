@@ -44,7 +44,7 @@
 ### App shell and navigation
 
 - **Desktop:** Use a persistent left sidebar with the EthioDev mark and primary destinations in this order: Discover, Collabspaces, Chat, Notifications, Profile. Keep Chat easy to spot. Highlight the current destination with the green accent; use clear icons with text labels. Put Post opportunity in the Discover page header, not the sidebar.
-- **Main content:** Give each page one focused content area with a comfortable reading width. Do not add a right rail, dashboard metrics, or promotional panels.
+- **Main content:** Use a consistent page frame across signed-in destinations: fill the available viewport height, use 32px desktop gutters and 16px mobile gutters, and align page content to a 1200px maximum width. Chat may use the full frame height for its conversation layout. Do not add a right rail, dashboard metrics, or promotional panels.
 - **Account menu:** Anchor the signed-in member's avatar and name at the bottom of the sidebar. Clicking it opens a small menu with Log out. Keep Profile as its own navigation destination.
 - **Mobile:** Replace the sidebar with a compact bottom navigation for Discover, Collabspaces, Chat, Notifications, and Profile. Keep Post opportunity available in the Discover page header without adding it as a sixth navigation destination. Search remains available from Discover and is not a global navigation item.
 - **Related guidance:** Use the same shell across signed-in destinations; the selected destination and keyboard focus must remain visible and clear.
@@ -132,41 +132,52 @@
 - **Skills:** Show Skills directly below the text area as removable tags. Explain that tags help developers find the opportunity.
 - **Metadata:** Show categories, experience sought, and optional collaboration city as compact controls below the skill tags. These are optional; do not hide them behind a disclosure. Allow publishing with only a description.
 - **Publish:** Use a clear Publish opportunity action. Publishing creates only the opportunity; do not add attachments or a separate preview step.
-- **After publishing:** Return the owner to Discover with the new post visible. On the owner's post, show Create Collabspace until one is created; then show Open Collabspace. Creating the space requires a name and links it explicitly to that opportunity.
-- **Adding members:** In request review, Add to Collabspace adds the accepted applicant directly when the linked space exists. If it does not, guide the owner to name and create the linked space, then add the applicant. Canceling leaves the request pending. Do not show a space picker in an opportunity request flow.
+- **After publishing:** Return the owner to Discover with the new post visible. Opportunity posts do not create or link Collabspaces.
+- **Adding members:** In request review, the owner can accept into private chat, select a Collabspace they own/administer, create one during acceptance, or decline. Canceling leaves the request pending.
 - **Validation and recovery:** Explain missing required text near the text area and retain entered content when the owner needs to correct the form.
 - **Content:** Keep the composer focused. Avoid decorative subtitles and unrelated settings.
 - **Related flow:** J-02 in `APP_FLOW.md`.
 
 ### Create Collabspace dialog
 
-- **Purpose:** Let an opportunity owner create the linked team space when ready to organize collaboration.
-- **Entry:** Open from Create Collabspace on the owner's opportunity post. Keep the dialog tied to that opportunity; do not provide a Collabspace picker.
+- **Purpose:** Let a signed-in member create an independent team space.
+- **Entry:** Provide a clear **Create Collabspace** action on the Collabspaces page. Keep this separate from opportunity creation and editing.
 - **Form:** Ask for the Collabspace name and provide clear Create and Cancel actions. Keep the form focused and omit unrelated settings.
-- **Outcome:** Create links the new space to the current opportunity and returns to its post, where the owner can open the Collabspace. Cancel closes the dialog without creating a space. When this flow was launched while handling a pending collaboration request, canceling also leaves that request pending.
+- **Outcome:** Create makes the signed-in member the Collabspace Owner and opens the new space. Cancel closes the dialog without creating a space. When created during collaboration-request acceptance, create the space and add the applicant only when acceptance succeeds; canceling leaves the request pending.
 - **Related flow:** J-02 and J-04 in `APP_FLOW.md`.
 
 ### Collabspace
 
-- **Purpose:** Give an opportunity's team one place for group chat and shared task planning.
-- **Entry and identity:** Open from the linked opportunity or the Collabspaces list. Show the Collabspace name and a clear link to its opportunity. A Collabspace exists only after its owner creates it from the opportunity.
-- **Layout:** Reuse the app shell. Put the Collabspace header above two views, Chat and Taskboard. Open Chat by default. Keep the page focused without a dashboard rail.
+- **Purpose:** Give a team one independent place for group chat and shared task planning.
+- **Entry and identity:** Open from the Collabspaces list or an accepted invitation. Show the Collabspace name without a decorative space avatar; keep the back arrow inline with the name to save vertical space. Do not require or imply an opportunity link.
+- **Layout:** Reuse the app shell. Put the Collabspace name in the header, followed by four tabs: Group chat, Taskboard, Members, and Settings. Open Group chat by default. Keep the page focused without a dashboard rail or separate Overview tab.
 - **Group chat:** Show the chronological conversation with member avatar, name, timestamp, and message. Do not add role/skill tags to chat names. Provide a text composer that supports messages and links; do not show attachment controls. Follow the agreed message edit/delete permissions.
 - **Taskboard:** Use Trello as inspiration for a clear board of status columns and movable task cards. Show milestones as a list with a compact completed/total task count. Opening a milestone shows three desktop columns: To do, In progress, and Done. Task cards show a concise title, one assignee, and an optional due date; an expand control reveals task details. Owners and admins can add a task from a column; it inherits the selected milestone and status. Let authorized users drag tasks between columns to update status: owners/admins can manage tasks, and an assignee can update the status of their own task. On mobile, use status tabs and show one column at a time; provide a keyboard-accessible status control as an alternative to dragging. Persist changes before showing them as saved and broadcast them live to current members. Do not allow multiple assignees per task.
 - **Add/edit task dialog:** Use one focused dialog for creating and editing tasks. Include a required task title, optional details, one assignee selected from current members, and an optional due date. When creating from a board column, inherit the selected milestone and status; do not ask the user to select them again. When editing, owners and admins can move the task to another milestone. Owners and admins can create and edit task details, including assigning a member or themselves. Save and Cancel actions remain clear. On mobile, present the form as a full-height sheet. Assignees can update their own task status from the board without opening this form.
 - **Milestone controls:** Owners and admins can add milestones. A milestone's three-dot menu offers Edit name and Delete. If it contains tasks, selecting Delete explains that tasks must be moved first and offers a way to review them. Once empty, deleting requires confirmation; deletion never removes tasks. Do not provide a bulk-delete path for milestone tasks.
-- **Members:** Show a compact row of member avatars side by side in the Collabspace header, with a **View all** control that opens the full Members panel. The panel lists members by avatar and name with Owner or Admin labels where relevant. Each member row has a context menu: the owner can make a member an admin or remove an admin role; owners and admins can remove regular members; members can leave for themselves. Admins cannot change admin roles or edit the opportunity. On mobile, show the full list in a full-height sheet. Confirm removal and explain that access ends immediately, open tasks become unassigned, and remaining members keep chat and task history. Do not label individual chat messages with a member's project role.
+- **Members:** The Members tab opens the member list and management actions. Show the member count and list members by name with Owner or Admin labels where relevant. Each member row has a context menu: the Owner can make a member an admin or remove an admin role; Owners and admins can remove regular members; members can leave for themselves. Admins cannot change admin roles. New members join by accepting a collaboration request or invitation; do not add a direct-add control here. Keep the member list usable on mobile. Confirm removal and explain that access ends immediately, open tasks become unassigned, and remaining members keep chat and task history. Do not label individual chat messages with a member's project role.
+- **Settings:** The Settings tab groups space-level actions. Only the Owner can rename the space; use a focused 1–100 character name form and show a saved confirmation. Admins and members see that only the Owner can change these settings.
+- **Space deletion:** In Settings, show Delete Collabspace to the Owner only in a clearly separated danger section. Require a clear confirmation that deletion is permanent, every member loses access, and group chat and task history are removed. There is no archive action.
 - **Removal confirmation:** Confirm removal and explain that the member immediately loses access and their open tasks become unassigned; the remaining team keeps chat and task history. Do not offer the owner an action to leave their own Collabspace.
-- **Privacy:** The Collabspace is available only to current members. Do not mark it as a public space; its linked opportunity remains publicly viewable.
+- **Privacy:** The Collabspace is available only to current members. Do not mark it as a public space or expose private membership on public opportunity posts.
 - **Related flow:** J-04 in `APP_FLOW.md`.
 
 ### Collabspaces list
 
 - **Purpose:** Let a member find and open Collabspaces they belong to.
 - **Layout:** Reuse the app shell and show a straightforward list of the member's spaces. Keep the page focused; avoid a dashboard rail or extra metrics.
-- **Space items:** Show the Collabspace name and its linked opportunity. Open the item to enter the Collabspace; make the linked opportunity available from the item. Show a small Archived tag on archived spaces, which remain in the list as read-only.
-- **Access:** List only spaces the member currently belongs to, plus archived spaces they were a member of when archived.
+- **Creation:** Show a clear Create Collabspace action. A member can create a standalone space without first publishing an opportunity.
+- **Space items:** Show the Collabspace name and member context. Open the item to enter the Collabspace.
+- Show a small unread group-message count on a space item when its count is nonzero; group messages do not create private-chat notifications.
+- **Access:** List only spaces the member currently belongs to.
 - **Related flow:** J-04 in `APP_FLOW.md`.
+
+### Collabspace overview (T-34)
+
+- Reuse the app shell. Provide a member-only list and a direct overview URL for each space; opening an item shows space identity and current members with Owner/Admin labels where applicable.
+- Keep group chat and taskboard destinations visible from the overview. Until their implementation tasks are complete, the destinations lead to clearly labeled upcoming sections instead of pretending the features are available.
+- The group chat shows persisted messages in chronological order, loads older history on request, and delivers new messages live to current members. Show an unread count in the Collabspaces list and clear it as the member reads through messages. Group messages do not create notifications.
+- Let the page use the available width and reflow its content on narrow screens.
 
 ### Notifications
 
@@ -181,8 +192,8 @@
 
 - **Purpose:** Let a recipient review the sender and relevant context before accepting or declining an incoming request or invitation.
 - **Entry:** For M5 profile chat requests, open the pending item in Chat. Later request types open from Notifications. Do not put accept/decline controls directly on a notification row.
-- **Context:** Show the sender's profile with a way to view the full profile, plus the relevant context: opportunity and optional message for a collaboration request, profile for a chat request, or Collabspace and linked opportunity for a Collabspace invitation. Reuse the same layout while varying context and actions by request type.
-- **Collaboration request actions:** Offer Accept into private chat, Add to Collabspace, and Decline. Adding to the linked Collabspace immediately grants membership. If no Collabspace exists, guide the opportunity owner to name and create it, then add the requester; canceling leaves the request pending.
+- **Context:** Show the sender's profile with a way to view the full profile, plus the relevant context: opportunity and optional message for a collaboration request, profile for a chat request, or standalone Collabspace for a Collabspace invitation. Reuse the same layout while varying context and actions by request type.
+- **Collaboration request actions:** Offer Accept into private chat, Add to Collabspace, and Decline. Adding opens a picker containing only spaces the opportunity owner owns or administers, with a Create Collabspace option. If creating, commit the space and membership only with successful request acceptance; canceling leaves the request pending.
 - **Chat request actions:** Offer Accept and Decline. Acceptance opens the private conversation.
 - **Invitation actions:** Offer Accept and Decline. Acceptance opens the private chat or adds the recipient to the invited Collabspace, depending on the invitation.
 - **Feedback:** Confirm successful actions clearly. Declining sends no notification to the sender; the sender sees the declined status in Requests.
@@ -193,9 +204,9 @@
 
 - **Purpose:** Let members continue accepted one-to-one private conversations.
 - **Layout:** Use Telegram's familiar two-pane conversation layout within the EthioDev app shell. On desktop, enclose the conversation list and selected private chat in one shared outer border with a divider between the panes. At narrower widths, show one pane at a time inside that same shared frame. Give each selected conversation a direct `/chat?conversation=:id` link. Clicking Chat navigation returns to `/chat`. Let the chat area fill the available page height; do not cap it or leave unused space above mobile navigation.
-- **Conversation list:** Include active private chats only. Show the other member's name beside the latest message time and that chat's unread count; do not show a message text preview. Order by recent activity. Collabspace group chats are accessed inside their Collabspace and do not appear here.
+- **Conversation list:** Include active private chats only. Label the list `Chats`. Show the other member's name and username, with the latest message time aligned beside the name and the unread count at the row's edge; do not show a message text preview. Order by recent activity. Let the list fill the available chat area. Collabspace group chats are accessed inside their Collabspace and do not appear here.
 - **Conversation view:** Show the other member's identity and chronological persisted messages, with a way to load older history. Opening a chat marks the messages shown as read. The text composer supports messages and links without attachment controls. Each sender can edit or delete their own messages; edits are marked, and deletion removes the message for both participants while refreshing the chat preview and unread count.
-- **Conversation settings:** Put per-chat mute and Delete chat in the conversation header menu. Deleting requires a warning that the conversation is removed for both participants and ends the chat; do not offer a delete-for-me option.
+- **Conversation settings:** Put per-chat mute and Delete chat in both the conversation row's three-dot menu and the open conversation's header menu. Deleting requires a warning that the conversation is removed for both participants and ends the chat; do not offer a delete-for-me option. Row actions must not open the conversation.
 - **Requests:** During M5, incoming chat requests appear as selectable rows in Chat. Selecting a request shows its sender and Accept / Decline actions in the conversation pane; accepting replaces the request view with the new conversation. The shared Notifications screen is planned outside M5 as T-58.
 - **Related flows:** J-01, J-02, and J-03 in `APP_FLOW.md`.
 

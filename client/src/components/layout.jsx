@@ -33,7 +33,7 @@ function AppSidebar({
 
   return (
     <aside
-      className="app-sidebar sticky top-0 flex h-screen flex-col border-r border-border bg-[#101619] px-[18px] py-6 max-[760px]:static max-[760px]:grid max-[760px]:h-auto max-[760px]:w-full max-[760px]:min-w-0 max-[760px]:grid-cols-[minmax(0,1fr)] max-[760px]:items-center max-[760px]:gap-x-3 max-[760px]:gap-y-2 max-[760px]:border-r-0 max-[760px]:border-b max-[760px]:border-border max-[760px]:px-4 max-[760px]:py-2 max-[760px]:has-[.app-account-menu]:border-b-0 max-[760px]:has-[.app-account-menu]:p-0 max-[420px]:px-[10px]"
+      className="app-sidebar sticky top-0 flex h-dvh flex-col border-r border-border bg-[#101619] px-[18px] py-6 max-[760px]:static max-[760px]:grid max-[760px]:h-auto max-[760px]:w-full max-[760px]:min-w-0 max-[760px]:grid-cols-[minmax(0,1fr)] max-[760px]:items-center max-[760px]:gap-x-3 max-[760px]:gap-y-2 max-[760px]:border-r-0 max-[760px]:border-b max-[760px]:border-border max-[760px]:px-4 max-[760px]:py-2 max-[760px]:has-[.app-account-menu]:border-b-0 max-[760px]:has-[.app-account-menu]:p-0 max-[420px]:px-[10px]"
       aria-label="Main navigation"
     >
       <a
@@ -55,6 +55,16 @@ function AppSidebar({
         >
           Discover
         </button>
+        {user && (
+          <button
+            className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "collabspaces" ? " is-active bg-accent-dark text-accent-light" : ""}`}
+            type="button"
+            onClick={() => onNavigate("collabspaces")}
+            aria-current={activePage === "collabspaces" ? "page" : undefined}
+          >
+            Collabspaces
+          </button>
+        )}
         {user && (
           <button
             className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "chat" ? " is-active bg-accent-dark text-accent-light" : ""}`}

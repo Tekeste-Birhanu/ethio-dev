@@ -71,9 +71,9 @@ export default function ProfilePage(props) {
 
   return (
     <section
-                  className={`app-main-content min-w-0 px-8 pb-16 pt-8 max-[760px]:px-4 max-[760px]:pb-[calc(104px+env(safe-area-inset-bottom))] max-[760px]:pt-6${page === "profile" || page === "public-profile" ? " profile-main-content" : ""}`}
+                  className={`app-page app-main-content${page === "profile" || page === "public-profile" ? " profile-main-content" : ""}`}
                 >
-                  <section className="profile-shell mx-auto w-full max-w-[790px] min-w-0">
+                  <section className="profile-shell mx-auto w-full max-w-[1440px] min-w-0">
                     {page !== "profile" && page !== "public-profile" && (
                       <button
                         className="back-button [display:inline-flex] [min-height:42px] [align-items:center] [padding:0_15px] [border:1px_solid_#303a3e] [border-radius:10px] [background:#1b2327] [color:#edf3f4] [cursor:pointer] [font-weight:600] [text-decoration:none] hover:[border-color:#59696c] hover:[background:#222d31] [margin-bottom:18px]"

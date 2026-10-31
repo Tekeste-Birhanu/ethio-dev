@@ -18,6 +18,7 @@
 body {
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   background: var(--color-page);
   color: var(--color-ink);
@@ -63,5 +64,33 @@ textarea {
   select[aria-invalid="true"],
   textarea[aria-invalid="true"] {
     @apply border-[#f27a7a];
+  }
+}
+
+.app-page {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: 32px;
+}
+
+.app-page--chat {
+  height: 100dvh;
+  min-height: 0;
+  padding: 16px 20px;
+}
+
+@media (max-width: 760px) {
+  .app-page {
+    min-height: 100dvh;
+    padding: 16px 16px calc(104px + env(safe-area-inset-bottom));
+  }
+
+  .app-page--chat {
+    height: calc(100dvh - 68px - env(safe-area-inset-bottom));
+    min-height: 0;
+    padding: 8px 0 0;
   }
 }

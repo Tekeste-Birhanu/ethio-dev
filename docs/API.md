@@ -126,9 +126,79 @@ Success returns `201` with `{ "opportunity": ... }`. Validation errors return `4
 
 `GET /api/opportunities/mine`
 
-Requires a signed-in member. Returns all of the member's non-deleted opportunities, ordered newest first.
+Requires a signed-in member. Returns all of the member's non-deleted opportunities, ordered newest first. Opportunity records do not include Collabspace data.
 
 Success returns `200` with `{ "opportunities": [...] }`; unauthenticated requests return `401`.
+
+### Create a standalone Collabspace
+
+`POST /api/collabspaces`
+
+Requires same-origin and a signed-in member. Accepts `{ "name": "Study Planner team" }` with a trimmed name of 1–100 characters. The server creates the standalone Collabspace and an active Owner membership for the creator atomically. Invalid names return `400`; unauthenticated requests return `401`; a transaction conflict returns `409`.
+
+Success returns `201` with `{ "collabspace": { "id": "...", "name": "...", "createdAt": "..." } }`.
+
+### List your Collabspaces
+
+`GET /api/collabspaces`
+
+Requires a signed-in member. Returns Collabspaces where the member has an active membership, ordered newest first. Each item includes its ID, name, the signed-in member's role, and derived unread group-message count. No private account fields are returned.
+
+Success returns `200` with `{ "collabspaces": [...] }`; unauthenticated requests return `401`.
+
+### View a Collabspace overview
+
+`GET /api/collabspaces/:id`
+
+Requires an active member of a Collabspace. Returns its name, member identities and roles, and the group conversation ID when one exists. User email and other private account fields are excluded. Nonmembers and unknown IDs receive the same `404` response; unauthenticated requests return `401`.
+
+Success returns `200` with `{ "collabspace": { ... } }`.
+
+### Rename a Collabspace
+
+`PATCH /api/collabspaces/:id`
+
+Requires same-origin and the active Collabspace Owner. Accepts `{ "name": "Study Planner team" }`; the server trims whitespace and requires a name of 1–100 characters. The updated name is returned for the client to show across the space. Invalid names return `400`; non-owners and unknown spaces return `404`; concurrent changes return `409`; unauthenticated requests return `401`.
+
+### Manage Collabspace membership
+
+`PATCH /api/collabspaces/:id/members/:userId/role` accepts `{ "role": "ADMIN" }` or `{ "role": "MEMBER" }`. Only the Collabspace Owner can change an active member's role; the Owner role cannot be changed. Success returns `{ "membership": { "id": "...", "role": "ADMIN|MEMBER", "status": "ACTIVE" } }`.
+
+`DELETE /api/collabspaces/:id/members/:userId` ends the target's active membership immediately. Owners can remove admins or members; admins can remove regular members only; members can use this endpoint for themselves to leave. The Collabspace Owner cannot leave, and admins cannot remove themselves or another admin through this route. The membership record is retained with status `REMOVED` or `LEFT` and an `endedAt` timestamp. The response is `204`; inaccessible targets return `404`, and concurrent membership changes return `409`. New members must first accept a collaboration request or invitation; this endpoint does not add members.
+
+### Permanently delete a Collabspace
+
+`DELETE /api/collabspaces/:id`
+
+Requires same-origin and the active Collabspace Owner. Permanently deletes the Collabspace and its dependent memberships, group conversation, and messages. The client must show a clear warning that all members lose access and group chat history is permanently removed before calling this endpoint. Success returns `204`; non-owners and unknown spaces return `404`; concurrent changes return `409`; unauthenticated requests return `401`.
+
+### Read Collabspace group chat history
+
+`GET /api/collabspaces/:id/messages?before=:messageId`
+
+Requires an active member of a Collabspace. The first request creates its single group conversation if needed. Returns up to 100 messages in chronological order, sender public identity, `conversationId`, `hasMore`, `nextCursor`, the member's `unreadCount`, and whether the member can write. Omit `before` for the newest page; pass `nextCursor` to load older history. Inaccessible spaces return `404`; invalid cursors return `400`.
+
+### Mark Collabspace group messages as read
+
+`PATCH /api/collabspaces/:id/read`
+
+Requires same-origin and membership with access to the space. Accepts `{ "throughMessageId": "..." }` for a message in its group conversation and advances only the signed-in member's read marker. Returns `{ "read": true, "unreadCount": 0 }`; an invalid marker returns `400`; inaccessible spaces return `404`.
+
+### Edit a Collabspace group message
+
+`PATCH /api/collabspaces/:id/messages/:messageId`
+
+Requires same-origin, active membership, and the message author. Accepts `{ "content": "..." }` with trimmed text of 1–5,000 characters. Success returns `{ "message": ... }` and broadcasts `message.updated` to current members.
+
+### Delete a Collabspace group message
+
+`DELETE /api/collabspaces/:id/messages/:messageId`
+
+Requires same-origin and active membership. The author may delete their own message; owners and admins may also delete group messages from other members. Success returns `204` and broadcasts `group.message.deleted` to current members.
+
+### Send and receive Collabspace group messages
+
+Use the authenticated `/api/chat/socket` connection described under private messaging and send the same `{ "type": "message.send", "conversationId": "...", "clientMessageId": "...", "content": "..." }` event. The server verifies current active Collabspace membership, persists the message, then broadcasts `group.message.created` and acknowledges the sender with `group.message.ack`. Group messages are sent to current member sessions only and do not create notifications. Edits and deletions broadcast `group.message.updated` and `group.message.deleted` to current members.
 
 ### List a developer’s opportunities
 

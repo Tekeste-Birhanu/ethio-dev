@@ -22,35 +22,35 @@
 
 - **Purpose:** Public, title-free collaboration post and record of the resulting project.
 - **Fields:** `id`; `ownerId`; required `description`; optional `experienceSought` and `city`; `status`; `commentsEnabled` (default true); `createdAt`; `updatedAt`; nullable `deletedAt`.
-- **Constraints:** One owner per opportunity; a user may own many. Categories and sought skills are stored in related rows, not as lists on Opportunity. Optional city gives local collaboration context. The supported status transitions are Open, Paused, and Completed; Completed is terminal. Deleted posts are hidden from public lists and stable URLs while a linked Collabspace retains its separate history rules.
+- **Constraints:** One owner per opportunity; a user may own many. Categories and sought skills are stored in related rows, not as lists on Opportunity. Optional city gives local collaboration context. The supported status transitions are Open, Paused, and Completed; Completed is terminal. Deleted posts are hidden from public lists and stable URLs; separately created Collabspaces are unaffected.
 - **Related requirements:** F-03–F-07, F-10–F-12, F-18.
 
 ### Collabspace (`Workspace` in the data model)
 
-- **Purpose:** Named team space linked to an opportunity, with membership, group chat, and taskboard.
-- **Fields:** `id`; unique required `opportunityId`; `name`; `status` (Active or Archived); `createdAt`; nullable `archivedAt`.
-- **Constraints:** Created separately after the opportunity is published. Each opportunity has at most one Collabspace, and each Collabspace belongs to exactly one opportunity. Archiving makes the space read-only.
-- **Related requirements:** F-12, F-13, F-18.
+- **Purpose:** Named standalone team space with membership, group chat, and taskboard.
+- **Fields:** `id`; `name`; `createdAt`.
+- **Constraints:** Created from the Collabspaces page by a signed-in member, who becomes Owner. It has no Opportunity relationship. Only its active Owner can rename it or permanently delete it; names are trimmed and limited to 1–100 characters. Deletion removes its memberships, group chat, and task history after confirmation.
+- **Related requirements:** F-12, F-13, F-18, F-19.
 
 ### Membership
 
 - **Purpose:** User's role and access state in a Collabspace.
-- **Fields:** `id`; `workspaceId`; `userId`; `role` (Owner, Admin, Member); `status` (Active, Left, Removed); `joinedAt`; nullable `endedAt`.
-- **Constraints:** A user has at most one current membership record per Collabspace; membership rows remain when a member leaves or is removed. The opportunity owner has an active Owner membership and admin permissions. Only the owner changes admin roles; admins manage regular members. The owner cannot leave their own space.
+- **Fields:** `id`; `workspaceId`; `userId`; `role` (Owner, Admin, Member); `status` (Active, Left, Removed); `joinedAt`; nullable `endedAt` and `lastReadAt`.
+- **Constraints:** A user has one membership record per Collabspace; its status records whether access is active, ended by leaving, or ended by removal, and the row is retained when access ends. The creating member has an active Owner membership and admin permissions. Only the Owner changes admin roles; admins manage regular members. The Owner cannot leave their own space.
 - **Related requirements:** F-13, F-16, F-18.
 
 ### Request
 
 - **Purpose:** One record for collaboration requests, profile chat requests, and owner invitations.
-- **Fields:** `id`; `senderId`; `recipientId`; `type` (CollaborationRequest, ChatRequest, ChatInvitation, CollabspaceInvitation); `status` (Pending, Accepted, Declined, Withdrawn, Canceled); optional `opportunityId`; optional `message`; `createdAt`; `updatedAt`; nullable `resolvedAt`.
-- **Constraints:** Collaboration requests and opportunity-owner invitations reference their opportunity. A Collabspace invitation's destination is resolved through the opportunity's unique Collabspace link; do not store a redundant `workspaceId` here. Profile chat requests do not require an opportunity or message. Only the intended recipient accepts or declines; the sender may withdraw while pending. Keep resolved rows as history. A declined collaboration request cannot be repeated for that opportunity; a declined invitation cannot be repeated for that recipient and destination. A declined chat request may be sent again. Withdrawal allows a new request or invitation. Prevent duplicate pending requests to the same user pair, regardless of which user sent the request; enforce cross-record lifecycle rules in trusted server logic and transactions.
+- **Fields:** `id`; `senderId`; `recipientId`; `type` (CollaborationRequest, ChatRequest, ChatInvitation, CollabspaceInvitation); `status` (Pending, Accepted, Declined, Withdrawn, Canceled); optional `opportunityId`; optional `workspaceId` for a Collabspace invitation; optional `message`; `createdAt`; `updatedAt`; nullable `resolvedAt`.
+- **Constraints:** Collaboration requests reference their opportunity. A Collabspace invitation stores its destination `workspaceId`; an opportunity relationship may also be included as context. Deleting a Collabspace cancels its pending invitations, sets the destination reference to null, and retains resolved request history. Profile chat requests do not require an opportunity or message. Only the intended recipient accepts or declines; the sender may withdraw while pending. Keep resolved rows as history. A declined collaboration request cannot be repeated for that opportunity; a declined invitation cannot be repeated for that recipient and destination. A declined chat request may be sent again. Withdrawal allows a new request or invitation. Prevent duplicate pending requests to the same user pair, regardless of which user sent the request; enforce cross-record lifecycle rules in trusted server logic and transactions.
 - **Related requirements:** F-07–F-09, F-17, F-18.
 
 ### Conversation
 
 - **Purpose:** Private chat between two users or group chat for one Collabspace.
 - **Fields:** `id`; `type` (Private or Collabspace); optional unique `workspaceId` (required for Collabspace conversations); `createdAt`; nullable `endedAt`.
-- **Constraints:** Private participants are stored as separate PrivateConversationParticipant rows, not as two participant columns. A private conversation has exactly two distinct participant rows and at most one active conversation per pair. A Collabspace conversation is linked to exactly one Collabspace and is accessible only through current membership (or the documented archived read-only access). Chat deletion ends the private conversation for both participants. Group chat remains inside its Collabspace.
+- **Constraints:** Private participants are stored as separate PrivateConversationParticipant rows, not as two participant columns. A private conversation has exactly two distinct participant rows and at most one active conversation per pair. A Collabspace conversation is linked to exactly one Collabspace and is accessible only through current membership. Chat deletion ends the private conversation for both participants. Group chat remains inside its Collabspace and is permanently deleted with the Collabspace.
 - **Related requirements:** F-13–F-15, F-17, F-18.
 
 The initial M5 migration creates the private-conversation and message tables. `workspaceId` is reserved for the Collabspace conversation relationship introduced in M6; M5 creates private conversations only. The server must create exactly two distinct participant rows in a transaction and permit access only to those participants. `lastReadAt` supports per-conversation unread counts, while `mutedAt` supports later notification behavior.
@@ -82,7 +82,7 @@ The initial M5 migration creates the private-conversation and message tables. `w
 
 These records support the main entities without changing their ownership model:
 
-- **PrivateConversationParticipant:** Composite key `(conversationId, userId)`, plus nullable `lastReadAt` and `mutedAt`. Used for private-chat participants, unread counts, and per-chat mute. Collabspace group access remains governed by Membership.
+- **PrivateConversationParticipant:** Composite key `(conversationId, userId)`, plus nullable `lastReadAt` and `mutedAt`. Used for private-chat participants, unread counts, and per-chat mute. Collabspace group access and unread read-markers remain governed by Membership.
 - **UserSkill:** Composite key `(userId, skillId)`; no duplicate skill assignment to the same user.
 - **OpportunitySkill:** Composite key `(opportunityId, skillId)`; no duplicate sought skill on the same opportunity.
 - **OpportunityCategory:** Composite key `(opportunityId, category)`, with category drawn from the fixed approved set; no duplicate category on the same opportunity.
@@ -97,7 +97,7 @@ These records support the main entities without changing their ownership model:
 | Entity | Relationship | Entity | Rules |
 |---|---|---|---|
 | User | One-to-many | Opportunity | Each opportunity has one owner; a user may own many. |
-| Opportunity | Optional one-to-one | Collabspace | The space is created from its opportunity; the link is explicit and unique. |
+| Opportunity | One-to-many optional context | Request | Collaboration requests refer to the post; spaces remain independent. |
 | User | Many-to-many through Membership | Collabspace | Membership stores role and active/ended access. A user may join multiple spaces. |
 | User | One-to-many as sender or recipient | Request | Each request has one sender and one recipient; opportunity and destination links depend on request type. |
 | Collabspace | Optional one-to-one | Collabspace conversation | Group conversation belongs to its space and uses its membership for access. |
@@ -117,11 +117,11 @@ These records support the main entities without changing their ownership model:
 ## 5. Integrity and business invariants
 
 - **INV-01 — Opportunity ownership:** Each opportunity has exactly one owner. Only that owner controls its content, comments setting, status, and deletion.
-- **INV-02 — Opportunity and Collabspace link:** An opportunity has zero or one linked Collabspace. The link is set by creating the space from that opportunity, never by matching names.
+- **INV-02 — Standalone Collabspaces:** A Collabspace has no required Opportunity link. Opportunity ownership grants no membership or control over any Collabspace.
 - **INV-03 — Current membership:** Only active members may read or write an active Collabspace. The owner is an active member with owner/admin permissions. Leaving or removal ends access immediately.
-- **INV-04 — Archived space access:** Deleting an opportunity archives its linked Collabspace as read-only for users who were active members at archival time. Former or removed members do not gain archived access.
+- **INV-04 — Collabspace deletion:** Only the active Owner can permanently delete a Collabspace. Deletion removes access for all members and permanently removes the space's group chat and task history. Opportunity deletion has no effect on Collabspaces.
 - **INV-05 — Request transitions:** Requests begin Pending and resolve to Accepted, Declined, Withdrawn, or Canceled. Only pending records can transition. A declined collaboration request or invitation cannot be repeated under the rules defined for Request.
-- **INV-06 — Conversation access:** Private messages are visible only to the two participants. Group messages are visible only to current Collabspace members, with archived read-only access as defined above. Message persistence precedes real-time delivery.
+- **INV-06 — Conversation access:** Private messages are visible only to the two participants. Group messages are visible only to current Collabspace members. Message persistence precedes real-time delivery.
 - **INV-07 — Task authorization:** Owners/admins manage milestones and task details. An assignee may change the status of their own task. Assignments can be made only to active members of the same Collabspace. When membership ends, unfinished tasks are unassigned; completed tasks may retain their former assignee for history.
 - **INV-08 — Private information:** Email, password hashes, session identifiers, and Google OAuth credentials are never exposed in public profile or discovery responses.
 
@@ -149,7 +149,7 @@ Add search-specific indexes only after choosing the search implementation and co
 
 - **Ownership / boundaries:** Opportunity owner controls opportunity data. Collabspace membership controls space data. Conversation participants control private chat data. Notification and saved-post records are private to their user.
 - **Read / write permissions:** Public visitors can read public profiles and non-deleted opportunities. Protected actions require authentication. Enforce all role and membership checks in Express, including WebSocket actions.
-- **Deletion / archival:** Opportunity deletion removes the post from public discovery and cancels its pending requests/invitations. Retain the opportunity record as a non-public tombstone while its linked Collabspace is archived read-only. Private-chat deletion ends the chat for both participants and removes its messages while retaining the resolved request history; either member may send a new request afterward. Comment deletion removes only the selected comment. Removing a member ends access but retains team conversation and task history.
+- **Deletion:** Opportunity deletion removes the post from public discovery and cancels its pending requests and opportunity-related invitations; it does not alter Collabspaces. Collabspace deletion requires Owner confirmation and permanently removes its memberships, group chat, messages, milestones, and tasks. Private-chat deletion ends the chat for both participants and removes its messages while retaining the resolved request history; either member may send a new request afterward. Comment deletion removes only the selected comment. Removing a member ends access but retains team conversation and task history for the remaining members.
 - **Privacy:** Email is authentication-only. Password hashes, session identifiers, and OAuth secrets remain private. Saved posts and notifications are visible only to their owner.
 - **Audit history:** Keep resolved Request rows for the Requests history. No separate general audit log is required by the current MVP scope.
 

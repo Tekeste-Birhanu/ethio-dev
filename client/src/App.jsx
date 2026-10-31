@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import DiscoverPage from "./pages/DiscoverPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
+import CollabspacesPage from "./pages/CollabspacesPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import { emptyOpportunityForm, emptyProfileFields } from "./constants.js";
 import { AppSidebar } from "./components/layout.jsx";
@@ -56,6 +57,7 @@ function readAppRoute() {
   const chatConversationId = new URLSearchParams(window.location.search).get("conversation") ?? "";
   const profileMatch = pathname.match(/^\/profile\/([^/]+)$/);
   const opportunityMatch = pathname.match(/^\/opportunities\/([^/]+)$/);
+  const collabspaceMatch = pathname.match(/^\/collabspaces(?:\/([^/]+))?$/);
 
   if (pathname === "/profile") {
     return { page: "profile", publicUsername: "", sharedOpportunityId: "" };
@@ -63,6 +65,19 @@ function readAppRoute() {
 
   if (pathname === "/chat") {
     return { page: "chat", publicUsername: "", sharedOpportunityId: "", chatConversationId };
+  }
+
+  if (collabspaceMatch) {
+    try {
+      return {
+        page: "collabspaces",
+        publicUsername: "",
+        sharedOpportunityId: "",
+        collabspaceId: collabspaceMatch[1] ? decodeURIComponent(collabspaceMatch[1]) : "",
+      };
+    } catch {
+      return { page: "collabspaces", publicUsername: "", sharedOpportunityId: "", collabspaceId: "" };
+    }
   }
 
   if (profileMatch) {
@@ -137,6 +152,7 @@ function App() {
     initialRoute.sharedOpportunityId,
   );
   const [page, setPage] = useState(initialRoute.page);
+  const [requestedCollabspaceId, setRequestedCollabspaceId] = useState(initialRoute.collabspaceId ?? "");
   const [mode, setMode] = useState("register");
   const [registration, setRegistration] = useState({
     name: "",
@@ -474,6 +490,7 @@ function App() {
       const route = readAppRoute();
       const nextState = readDiscoverUrlState();
       setPage(route.page);
+      setRequestedCollabspaceId(route.collabspaceId ?? "");
       setRequestedChatConversationId(route.chatConversationId ?? "");
       setPublicUsername(route.publicUsername);
       setSharedOpportunityId(route.sharedOpportunityId);
@@ -1507,6 +1524,29 @@ function App() {
   }
 
   function handleAppNavigation(destination, chatConversationId = "") {
+    if (destination === "collabspaces" || destination.startsWith("collabspace:")) {
+      if (!user) {
+        setMode("login");
+        setMessage("Sign in to view your Collabspaces.");
+        setPage("auth");
+        return;
+      }
+      const collabspaceId = destination.startsWith("collabspace:")
+        ? destination.slice("collabspace:".length)
+        : "";
+      setPublicUsername("");
+      setSharedOpportunityId("");
+      setRequestedCollabspaceId(collabspaceId);
+      setPage("collabspaces");
+      const path = collabspaceId
+        ? `/collabspaces/${encodeURIComponent(collabspaceId)}`
+        : "/collabspaces";
+      if (`${window.location.pathname}${window.location.search}` !== path) {
+        window.history.pushState(window.history.state, "", path);
+      }
+      return;
+    }
+
     if (destination === "chat") {
       if (!user) {
         setMode("login");
@@ -1918,13 +1958,15 @@ function App() {
     };
 
     return (
-      <main className="profile-page min-h-screen bg-page p-0">
-        <div className="app-shell grid min-h-screen min-w-0 grid-cols-[250px_minmax(0,1fr)] max-[760px]:grid-cols-[minmax(0,1fr)] max-[760px]:grid-rows-[auto_minmax(0,1fr)]">
+      <main className="profile-page min-h-dvh bg-page p-0">
+        <div className="app-shell grid min-h-dvh min-w-0 grid-cols-[250px_minmax(0,1fr)] max-[760px]:grid-cols-[minmax(0,1fr)] max-[760px]:grid-rows-[auto_minmax(0,1fr)]">
           <AppSidebar
             user={user}
             activePage={
               page === "chat"
                 ? "chat"
+                : page === "collabspaces"
+                  ? "collabspaces"
                 : page === "discover" ||
               page === "public-profile" ||
               (page === "create-opportunity" &&
@@ -1979,6 +2021,13 @@ function App() {
               user={user}
               requestedConversationId={requestedChatConversationId}
               onConversationUrlChange={updateChatConversationUrl}
+            />
+          ) : page === "collabspaces" ? (
+            <CollabspacesPage
+              selectedId={requestedCollabspaceId}
+              user={user}
+              onOpen={(collabspaceId) => handleAppNavigation(`collabspace:${collabspaceId}`)}
+              onBack={() => handleAppNavigation("collabspaces")}
             />
           ) : (
             <ProfilePage {...pageProps} />

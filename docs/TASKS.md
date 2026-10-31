@@ -23,7 +23,7 @@
 | M3. Opportunity posts                      | Users can publish and manage collaboration opportunities | M2             | Done        |
 | M4. Discover and search                    | Users can browse opportunities and developers            | M3             | Done        |
 | M5. Private chat                           | Accepted chat requests create one-to-one conversations   | M2             | Done        |
-| M6. Collabspaces and group chat            | Teams have a linked shared space and group conversation  | M3, M5         | Not started |
+| M6. Collabspaces and group chat            | Members create independent spaces for group conversation | M3, M5         | Done        |
 | M7. Collaboration requests and invitations | Owners can review requests and invite developers         | M3, M4, M5, M6 | Not started |
 | M8. Shared taskboard                       | Members coordinate work with tasks and assignees         | M6             | Not started |
 | M9. Release readiness                      | Core flows are polished and ready for release            | M1–M8          | Not started |
@@ -91,25 +91,26 @@
 
 ## M6. Collabspaces and group chat
 
-**Outcome:** An opportunity owner can create a linked Collabspace for a team to communicate and coordinate.
+**Outcome:** Members can create independent Collabspaces for teams to communicate and coordinate.
 
-- [ ] **T-32 — Create the Collabspace data model.** Link a Collabspace to its opportunity and define owner, admin, and member relationships.
-- [ ] **T-33 — Create a Collabspace from its opportunity.** Provide a Create Collabspace action and require a name; keep the opportunity-to-space relationship explicit.
-- [ ] **T-34 — Build the Collabspace overview.** Show its linked opportunity, members, group chat, and taskboard entry points.
-- [ ] **T-35 — Build Collabspace group chat.** Provide shared member chat with unread counts and message history.
-- [ ] **T-36 — Add member and admin management.** Let the owner add or remove members and assign admins; admins manage the Collabspace but cannot edit the opportunity. Preserve the agreed deleted-space display/history behavior.
+- [x] **T-32 — Create the Collabspace data model.** Make Collabspaces independent from opportunities and define creator-owner, admin, and member relationships.
+- [x] **T-33 — Create a standalone Collabspace.** Add a Create Collabspace action to the Collabspaces page and create a named space with its creator as Owner.
+- [x] **T-34 — Build the Collabspace overview.** Show space identity, group chat, taskboard, member management, and space settings without requiring an opportunity link. The space view has Group chat, Taskboard, Members, and Settings tabs; Group chat opens by default.
+- [x] **T-35 — Build Collabspace group chat.** Provide shared member chat with unread counts and message history.
+- [x] **T-36 — Add member and admin management.** Let Owners appoint/remove admins, Owners and admins manage regular member access, members leave, and Owners delete spaces after a clear warning; enforce these permissions in the API. New members join only after accepting a collaboration request or invitation (T-42/T-43). Preserve team history when individual members leave or are removed.
+- [x] **T-36a — Add Collabspace settings and renaming.** Add a Settings tab for space-level actions. Let only the active Owner rename a Collabspace with a validated name; move permanent deletion into Settings with a clear warning. Enforce Owner permissions in the API and update the name for all members.
 
 ## M7. Collaboration requests and invitations
 
-**Outcome:** Opportunity owners can review collaboration requests and add accepted developers to the right Collabspace.
+**Outcome:** Opportunity owners can review collaboration requests and accept developers into private chat or a chosen Collabspace.
 
 - [ ] **T-37 — Create collaboration request records and API.** Associate each request with its opportunity and requester; allow an optional message.
 - [ ] **T-38 — Add the Send collaboration request action.** Require a completed profile, allow requests only for Open opportunities in both UI and API, and prevent duplicate pending requests.
 - [ ] **T-39 — Build outgoing request tracking.** Show a user's sent requests and their current status in the profile's Requests area.
 - [ ] **T-40 — Build incoming request review.** Show pending requests with the requester's profile available to the owner, including requests on Paused opportunities.
 - [ ] **T-41 — Add accept and decline actions.** Let the opportunity owner decide; acceptance notifies the requester and decline does not. Completing an opportunity closes its pending requests.
-- [ ] **T-42 — Add accepted-request routing.** The owner can accept into private chat or add directly to the linked Collabspace. If the opportunity has no Collabspace, guide the owner to create one before adding the person.
-- [ ] **T-43 — Add owner invitations to developers.** Let an owner invite a developer from an Open opportunity to request a private chat or join the opportunity's Collabspace; the invitee must accept before the relevant access is granted. Completing an opportunity closes its pending invitations.
+- [ ] **T-42 — Add accepted-request routing.** The owner can accept into private chat or choose a Collabspace they own/administer; if needed, create a new standalone space as part of the acceptance action.
+- [ ] **T-43 — Add developer invitations.** Opportunity owners can invite developers to private chat; Collabspace owners/admins can invite developers to their space. Invitees must accept before access is granted. Completing an opportunity closes its opportunity-related pending requests and invitations.
 
 ## M8. Shared taskboard
 
@@ -139,10 +140,6 @@
 - [ ] **T-55 — Deploy the client and API.** Deploy the client to Cloudflare Pages and the Express API to Render.
 - [ ] **T-56 — Provision and migrate the production database.** Configure Neon PostgreSQL, run Prisma migrations, and verify connectivity.
 - [ ] **T-57 — Verify the live release and document operations.** Check authentication, core user journeys, logs, and recovery steps; document how to release updates.
-
-## Planned follow-up outside M5
-
-- [ ] **T-58 — Build the shared Notifications screen.** After request and invitation flows are available, show activity in one chronological list with unread state and links to each review or chat destination. Until then, M5 acceptance and private-message alerts appear as temporary Chat toasts using polling.
 
 ## Deferred from MVP
 

@@ -53,7 +53,7 @@ These are logical backend modules inside one Express application, not separate s
 | Discovery | Opportunity and developer browsing, search, and filters | Return only fields intended for public discovery. |
 | Opportunities | Opportunity posts, comments, saves, sharing metadata, and lifecycle | Opportunity owner controls opportunity content and lifecycle. |
 | Requests and invitations | Collaboration requests, chat requests, invitations, withdrawal, acceptance, and decline | Enforce duplicate and eligibility rules in trusted server logic and database constraints where applicable. |
-| Collabspaces and membership | Space membership, admin roles, archival, and member access | Every protected read and write checks current membership; owner/admin powers follow `PRD.md`. |
+| Collabspaces and membership | Space membership, admin roles, deletion, and member access | Every protected read and write checks current membership; owner/admin powers follow `PRD.md`. |
 | Tasks and milestones | Milestones, tasks, assignments, due dates, and status changes | Enforce admin management rights and assignee status rights on the server. |
 | Chat and notifications | Private/group messages, editing/deletion, unread counts, mute settings, and in-app notifications | Persist messages before reporting successful delivery; authorize access to each conversation. The product Chat destination lists private conversations only; group chat is accessed within its Collabspace. |
 
@@ -88,12 +88,12 @@ This is an initial boundary proposal for the new application. Add folders when i
 - **ADR-04 - Server-managed sessions for both sign-in methods:** Authenticate with email/username and password or Google OAuth, then create an EthioDev session stored in PostgreSQL. Store only a hash of the opaque session ID in the database and put the ID in an HttpOnly, SameSite=Lax cookie; set Secure in production. Sessions expire after 30 days and sign-out revokes the server-side record. Do not store session credentials in browser local storage. Accounts with a password credential can change it; accounts without one do not have an EthioDev password to change. Google OAuth uses the server-side authorization-code flow with state validation and PKCE; request only OpenID, email, and profile scopes.
 - **ADR-05 - No attachment storage in MVP:** Do not add R2 or another file-storage service. Chat messages support text and links as specified in the product requirements.
 - **ADR-06 - Free portfolio deployment:** Use Cloudflare Pages, Render, and Neon for the initial public demo. Design for service sleep, restarts, and WebSocket reconnects; do not treat the free deployment as a production reliability commitment.
-- **ADR-07 - Explicit opportunity-to-Collabspace link:** An opportunity may have no Collabspace after publication. When its owner uses Create Collabspace on that opportunity, persist an explicit one-to-one association (`workspace.opportunityId` referencing the opportunity ID, unique and required once created). Member addition and invitations resolve the linked space through that association, never by name.
+- **ADR-07 - Standalone Collabspaces:** Collabspaces are independent of opportunities. A signed-in member creates one from the Collabspaces page; the creator becomes Owner. Opportunity ownership grants no implicit space membership or control. Collaboration-request acceptance chooses a space the opportunity owner owns or administers, or creates one as part of acceptance.
 - **ADR-08 - WebSocket library:** Use the `ws` library on the existing Express HTTP server for authenticated chat delivery. REST remains the source of truth for conversation history and unread state; the server persists each message before broadcasting it. The browser reconnects and reconciles uncertain sends using a per-sender client message ID.
 
 ## 7. Data and integration flow
 
-An opportunity may exist without a Collabspace. The owner creates the Collabspace from the opportunity's Create Collabspace action and provides its name; the server saves the opportunity ID on the `workspace` record. The unique relationship lets request handling resolve the correct space when the owner adds someone. Deleting an opportunity archives its linked Collabspace only if one exists.
+Collabspaces are created independently from the Collabspaces page and have no required opportunity association. A collaboration-request decision may create a standalone Collabspace and add the applicant atomically with acceptance. Deleting an opportunity cancels its pending opportunity-related requests and invitations but does not change any Collabspace.
 
 ### REST operation
 

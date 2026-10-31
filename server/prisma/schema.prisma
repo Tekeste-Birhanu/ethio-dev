@@ -56,6 +56,18 @@ enum NotificationType {
   PRIVATE_MESSAGE_RECEIVED
 }
 
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  LEFT
+  REMOVED
+}
+
 model User {
   id                              String                           @id @default(cuid())
   email                           String                           @unique
@@ -79,6 +91,7 @@ model User {
   sentRequests                    Request[]                        @relation("RequestSender")
   receivedRequests                Request[]                        @relation("RequestRecipient")
   notifications                   Notification[]
+  workspaceMemberships            Membership[]
 }
 
 model Skill {
@@ -176,6 +189,31 @@ model SavedOpportunity {
   @@index([userId, savedAt])
 }
 
+model Workspace {
+  id            String       @id @default(cuid())
+  name          String
+  createdAt     DateTime     @default(now())
+  memberships   Membership[]
+  conversation  Conversation?
+}
+
+model Membership {
+  id          String           @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MembershipRole   @default(MEMBER)
+  status      MembershipStatus @default(ACTIVE)
+  joinedAt    DateTime         @default(now())
+  endedAt     DateTime?
+  lastReadAt  DateTime?
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([workspaceId, userId])
+  @@index([userId, status])
+  @@index([workspaceId, status])
+}
+
 model Conversation {
   id           String                           @id @default(cuid())
   type         ConversationType                 @default(PRIVATE)
@@ -184,6 +222,7 @@ model Conversation {
   endedAt      DateTime?
   participants PrivateConversationParticipant[]
   messages     Message[]
+  workspace    Workspace?                       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
 
 model PrivateConversationParticipant {

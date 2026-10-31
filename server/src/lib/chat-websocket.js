@@ -47,6 +47,10 @@ export function broadcastPrivateMessageChanged(participantIds, event) {
   for (const userId of participantIds) broadcastToUser(userId, event)
 }
 
+export function broadcastGroupMessage(memberIds, event) {
+  for (const userId of memberIds) broadcastToUser(userId, event)
+}
+
 function validateMessageEvent(event) {
   if (!event || typeof event !== 'object' || Array.isArray(event) || event.type !== 'message.send') {
     return { error: 'Unsupported chat event.' }
@@ -121,6 +125,68 @@ async function persistPrivateMessage(userId, { conversationId, clientMessageId, 
   }, { isolationLevel: 'Serializable' })
 }
 
+async function persistGroupMessage(userId, { conversationId, clientMessageId, content }) {
+  return prisma.$transaction(async (transaction) => {
+    const conversation = await transaction.conversation.findFirst({
+      where: {
+        id: conversationId,
+        type: 'COLLABSPACE',
+        endedAt: null,
+        workspace: {
+          is: {
+            memberships: { some: { userId, status: 'ACTIVE' } },
+          },
+        },
+      },
+      select: {
+        workspace: {
+          select: {
+            memberships: {
+              where: { status: 'ACTIVE' },
+              select: { userId: true },
+            },
+          },
+        },
+      },
+    })
+    if (!conversation) {
+      return { error: { code: 'CONVERSATION_NOT_FOUND', message: 'This conversation is not available.' } }
+    }
+
+    const message = await transaction.message.upsert({
+      where: { senderId_clientMessageId: { senderId: userId, clientMessageId } },
+      update: {},
+      create: { conversationId, senderId: userId, clientMessageId, content },
+      select: {
+        id: true,
+        conversationId: true,
+        senderId: true,
+        clientMessageId: true,
+        content: true,
+        createdAt: true,
+        sender: { select: publicUserSelect },
+      },
+    })
+    if (message.conversationId !== conversationId || message.content !== content) {
+      return { error: { code: 'MESSAGE_ID_REUSED', message: 'This message could not be retried safely.' } }
+    }
+
+    return {
+      message,
+      memberIds: conversation.workspace.memberships.map((membership) => membership.userId),
+    }
+  }, { isolationLevel: 'Serializable' })
+}
+
+async function persistConversationMessage(userId, payload) {
+  const conversation = await prisma.conversation.findUnique({
+    where: { id: payload.conversationId },
+    select: { type: true },
+  })
+  if (conversation?.type === 'COLLABSPACE') return persistGroupMessage(userId, payload)
+  return persistPrivateMessage(userId, payload)
+}
+
 async function handleMessage(socket, rawData, isBinary) {
   let event
   try {
@@ -148,7 +214,7 @@ async function handleMessage(socket, rawData, isBinary) {
       socket.close(4401, 'Session expired')
       return
     }
-    const result = await persistPrivateMessage(socket.user.id, validated)
+    const result = await persistConversationMessage(socket.user.id, validated)
     if (result.error) {
       return sendJson(socket, {
         type: 'error',
@@ -157,15 +223,19 @@ async function handleMessage(socket, rawData, isBinary) {
       })
     }
 
-    const eventData = { type: 'message.created', message: result.message }
-    const recipients = new Set([socket.user.id, result.recipientId])
+    const isGroupMessage = Array.isArray(result.memberIds)
+    const eventData = {
+      type: isGroupMessage ? 'group.message.created' : 'message.created',
+      message: result.message,
+    }
+    const recipients = new Set(result.memberIds ?? [socket.user.id, result.recipientId])
     for (const recipientId of recipients) {
       const message = { ...result.message }
       if (recipientId !== result.message.senderId) delete message.clientMessageId
       broadcastToUser(recipientId, { ...eventData, message })
     }
     sendJson(socket, {
-      type: 'message.ack',
+      type: isGroupMessage ? 'group.message.ack' : 'message.ack',
       clientMessageId: validated.clientMessageId,
       message: result.message,
     })
