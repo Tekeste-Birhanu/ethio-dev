@@ -8,6 +8,7 @@ export default function DiscoverPage(props) {
   const {
     activeDiscoverFilterCount,
     areDiscoverFiltersOpen,
+    collaborationRequestStatuses,
     debouncedDiscoverQuery,
     developersError,
     developersLoadedQuery,
@@ -25,6 +26,7 @@ export default function DiscoverPage(props) {
     handleLoadMoreOpportunities,
     handleOpenOpportunityComposer,
     handleSaveOpportunity,
+    handleSendCollaborationRequest,
     handleShareOpportunity,
     handleToggleOpportunityComments,
     hasMoreDevelopers,
@@ -38,6 +40,7 @@ export default function DiscoverPage(props) {
     opportunitiesError,
     opportunitiesLoadedQuery,
     opportunitiesLoading,
+    sendingCollaborationOpportunityId,
     savedOpportunities,
     setActiveCommentsOpportunity,
     setAreDiscoverFiltersOpen,
@@ -384,6 +387,9 @@ export default function DiscoverPage(props) {
                         onToggleComments={handleToggleOpportunityComments}
                         onSave={handleSaveOpportunity}
                         onShare={handleShareOpportunity}
+                        onRequest={user?.name && user?.username ? handleSendCollaborationRequest : undefined}
+                        requestStatus={collaborationRequestStatuses?.get(sharedOpportunity.id)}
+                        isSendingRequest={sendingCollaborationOpportunityId === sharedOpportunity.id}
                       />
                     </div>
                   )}
@@ -515,6 +521,9 @@ export default function DiscoverPage(props) {
                               }
                               onSave={handleSaveOpportunity}
                               onShare={handleShareOpportunity}
+                              onRequest={user?.name && user?.username ? handleSendCollaborationRequest : undefined}
+                              requestStatus={collaborationRequestStatuses?.get(opportunity.id)}
+                              isSendingRequest={sendingCollaborationOpportunityId === opportunity.id}
                             />
                           ))}
                         </div>

@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { parseOpportunityInput } from '../lib/opportunity-input.js'
 import { authenticate } from '../middleware/authenticate.js'
 import { requireSameOrigin } from '../middleware/require-same-origin.js'
+import { findOrCreatePrivateConversation } from '../lib/private-conversation.js'
 
 const router = Router()
 
@@ -37,6 +38,425 @@ const commentSelect = {
   createdAt: true,
   author: { select: { id: true, name: true, username: true } },
 }
+
+export function createCollaborationRequestHandler(database) {
+  return async (req, res) => {
+    const opportunityId = typeof req.params.id === 'string' ? req.params.id.trim() : ''
+    const rawMessage = req.body?.message
+    if (!opportunityId || opportunityId.length > 100) {
+      return res.status(400).json({
+        error: { code: 'INVALID_OPPORTUNITY', message: 'Choose an opportunity to request.' },
+      })
+    }
+    if (rawMessage !== undefined && rawMessage !== null && typeof rawMessage !== 'string') {
+      return res.status(400).json({
+        error: { code: 'INVALID_MESSAGE', message: 'The optional message must be text up to 1,000 characters.' },
+      })
+    }
+    const message = typeof rawMessage === 'string' ? rawMessage.trim() || null : null
+    if (message && message.length > 1000) {
+      return res.status(400).json({
+        error: { code: 'INVALID_MESSAGE', message: 'The optional message must be text up to 1,000 characters.' },
+      })
+    }
+    if (!req.auth.user.name || !req.auth.user.username) {
+      return res.status(403).json({
+        error: { code: 'PROFILE_INCOMPLETE', message: 'Complete your profile before sending a collaboration request.' },
+      })
+    }
+
+    try {
+      const request = await database.$transaction(async (transaction) => {
+        const opportunity = await transaction.opportunity.findFirst({
+          where: { id: opportunityId, deletedAt: null },
+          select: {
+            id: true,
+            description: true,
+            ownerId: true,
+            status: true,
+            owner: { select: { id: true, name: true, username: true } },
+          },
+        })
+        if (!opportunity) return { error: 'NOT_FOUND' }
+        if (opportunity.status !== 'OPEN') return { error: 'NOT_OPEN' }
+        if (opportunity.ownerId === req.auth.user.id) return { error: 'SELF_REQUEST' }
+
+        const existingRequest = await transaction.request.findFirst({
+          where: {
+            senderId: req.auth.user.id,
+            opportunityId: opportunity.id,
+            type: 'COLLABORATION_REQUEST',
+            status: { in: ['PENDING', 'ACCEPTED', 'DECLINED'] },
+          },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          select: { id: true, status: true },
+        })
+        if (existingRequest?.status === 'DECLINED') return { error: 'REQUEST_DECLINED' }
+        if (existingRequest?.status === 'PENDING') return { error: 'REQUEST_PENDING' }
+        if (existingRequest?.status === 'ACCEPTED') return { error: 'REQUEST_ACCEPTED' }
+
+        const created = await transaction.request.create({
+          data: {
+            senderId: req.auth.user.id,
+            recipientId: opportunity.ownerId,
+            type: 'COLLABORATION_REQUEST',
+            opportunityId: opportunity.id,
+            message,
+          },
+          select: {
+            id: true,
+            status: true,
+            message: true,
+            createdAt: true,
+          },
+        })
+        return {
+          request: {
+            ...created,
+            opportunity: { id: opportunity.id, description: opportunity.description },
+            recipient: opportunity.owner,
+          },
+        }
+      }, { isolationLevel: 'Serializable' })
+
+      if (request.error === 'NOT_FOUND') {
+        return res.status(404).json({
+          error: { code: 'OPPORTUNITY_NOT_FOUND', message: 'This opportunity could not be found.' },
+        })
+      }
+      if (request.error === 'SELF_REQUEST') {
+        return res.status(400).json({
+          error: { code: 'SELF_REQUEST', message: 'You cannot send a collaboration request for your own opportunity.' },
+        })
+      }
+      if (request.error === 'NOT_OPEN') {
+        return res.status(409).json({
+          error: { code: 'OPPORTUNITY_NOT_OPEN', message: 'This opportunity is not accepting new requests.' },
+        })
+      }
+      if (request.error === 'REQUEST_PENDING') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_PENDING', message: 'You already have a pending request for this opportunity.' },
+        })
+      }
+      if (request.error === 'REQUEST_DECLINED') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_DECLINED', message: 'This request was declined. You cannot send another collaboration request for this opportunity.' },
+        })
+      }
+      if (request.error === 'REQUEST_ACCEPTED') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_ACCEPTED', message: 'This opportunity request has already been accepted.' },
+        })
+      }
+      return res.status(201).json({ request: request.request })
+    } catch (error) {
+      if (error?.code === 'P2002') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_PENDING', message: 'You already have a pending request for this opportunity.' },
+        })
+      }
+      if (error?.code === 'P2034') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_CHANGED', message: 'The opportunity changed. Refresh and try again.' },
+        })
+      }
+      console.error('Collaboration request could not be created')
+      return res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Could not send the collaboration request.' },
+      })
+    }
+  }
+}
+
+export function resolveCollaborationRequestHandler(database) {
+  return async (req, res) => {
+    const status = typeof req.body?.status === 'string'
+      ? req.body.status.trim().toUpperCase()
+      : ''
+    if (!['ACCEPTED', 'DECLINED'].includes(status)) {
+      return res.status(400).json({
+        error: { code: 'INVALID_REQUEST_STATUS', message: 'Choose accept or decline.' },
+      })
+    }
+    const destination = req.body?.destination
+    if (status === 'ACCEPTED' && !['PRIVATE_CHAT', 'COLLABSPACE', 'CREATE_COLLABSPACE'].includes(destination?.type)) {
+      return res.status(400).json({
+        error: { code: 'INVALID_DESTINATION', message: 'Choose private chat or a Collabspace for acceptance.' },
+      })
+    }
+    if (status === 'ACCEPTED' && destination.type === 'COLLABSPACE'
+      && (typeof destination.workspaceId !== 'string' || !destination.workspaceId.trim())) {
+      return res.status(400).json({
+        error: { code: 'INVALID_DESTINATION', message: 'Choose a Collabspace.' },
+      })
+    }
+    const newSpaceName = typeof destination?.name === 'string' ? destination.name.trim() : ''
+    if (status === 'ACCEPTED' && destination.type === 'CREATE_COLLABSPACE'
+      && (!newSpaceName || newSpaceName.length > 100)) {
+      return res.status(400).json({
+        error: { code: 'INVALID_SPACE_NAME', message: 'Enter a Collabspace name up to 100 characters.' },
+      })
+    }
+
+    try {
+      const result = await database.$transaction(async (transaction) => {
+        const request = await transaction.request.findFirst({
+          where: {
+            id: req.params.id,
+            recipientId: req.auth.user.id,
+            type: 'COLLABORATION_REQUEST',
+          },
+          select: {
+            id: true,
+            status: true,
+            senderId: true,
+            workspaceId: true,
+            opportunity: { select: { id: true, ownerId: true, status: true, deletedAt: true } },
+          },
+        })
+        if (!request || request.opportunity?.ownerId !== req.auth.user.id) return { error: 'NOT_FOUND' }
+        if (request.status !== 'PENDING') return { error: 'RESOLVED' }
+        if (!request.opportunity || request.opportunity.deletedAt || request.opportunity.status === 'COMPLETED') {
+          return { error: 'OPPORTUNITY_CLOSED' }
+        }
+
+        let conversation = null
+        let workspaceId = null
+        if (status === 'ACCEPTED' && destination.type === 'PRIVATE_CHAT') {
+          conversation = await findOrCreatePrivateConversation(transaction, req.auth.user.id, request.senderId)
+        } else if (status === 'ACCEPTED' && destination.type === 'COLLABSPACE') {
+          const space = await transaction.workspace.findFirst({
+            where: {
+              id: destination.workspaceId.trim(),
+              memberships: {
+                some: {
+                  userId: req.auth.user.id,
+                  status: 'ACTIVE',
+                  role: { in: ['OWNER', 'ADMIN'] },
+                },
+              },
+            },
+            select: { id: true },
+          })
+          if (!space) return { error: 'SPACE_NOT_AVAILABLE' }
+          workspaceId = space.id
+        } else if (status === 'ACCEPTED' && destination.type === 'CREATE_COLLABSPACE') {
+          const space = await transaction.workspace.create({
+            data: { name: newSpaceName },
+            select: { id: true },
+          })
+          await transaction.membership.create({
+            data: { workspaceId: space.id, userId: req.auth.user.id, role: 'OWNER', status: 'ACTIVE' },
+          })
+          workspaceId = space.id
+        }
+
+        if (workspaceId) {
+          const membership = await transaction.membership.findUnique({
+            where: { workspaceId_userId: { workspaceId, userId: request.senderId } },
+            select: { id: true, status: true },
+          })
+          if (membership?.status === 'ACTIVE') {
+            // Existing access already satisfies the acceptance destination.
+          } else if (membership) {
+            await transaction.membership.update({
+              where: { id: membership.id },
+              data: { role: 'MEMBER', status: 'ACTIVE', joinedAt: new Date(), endedAt: null, lastReadAt: null },
+            })
+          } else {
+            await transaction.membership.create({
+              data: { workspaceId, userId: request.senderId, role: 'MEMBER', status: 'ACTIVE' },
+            })
+          }
+        }
+
+        const resolvedAt = new Date()
+        const updated = await transaction.request.updateMany({
+          where: {
+            id: request.id,
+            recipientId: req.auth.user.id,
+            status: 'PENDING',
+          },
+          data: { status, resolvedAt, workspaceId },
+        })
+        if (updated.count !== 1) return { error: 'RESOLVED' }
+
+        if (status === 'ACCEPTED') {
+          await transaction.notification.upsert({
+            where: { requestId: request.id },
+            update: {},
+            create: {
+              recipientId: request.senderId,
+              type: 'COLLABORATION_REQUEST_ACCEPTED',
+              requestId: request.id,
+            },
+          })
+        }
+        return { id: request.id, status, workspaceId, conversationId: conversation?.id ?? null }
+      }, { isolationLevel: 'Serializable' })
+
+      if (result.error === 'NOT_FOUND') {
+        return res.status(404).json({
+          error: { code: 'REQUEST_NOT_FOUND', message: 'This collaboration request is no longer available.' },
+        })
+      }
+      if (result.error === 'OPPORTUNITY_CLOSED') {
+        return res.status(409).json({
+          error: { code: 'OPPORTUNITY_CLOSED', message: 'This opportunity is no longer accepting requests.' },
+        })
+      }
+      if (result.error === 'RESOLVED') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_ALREADY_RESOLVED', message: 'This collaboration request has already been resolved.' },
+        })
+      }
+      if (result.error === 'SPACE_NOT_AVAILABLE') {
+        return res.status(404).json({
+          error: { code: 'COLLABSPACE_NOT_AVAILABLE', message: 'Choose a Collabspace you currently own or administer.' },
+        })
+      }
+      return res.json({ request: result })
+    } catch (error) {
+      if (error?.code === 'P2034') {
+        return res.status(409).json({
+          error: { code: 'REQUEST_ALREADY_RESOLVED', message: 'This collaboration request is being handled. Refresh and try again.' },
+        })
+      }
+      console.error('Collaboration request could not be resolved')
+      return res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Could not update the collaboration request.' },
+      })
+    }
+  }
+}
+
+router.post('/:id/requests', requireSameOrigin, authenticate, createCollaborationRequestHandler(prisma))
+
+router.patch('/requests/:id', requireSameOrigin, authenticate, resolveCollaborationRequestHandler(prisma))
+
+router.get('/requests', authenticate, async (req, res) => {
+  try {
+    const requests = await prisma.request.findMany({
+      where: {
+        senderId: req.auth.user.id,
+        type: 'COLLABORATION_REQUEST',
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      select: {
+        id: true,
+        status: true,
+        message: true,
+        createdAt: true,
+        recipient: { select: { id: true, name: true, username: true } },
+        opportunity: { select: { id: true, description: true, status: true, deletedAt: true } },
+      },
+    })
+
+    return res.json({
+      requests: requests.map((request) => ({
+        ...request,
+        opportunity: request.opportunity
+          ? {
+              id: request.opportunity.id,
+              description: request.opportunity.description,
+              status: request.opportunity.status,
+              isDeleted: Boolean(request.opportunity.deletedAt),
+            }
+          : null,
+      })),
+    })
+  } catch {
+    console.error('Outgoing collaboration requests could not be loaded')
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Could not load your sent requests.' },
+    })
+  }
+})
+
+export function createIncomingCollaborationRequestsHandler(database) {
+  return async (req, res) => {
+    try {
+      const requests = await database.request.findMany({
+        where: {
+          recipientId: req.auth.user.id,
+          type: 'COLLABORATION_REQUEST',
+          OR: [
+            {
+              status: 'PENDING',
+              opportunity: {
+                ownerId: req.auth.user.id,
+                deletedAt: null,
+                status: { in: ['OPEN', 'PAUSED'] },
+              },
+            },
+            {
+              status: { in: ['ACCEPTED', 'DECLINED'] },
+              opportunity: { ownerId: req.auth.user.id },
+            },
+          ],
+        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: {
+          id: true,
+          status: true,
+          message: true,
+          createdAt: true,
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              username: true,
+              city: true,
+              experience: true,
+              description: true,
+              skills: { select: { skill: { select: { name: true } } } },
+            },
+          },
+          opportunity: { select: { id: true, description: true, status: true } },
+        },
+      })
+
+      return res.json({
+        requests: requests.map((request) => ({
+          ...request,
+          sender: {
+            ...request.sender,
+            skills: request.sender.skills.map(({ skill }) => skill.name),
+          },
+        })),
+      })
+    } catch {
+      console.error('Incoming collaboration requests could not be loaded')
+      return res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Could not load incoming collaboration requests.' },
+      })
+    }
+  }
+}
+
+router.get('/requests/incoming', authenticate, createIncomingCollaborationRequestsHandler(prisma))
+
+router.get('/requests/statuses', authenticate, async (req, res) => {
+  try {
+    const requests = await prisma.request.findMany({
+      where: {
+        senderId: req.auth.user.id,
+        type: 'COLLABORATION_REQUEST',
+        status: { in: ['PENDING', 'ACCEPTED', 'DECLINED'] },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      distinct: ['opportunityId'],
+      select: { opportunityId: true, status: true },
+    })
+    return res.json({ requests: requests.filter(({ opportunityId }) => opportunityId) })
+  } catch {
+    console.error('Outgoing collaboration request statuses could not be loaded')
+    return res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'Could not check your collaboration requests.' },
+    })
+  }
+})
 
 router.post('/', requireSameOrigin, authenticate, async (req, res) => {
   if (!req.auth.user.name || !req.auth.user.username) {
@@ -374,6 +794,17 @@ router.patch('/:id/status', requireSameOrigin, authenticate, async (req, res) =>
       })
       if (updated.count === 0) return { invalidTransition: true }
 
+      if (status === 'COMPLETED') {
+        await transaction.request.updateMany({
+          where: {
+            opportunityId: req.params.id,
+            type: { in: ['COLLABORATION_REQUEST', 'CHAT_INVITATION'] },
+            status: 'PENDING',
+          },
+          data: { status: 'CANCELED', resolvedAt: new Date() },
+        })
+      }
+
       return transaction.opportunity.findUnique({
         where: { id: req.params.id },
         select: opportunitySelect,
@@ -391,7 +822,12 @@ router.patch('/:id/status', requireSameOrigin, authenticate, async (req, res) =>
       })
     }
     return res.json({ opportunity: toOpportunity(opportunity) })
-  } catch {
+  } catch (error) {
+    if (error?.code === 'P2034') {
+      return res.status(409).json({
+        error: { code: 'OPPORTUNITY_CHANGED', message: 'The opportunity changed. Refresh and try again.' },
+      })
+    }
     console.error('Opportunity status could not be updated')
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Could not update the opportunity status.' },
@@ -401,10 +837,23 @@ router.patch('/:id/status', requireSameOrigin, authenticate, async (req, res) =>
 
 router.delete('/:id', requireSameOrigin, authenticate, async (req, res) => {
   try {
-    const deleted = await prisma.opportunity.updateMany({
-      where: { id: req.params.id, ownerId: req.auth.user.id, deletedAt: null },
-      data: { deletedAt: new Date() },
-    })
+    const deleted = await prisma.$transaction(async (transaction) => {
+      const result = await transaction.opportunity.updateMany({
+        where: { id: req.params.id, ownerId: req.auth.user.id, deletedAt: null },
+        data: { deletedAt: new Date() },
+      })
+      if (result.count === 1) {
+        await transaction.request.updateMany({
+          where: {
+            opportunityId: req.params.id,
+            type: { in: ['COLLABORATION_REQUEST', 'CHAT_INVITATION'] },
+            status: 'PENDING',
+          },
+          data: { status: 'CANCELED', resolvedAt: new Date() },
+        })
+      }
+      return result
+    }, { isolationLevel: 'Serializable' })
 
     if (deleted.count === 0) {
       return res.status(404).json({
@@ -413,7 +862,12 @@ router.delete('/:id', requireSameOrigin, authenticate, async (req, res) => {
     }
 
     return res.status(204).end()
-  } catch {
+  } catch (error) {
+    if (error?.code === 'P2034') {
+      return res.status(409).json({
+        error: { code: 'OPPORTUNITY_CHANGED', message: 'The opportunity changed. Refresh and try again.' },
+      })
+    }
     console.error('Opportunity deletion failed')
     return res.status(500).json({
       error: { code: 'INTERNAL_ERROR', message: 'Could not delete the opportunity.' },

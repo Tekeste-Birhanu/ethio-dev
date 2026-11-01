@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmDialog } from "../components/ui.jsx";
 import CollabspaceGroupChat from "./CollabspaceGroupChat.jsx";
 
 function getErrorMessage(result, fallback) {
@@ -46,10 +47,81 @@ function OverviewEntry({ title, description }) {
 }
 
 function MembersPanel({ selected, user, memberActionError, memberActionPending, handleMemberAction }) {
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [developerSearch, setDeveloperSearch] = useState("");
+  const [developers, setDevelopers] = useState([]);
+  const [isSearchingDevelopers, setIsSearchingDevelopers] = useState(false);
+  const [developerSearchError, setDeveloperSearchError] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [invitePendingUserId, setInvitePendingUserId] = useState("");
+  const [invitedUserIds, setInvitedUserIds] = useState(() => new Set());
+  const ownMembership = selected.memberships.find((membership) => membership.user.id === user?.id);
+  const canInvite = ownMembership?.status === "ACTIVE" && ["OWNER", "ADMIN"].includes(ownMembership.role);
+  const query = developerSearch.trim();
+
+  useEffect(() => {
+    if (!isInviteOpen || query.length < 2) return undefined;
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      setIsSearchingDevelopers(true);
+      setDeveloperSearchError("");
+      try {
+        const response = await fetch(`/api/profiles?q=${encodeURIComponent(query)}`, { signal: controller.signal });
+        const result = await response.json();
+        if (!response.ok) throw new Error(getErrorMessage(result, "Could not search developers."));
+        const activeMemberIds = new Set(selected.memberships.filter((membership) => membership.status === "ACTIVE").map((membership) => membership.user.id));
+        setDevelopers((result.profiles ?? []).filter((developer) => developer.id !== user?.id && !activeMemberIds.has(developer.id)));
+      } catch (searchError) {
+        if (searchError.name !== "AbortError") setDeveloperSearchError(searchError.message || "Could not search developers.");
+      } finally {
+        if (!controller.signal.aborted) setIsSearchingDevelopers(false);
+      }
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [isInviteOpen, query, selected.memberships, user?.id]);
+
+  useEffect(() => {
+    if (!isInviteOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !invitePendingUserId) setIsInviteOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [invitePendingUserId, isInviteOpen]);
+
+  async function inviteDeveloper(developer) {
+    if (invitePendingUserId) return;
+    setInvitePendingUserId(developer.id);
+    setInviteError("");
+    try {
+      const response = await fetch("/api/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientId: developer.id, type: "COLLABSPACE_INVITATION", workspaceId: selected.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(getErrorMessage(result, "Could not send the invitation."));
+      setInvitedUserIds((current) => new Set(current).add(developer.id));
+    } catch (sendError) {
+      setInviteError(sendError.message || "Could not reach the server. Try again.");
+    } finally {
+      setInvitePendingUserId("");
+    }
+  }
+
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#293236] bg-[#111719]" aria-label="Collabspace members">
-      <h2 className="m-0 border-b border-[#293236] p-4 text-base font-bold">Members <span className="font-normal text-muted">{selected.memberships.length}</span></h2>
+    <section className="overflow-visible rounded-2xl border border-[#293236] bg-[#111719]" aria-label="Collabspace members">
       {memberActionError && <p className="m-3 rounded-xl border border-[#85434b] p-3 text-sm text-[#ffb6be]" role="alert">{memberActionError}</p>}
+      {canInvite && (
+        <div className="flex justify-end border-b border-[#293236] px-4 py-3">
+          <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:bg-[#28dfa5]" type="button" onClick={() => { setDeveloperSearch(""); setDeveloperSearchError(""); setInviteError(""); setIsInviteOpen(true); }}>Add members</button>
+        </div>
+      )}
       <div>
         {selected.memberships.map((membership) => (
           <div className="flex min-h-[68px] items-center gap-3 border-b border-[#293236] px-4 py-3 last:border-0" key={membership.id}>
@@ -82,6 +154,33 @@ function MembersPanel({ selected, user, memberActionError, memberActionPending, 
           </div>
         ))}
       </div>
+      {isInviteOpen && (
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-black/45 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !invitePendingUserId) setIsInviteOpen(false); }}>
+          <section className="grid max-h-[min(80dvh,38rem)] w-full max-w-lg gap-4 overflow-y-auto rounded-2xl border border-[#354044] bg-[#111719] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="add-collabspace-members-title">
+            <header className="flex items-center justify-between gap-3">
+              <h2 className="m-0 text-lg font-bold text-ink" id="add-collabspace-members-title">Add members</h2>
+              <button className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-xl text-muted hover:bg-[#222d31] hover:text-ink" type="button" disabled={Boolean(invitePendingUserId)} onClick={() => setIsInviteOpen(false)} aria-label="Close developer search">×</button>
+            </header>
+            <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="collabspace-developer-search">Search developers</label>
+            <input id="collabspace-developer-search" className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" type="search" autoFocus value={developerSearch} onChange={(event) => { setDeveloperSearch(event.target.value); setInviteError(""); }} placeholder="Name or username" />
+            {inviteError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{inviteError}</p>}
+            {query.length < 2 ? <p className="m-0 text-sm text-muted">Enter at least 2 characters to search.</p> : isSearchingDevelopers ? <p className="m-0 text-sm text-muted" role="status">Searching developers…</p> : developerSearchError ? <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{developerSearchError}</p> : developers.length === 0 ? <p className="m-0 text-sm text-muted" role="status">No developers found.</p> : (
+              <ul className="m-0 grid list-none gap-2 p-0" aria-label="Developer search results">
+                {developers.map((developer) => (
+                  <li className="flex min-w-0 items-center gap-3 rounded-xl border border-[#293236] bg-[#0d1315] px-3 py-2" key={developer.id}>
+                    <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#20332f] font-bold text-accent" aria-hidden="true">{developer.name.slice(0, 1).toUpperCase()}</span>
+                    <span className="grid min-w-0 flex-1 gap-0.5">
+                      <span className="truncate text-sm font-semibold text-ink">{developer.name}</span>
+                      <span className="truncate text-xs text-muted">@{developer.username}</span>
+                    </span>
+                    <button className="min-h-9 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-sm font-semibold text-accent-light hover:bg-[#223b32] disabled:cursor-wait disabled:opacity-60" type="button" disabled={Boolean(invitePendingUserId) || invitedUserIds.has(developer.id)} onClick={() => inviteDeveloper(developer)}>{invitePendingUserId === developer.id ? "Sending…" : invitedUserIds.has(developer.id) ? "Sent" : "Invite"}</button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
+      )}
     </section>
   );
 }
@@ -90,42 +189,48 @@ function SettingsPanel({ selected, user, spaceName, onSpaceNameChange, onRename,
   const isOwner = selected.memberships.some((membership) => membership.user.id === user?.id && membership.role === "OWNER");
 
   return (
-    <section className="grid gap-5" aria-label="Collabspace settings">
-      <form className="grid max-w-2xl gap-4 rounded-2xl border border-[#293236] bg-[#111719] p-5 sm:p-6" onSubmit={onRename}>
-        <div className="grid gap-1">
-          <h2 className="m-0 text-lg font-bold">Collabspace name</h2>
-          <p className="m-0 text-sm leading-6 text-muted">Choose the name members will see across this space.</p>
+    <section className="grid max-w-3xl gap-4" aria-label="Collabspace settings">
+      <form className="grid gap-4 rounded-2xl border border-[#293236] bg-[#111719] p-5 sm:p-6" onSubmit={onRename}>
+        <div className="grid gap-1 border-b border-[#293236] pb-3">
+          <h3 className="m-0 text-base font-bold">Space name</h3>
         </div>
         {isOwner ? (
           <>
-            <label className="grid gap-2 text-sm font-semibold" htmlFor="collabspace-settings-name">
-              Name
-              <input
-                className="min-h-12 w-full rounded-xl border border-[#354044] bg-[#0d1315] px-4 text-base text-ink outline-none focus:border-[#38e6b0]"
-                id="collabspace-settings-name"
-                maxLength={100}
-                onChange={(event) => onSpaceNameChange(event.target.value)}
-                required
-                value={spaceName}
-              />
-            </label>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-0 flex-1">
+                <input
+                  className="min-h-11 w-full rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base text-ink outline-none focus:border-[#38e6b0]"
+                  id="collabspace-settings-name"
+                  aria-label="Space name"
+                  maxLength={100}
+                  onChange={(event) => onSpaceNameChange(event.target.value)}
+                  required
+                  value={spaceName}
+                />
+              </div>
+              <div className="flex gap-2">
+                {spaceName.trim() !== selected.name && (
+                  <button className="min-h-11 cursor-pointer rounded-lg border border-[#354044] px-3 text-sm font-semibold text-ink hover:bg-[#20292d]" type="button" onClick={() => onSpaceNameChange(selected.name)}>Discard</button>
+                )}
+                <button className="min-h-11 cursor-pointer rounded-lg border-0 bg-[#1b9b76] px-4 text-sm font-bold text-[#061d16] hover:bg-[#24bd91] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={isSavingName || !spaceName.trim() || spaceName.trim() === selected.name}>{isSavingName ? "Saving…" : "Save changes"}</button>
+              </div>
+            </div>
             {settingsError && <p className="m-0 text-sm text-[#ffb6be]" role="alert">{settingsError}</p>}
             {settingsSuccess && <p className="m-0 text-sm text-accent" role="status">{settingsSuccess}</p>}
-            <button className="min-h-10 w-fit rounded-xl border-0 bg-[#1b9b76] px-4 text-sm font-bold text-[#061d16] hover:bg-[#24bd91] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={isSavingName || !spaceName.trim() || spaceName.trim() === selected.name}>
-              {isSavingName ? "Saving…" : "Save name"}
-            </button>
           </>
         ) : (
           <p className="m-0 text-sm text-muted">Only the Owner can rename this Collabspace.</p>
         )}
       </form>
       {isOwner && (
-        <section className="grid max-w-2xl gap-2 rounded-2xl border border-[#85434b] p-5 sm:p-6" aria-labelledby="delete-collabspace-heading">
-          <h2 className="m-0 text-lg font-bold" id="delete-collabspace-heading">Delete Collabspace</h2>
-          <p className="m-0 text-sm leading-6 text-muted">Permanently remove this space. All members will lose access, and its group chat and task history will be deleted.</p>
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#713b42] bg-[#171315] p-5 sm:p-6" aria-labelledby="delete-collabspace-heading">
+          <div className="grid max-w-xl gap-1">
+            <h3 className="m-0 text-base font-bold text-ink" id="delete-collabspace-heading">Delete Collabspace</h3>
+            <p className="m-0 text-sm leading-6 text-muted">Permanently remove this space, its members, and all group chat and task history.</p>
+          </div>
           {deleteCollabspaceError && <p className="m-0 text-sm text-[#ffb6be]" role="alert">{deleteCollabspaceError}</p>}
-          <button className="min-h-10 w-fit rounded-xl border border-[#85434b] bg-transparent px-4 text-sm font-semibold text-[#ffb6be] hover:bg-[#382125] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={isDeletingCollabspace} onClick={onDeleteCollabspace}>
-            {isDeletingCollabspace ? "Deleting…" : "Delete Collabspace"}
+          <button className="min-h-10 shrink-0 rounded-lg border border-[#85434b] bg-transparent px-4 text-sm font-semibold text-[#ffb6be] hover:bg-[#382125] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={isDeletingCollabspace} onClick={onDeleteCollabspace}>
+            {isDeletingCollabspace ? "Deleting…" : "Delete space"}
           </button>
         </section>
       )}
@@ -151,6 +256,8 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
   const [isSavingName, setIsSavingName] = useState(false);
   const [settingsError, setSettingsError] = useState("");
   const [settingsSuccess, setSettingsSuccess] = useState("");
+  const [confirmation, setConfirmation] = useState(null);
+  const closeConfirmation = useCallback(() => setConfirmation(null), []);
 
   const selectedTab = tabSelection.collabspaceId === selectedId ? tabSelection.tab : "chat";
 
@@ -214,15 +321,9 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
     )));
   }, [selectedId]);
 
-  const handleMemberAction = useCallback(async (targetUserId, action, role) => {
+  const performMemberAction = useCallback(async (targetUserId, action, role) => {
     if (!selected || memberActionPending) return;
     const isSelf = targetUserId === user?.id;
-    const actionLabel = action === "role" ? (role === "ADMIN" ? "make this member an admin" : "remove this admin role") : (isSelf ? "leave this Collabspace" : "remove this member");
-    const confirmation = action === "role"
-      ? `Are you sure you want to ${actionLabel}?`
-      : `Are you sure you want to ${actionLabel}? Their access ends immediately. Any open tasks become unassigned, and the rest of the team keeps chat and task history.`;
-    if (!window.confirm(confirmation)) return;
-
     setMemberActionPending(true);
     setMemberActionError("");
     try {
@@ -252,6 +353,21 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
       setMemberActionPending(false);
     }
   }, [memberActionPending, onBack, selected, user?.id]);
+
+  const handleMemberAction = useCallback((targetUserId, action, role) => {
+    if (!selected || memberActionPending) return;
+    const isSelf = targetUserId === user?.id;
+    const actionLabel = action === "role" ? (role === "ADMIN" ? "Make admin" : "Remove admin role") : (isSelf ? "Leave Collabspace" : "Remove member");
+    const description = action === "role"
+      ? `Are you sure you want to ${actionLabel.toLocaleLowerCase()}?`
+      : `Are you sure you want to ${actionLabel.toLocaleLowerCase()}? Their access ends immediately. Any open tasks become unassigned, and the rest of the team keeps chat and task history.`;
+    setConfirmation({
+      title: action === "role" ? "Change member role?" : isSelf ? "Leave Collabspace?" : "Remove member?",
+      description,
+      confirmLabel: actionLabel,
+      onConfirm: () => performMemberAction(targetUserId, action, role),
+    });
+  }, [memberActionPending, performMemberAction, selected, user?.id]);
 
   const handleRenameCollabspace = useCallback(async (event) => {
     event.preventDefault();
@@ -285,11 +401,8 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
     }
   }, [isSavingName, selected, spaceName]);
 
-  const handleDeleteCollabspace = useCallback(async () => {
+  const performDeleteCollabspace = useCallback(async () => {
     if (!selected || isDeletingCollabspace) return;
-    const confirmed = window.confirm(`Delete “${selected.name}” permanently?\n\nEvery member will lose access, and the group chat and task history will be permanently removed. This cannot be undone.`);
-    if (!confirmed) return;
-
     setIsDeletingCollabspace(true);
     setDeleteCollabspaceError("");
     try {
@@ -305,6 +418,16 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
       setIsDeletingCollabspace(false);
     }
   }, [isDeletingCollabspace, onBack, selected]);
+
+  const handleDeleteCollabspace = useCallback(() => {
+    if (!selected || isDeletingCollabspace) return;
+    setConfirmation({
+      title: `Delete “${selected.name}”?`,
+      description: "Every member will lose access, and the group chat and task history will be permanently removed. This cannot be undone.",
+      confirmLabel: "Delete space",
+      onConfirm: performDeleteCollabspace,
+    });
+  }, [isDeletingCollabspace, performDeleteCollabspace, selected]);
 
   const handleCreateCollabspace = async (event) => {
     event.preventDefault();
@@ -336,6 +459,7 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
 
   return (
     <main className="app-page bg-page text-ink">
+      <ConfirmDialog confirmation={confirmation} onClose={closeConfirmation} />
       {selectedId ? (
         <div className="mx-auto grid min-h-[calc(100dvh-4rem)] max-w-[1440px] content-start gap-4">
           {errorState.key === selectedId ? (
@@ -394,35 +518,39 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
             </button>
           </header>
           {isCreateOpen && (
-            <form className="mb-6 grid gap-4 rounded-2xl border border-[#293236] bg-[#111719] p-5 sm:p-6" onSubmit={handleCreateCollabspace}>
-              <div>
-                <h2 className="m-0 text-lg font-bold">Create a Collabspace</h2>
-                <p className="mb-0 mt-1 text-sm text-muted">You will be the Owner and the first member.</p>
-              </div>
-              <label className="grid gap-2 text-sm font-semibold" htmlFor="new-collabspace-name">
-                Name
-                <input
-                  autoFocus
-                  className="min-h-12 w-full rounded-xl border border-[#354044] bg-[#0d1315] px-4 text-base text-ink outline-none placeholder:text-[#87979c] focus:border-[#38e6b0]"
-                  id="new-collabspace-name"
-                  maxLength={100}
-                  name="name"
-                  onChange={(event) => setNewCollabspaceName(event.target.value)}
-                  placeholder="For example, Study Planner team"
-                  required
-                  value={newCollabspaceName}
-                />
-              </label>
-              {createError && <p className="m-0 text-sm text-[#ffb6be]" role="alert">{createError}</p>}
-              <div className="flex flex-wrap justify-end gap-3">
-                <button className="min-h-11 rounded-xl border border-[#354044] bg-transparent px-4 font-semibold text-ink hover:bg-[#20292d]" type="button" disabled={isCreating} onClick={() => { setIsCreateOpen(false); setCreateError(""); }}>
-                  Cancel
-                </button>
-                <button className="min-h-11 rounded-xl border-0 bg-[#1b9b76] px-5 font-bold text-[#061d16] hover:bg-[#24bd91] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={isCreating || !newCollabspaceName.trim()}>
-                  {isCreating ? "Creating…" : "Create"}
-                </button>
-              </div>
-            </form>
+            <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isCreating) { setIsCreateOpen(false); setCreateError(""); } }} onKeyDown={(event) => { if (event.key === "Escape" && !isCreating) { setIsCreateOpen(false); setCreateError(""); } }}>
+              <form className="grid w-full max-w-xl gap-4 rounded-2xl border border-[#293236] bg-[#111719] p-5 shadow-2xl sm:p-6" onSubmit={handleCreateCollabspace} role="dialog" aria-modal="true" aria-labelledby="create-collabspace-title">
+                <div>
+                  <h2 className="m-0 text-lg font-bold" id="create-collabspace-title">Create a Collabspace</h2>
+                  <p className="mb-0 mt-1 text-sm text-muted">You will be the Owner and the first member.</p>
+                </div>
+                <div className="flex flex-wrap items-end gap-3">
+                  <label className="grid min-w-[220px] flex-1 gap-2 text-sm font-semibold" htmlFor="new-collabspace-name">
+                    Name
+                    <input
+                      autoFocus
+                      className="min-h-12 w-full rounded-xl border border-[#354044] bg-[#0d1315] px-4 text-base text-ink outline-none placeholder:text-[#87979c] focus:border-[#38e6b0]"
+                      id="new-collabspace-name"
+                      maxLength={100}
+                      name="name"
+                      onChange={(event) => setNewCollabspaceName(event.target.value)}
+                      placeholder="For example, Study Planner team"
+                      required
+                      value={newCollabspaceName}
+                    />
+                  </label>
+                  <div className="flex shrink-0 gap-3">
+                    <button className="min-h-11 rounded-xl border border-[#354044] bg-transparent px-4 font-semibold text-ink hover:bg-[#20292d]" type="button" disabled={isCreating} onClick={() => { setIsCreateOpen(false); setCreateError(""); }}>
+                      Cancel
+                    </button>
+                    <button className="min-h-11 rounded-xl border-0 bg-[#1b9b76] px-5 font-bold text-[#061d16] hover:bg-[#24bd91] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={isCreating || !newCollabspaceName.trim()}>
+                      {isCreating ? "Creating…" : "Create"}
+                    </button>
+                  </div>
+                </div>
+                {createError && <p className="m-0 text-sm text-[#ffb6be]" role="alert">{createError}</p>}
+              </form>
+            </div>
           )}
           {errorState.key === "list" ? (
             <p className="rounded-xl border border-[#303a3e] p-6 text-center text-muted" role="alert">{errorState.message}</p>

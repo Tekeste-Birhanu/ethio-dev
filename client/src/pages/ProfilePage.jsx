@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button, ModalCloseButton, ModalFooter, ModalHeader } from "../components/ui.jsx";
 
 import { OpportunityCard } from "../components/opportunities.jsx";
@@ -37,6 +38,9 @@ export default function ProfilePage(props) {
     myOpportunities,
     myOpportunitiesError,
     myOpportunitiesLoading,
+    outgoingCollaborationRequests = [],
+    outgoingCollaborationRequestsLoading,
+    outgoingCollaborationRequestsError,
     opportunityForm,
     opportunityReturnPage,
     opportunitySkillDraft,
@@ -66,6 +70,106 @@ export default function ProfilePage(props) {
     shareCopiedOpportunityId,
     user,
   } = props;
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [inviteOptions, setInviteOptions] = useState({ opportunities: [], collabspaces: [] });
+  const [inviteDestinationType, setInviteDestinationType] = useState("CHAT_INVITATION");
+  const [inviteDestinationId, setInviteDestinationId] = useState("");
+  const [inviteMessage, setInviteMessage] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
+  const [outgoingInvitations, setOutgoingInvitations] = useState([]);
+  const [outgoingInvitationsError, setOutgoingInvitationsError] = useState("");
+
+  useEffect(() => {
+    if (!inviteDialogOpen) return undefined;
+    const closeOnEscape = (event) => { if (event.key === "Escape" && !inviteSubmitting) setInviteDialogOpen(false); };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [inviteDialogOpen, inviteSubmitting]);
+
+  useEffect(() => {
+    if (!isOwnProfile || profileTab !== "requests" || !user) return undefined;
+    let active = true;
+    fetch("/api/invitations")
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message ?? "Could not load your invitations.");
+        if (active) {
+          setOutgoingInvitations(result.invitations ?? []);
+          setOutgoingInvitationsError("");
+        }
+      })
+      .catch((error) => { if (active) setOutgoingInvitationsError(error.message); });
+    return () => { active = false; };
+  }, [isOwnProfile, profileTab, user]);
+
+  async function openInviteDialog() {
+    setInviteDialogOpen(true);
+    setInviteLoading(true);
+    setInviteError("");
+    setInviteSuccess("");
+    try {
+      const response = await fetch("/api/invitations/options");
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not load invitation destinations.");
+      setInviteOptions({ opportunities: result.opportunities ?? [], collabspaces: result.collabspaces ?? [] });
+      if (result.opportunities?.length) {
+        setInviteDestinationType("CHAT_INVITATION");
+        setInviteDestinationId(result.opportunities[0].id);
+      } else if (result.collabspaces?.length) {
+        setInviteDestinationType("COLLABSPACE_INVITATION");
+        setInviteDestinationId(result.collabspaces[0].id);
+      }
+    } catch (error) {
+      setInviteError(error.message || "Could not load invitation destinations.");
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
+  async function sendDeveloperInvitation(event) {
+    event.preventDefault();
+    if (inviteSubmitting || !profileData?.id || !inviteDestinationId) return;
+    setInviteSubmitting(true);
+    setInviteError("");
+    try {
+      const body = inviteDestinationType === "CHAT_INVITATION"
+        ? { recipientId: profileData.id, type: inviteDestinationType, opportunityId: inviteDestinationId, message: inviteMessage }
+        : { recipientId: profileData.id, type: inviteDestinationType, workspaceId: inviteDestinationId, message: inviteMessage };
+      const response = await fetch("/api/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not send the invitation.");
+      setOutgoingInvitations((current) => [result.invitation, ...current]);
+      setInviteSuccess("Invitation sent. They must accept before joining.");
+      setInviteDialogOpen(false);
+      setInviteMessage("");
+    } catch (error) {
+      setInviteError(error.message || "Could not reach the server. Try again.");
+    } finally {
+      setInviteSubmitting(false);
+    }
+  }
+
+  async function withdrawInvitation(invitationId) {
+    try {
+      const response = await fetch(`/api/invitations/${encodeURIComponent(invitationId)}`, { method: "DELETE" });
+      const result = response.status === 204 ? null : await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not withdraw the invitation.");
+      setOutgoingInvitations((current) => current.map((invitation) => invitation.id === invitationId ? { ...invitation, status: "WITHDRAWN" } : invitation));
+    } catch (error) {
+      setOutgoingInvitationsError(error.message || "Could not withdraw the invitation.");
+    }
+  }
+  const outgoingItems = [
+    ...outgoingCollaborationRequests.map((request) => ({ ...request, itemType: "COLLABORATION_REQUEST" })),
+    ...outgoingInvitations.map((invitation) => ({ ...invitation, itemType: invitation.type })),
+  ].sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
   const hasLoadedChatRequest = profileChatRequest?.username === profileData?.username;
   const currentChatRequest = hasLoadedChatRequest ? profileChatRequest : { status: "NONE", direction: "" };
 
@@ -561,6 +665,61 @@ export default function ProfilePage(props) {
                                 {currentChatRequest.status === "DECLINED" && (
                                   <span className="text-sm text-muted">You can send another request.</span>
                                 )}
+                                <Button type="button" variant="secondary" className="[width:auto]" onClick={openInviteDialog}>
+                                  Invite to collaborate
+                                </Button>
+                              </div>
+                            )}
+                            {inviteSuccess && <p className="mt-3 text-sm text-accent" role="status">{inviteSuccess}</p>}
+                            {inviteDialogOpen && (
+                              <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setInviteDialogOpen(false); }}>
+                                <section className="grid w-full max-w-lg gap-4 rounded-2xl border border-[#303a3e] bg-[#111719] p-5 shadow-2xl sm:p-6" role="dialog" aria-modal="true" aria-labelledby="invite-developer-heading">
+                                  <header className="flex items-start justify-between gap-4">
+                                    <div>
+                                      <h2 className="m-0 text-xl font-bold text-ink" id="invite-developer-heading">Invite {profileData.name}</h2>
+                                      <p className="mb-0 mt-1 text-sm text-muted">They must accept before a chat opens or they join a Collabspace.</p>
+                                    </div>
+                                    <button type="button" className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-xl text-muted hover:bg-[#222d31] hover:text-ink" aria-label="Close invitation dialog" onClick={() => setInviteDialogOpen(false)}>×</button>
+                                  </header>
+                                  {inviteLoading ? <p className="m-0 text-sm text-muted" role="status">Loading destinations…</p> : (
+                                    <form className="grid gap-4" onSubmit={sendDeveloperInvitation}>
+                                      <label className="grid gap-2 text-sm font-semibold text-ink">
+                                        Invite to
+                                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={inviteDestinationType} onChange={(event) => {
+                                          const nextType = event.target.value;
+                                          setInviteDestinationType(nextType);
+                                          const destinations = nextType === "CHAT_INVITATION" ? inviteOptions.opportunities : inviteOptions.collabspaces;
+                                          setInviteDestinationId(destinations[0]?.id ?? "");
+                                        }}>
+                                          {inviteOptions.opportunities.length > 0 && <option value="CHAT_INVITATION">Private chat through an opportunity</option>}
+                                          {inviteOptions.collabspaces.length > 0 && <option value="COLLABSPACE_INVITATION">Join a Collabspace</option>}
+                                        </select>
+                                      </label>
+                                      <label className="grid gap-2 text-sm font-semibold text-ink">
+                                        {inviteDestinationType === "CHAT_INVITATION" ? "Open opportunity" : "Collabspace"}
+                                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={inviteDestinationId} onChange={(event) => setInviteDestinationId(event.target.value)}>
+                                          {(inviteDestinationType === "CHAT_INVITATION" ? inviteOptions.opportunities : inviteOptions.collabspaces).map((destination) => (
+                                            <option key={destination.id} value={destination.id}>
+                                              {destination.name ?? destination.description.slice(0, 100)}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </label>
+                                      <label className="grid gap-2 text-sm font-semibold text-ink">
+                                        Optional message
+                                        <textarea className="min-h-24 resize-y rounded-lg border border-[#354044] bg-[#0d1315] p-3 text-ink" maxLength={1000} value={inviteMessage} onChange={(event) => setInviteMessage(event.target.value)} placeholder="Add a short note (optional)" />
+                                      </label>
+                                      {inviteOptions.opportunities.length === 0 && inviteOptions.collabspaces.length === 0 && <p className="m-0 text-sm text-muted">You need an open opportunity or a Collabspace you own or administer before you can invite someone.</p>}
+                                      {inviteError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{inviteError}</p>}
+                                      <footer className="flex justify-end gap-2">
+                                        <button className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-transparent px-4 text-sm font-semibold text-ink hover:bg-[#222d31]" type="button" onClick={() => setInviteDialogOpen(false)}>Cancel</button>
+                                        <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={inviteSubmitting || !inviteDestinationId || (inviteDestinationType === "CHAT_INVITATION" ? inviteOptions.opportunities.length === 0 : inviteOptions.collabspaces.length === 0)}>
+                                          {inviteSubmitting ? "Sending…" : "Send invitation"}
+                                        </button>
+                                      </footer>
+                                    </form>
+                                  )}
+                                </section>
                               </div>
                             )}
                             {profileData.description && (
@@ -962,8 +1121,18 @@ export default function ProfilePage(props) {
                             <>
                               <nav
                                 className="profile-content-tabs mt-5 mb-[18px] flex gap-6 border-b border-[#252d31]"
-                                aria-label="Profile posts"
+                                aria-label={isOwnProfile ? "Profile sections" : "Profile posts"}
                               >
+                                {isOwnProfile && (
+                                  <button
+                                    className={`[display:inline-flex] [align-items:center] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${profileTab === "requests" ? "[border-bottom-color:#19c990] [color:#65e7b7]" : ""}`}
+                                    type="button"
+                                    aria-pressed={profileTab === "requests"}
+                                    onClick={() => setProfileTab("requests")}
+                                  >
+                                    Requests
+                                  </button>
+                                )}
                                 <button
                                   className={`[display:inline-flex] [align-items:center] [gap:8px] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${!isOwnProfile || profileTab === "opportunities" ? "[border-bottom-color:#19c990] [color:#65e7b7]" : ""}`}
                                   type="button"
@@ -1095,6 +1264,50 @@ export default function ProfilePage(props) {
                                   ) : (
                                     <p className="discover-state [padding:28px_20px] [border:1px_solid_#252d31] [border-radius:16px] [color:#aebabb] [text-align:center]">
                                       You have not saved any opportunities yet.
+                                    </p>
+                                  )}
+                                </section>
+                              )}
+                              {isOwnProfile && profileTab === "requests" && (
+                                <section className="my-opportunities-section [margin-top:0]" aria-label="Sent collaboration requests">
+                                  {outgoingCollaborationRequestsLoading ? (
+                                    <p className="discover-state [padding:28px_20px] [border:1px_solid_#252d31] [border-radius:16px] [color:#aebabb] [text-align:center]" role="status">
+                                      Loading sent requests...
+                                    </p>
+                                  ) : outgoingCollaborationRequestsError || outgoingInvitationsError ? (
+                                    <p className="discover-state [padding:28px_20px] [border:1px_solid_#252d31] [border-radius:16px] [color:#aebabb] [text-align:center]" role="alert">
+                                      {outgoingCollaborationRequestsError || outgoingInvitationsError}
+                                    </p>
+                                  ) : outgoingItems.length > 0 ? (
+                                    <ol className="grid list-none gap-3 p-0">
+                                      {outgoingItems.map((request) => (
+                                        <li className="rounded-xl border border-[#252d31] bg-[#111719] p-4" key={request.id}>
+                                          <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                              <p className="m-0 font-semibold text-ink">To {request.recipient?.name ?? "Developer"} <span className="font-normal text-muted">@{request.recipient?.username ?? "unknown"}</span></p>
+                                              <p className="mb-0 mt-2 line-clamp-3 whitespace-pre-wrap text-sm text-[#c0cece]">
+                                                {request.itemType === "CHAT_INVITATION"
+                                                  ? request.opportunity?.isDeleted ? "Opportunity was deleted" : request.opportunity?.description ?? "Private chat invitation"
+                                                  : request.itemType === "COLLABSPACE_INVITATION"
+                                                    ? `Collabspace: ${request.workspace?.name ?? "Deleted Collabspace"}`
+                                                    : request.opportunity?.isDeleted ? "Opportunity was deleted" : request.opportunity?.description ?? "Opportunity unavailable"}
+                                              </p>
+                                            </div>
+                                            <span className="rounded-full border border-[#354044] px-3 py-1 text-xs font-semibold text-[#c0cece]">
+                                              {request.status === "PENDING" ? "Pending" : request.status === "ACCEPTED" ? "Accepted" : request.status === "DECLINED" ? "Declined" : request.status === "WITHDRAWN" ? "Withdrawn" : "Canceled"}
+                                            </span>
+                                          </div>
+                                          {request.message && <p className="mb-0 mt-3 border-l-2 border-[#354044] pl-3 text-sm italic text-muted">{request.message}</p>}
+                                          <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                                            <time className="block text-xs text-muted" dateTime={request.createdAt}>{new Date(request.createdAt).toLocaleString()}</time>
+                                            {request.itemType !== "COLLABORATION_REQUEST" && request.status === "PENDING" && <button className="min-h-9 cursor-pointer rounded-lg border border-[#85434b] bg-transparent px-3 text-xs font-semibold text-[#ffb6be] hover:bg-[#382125]" type="button" onClick={() => withdrawInvitation(request.id)}>Withdraw invitation</button>}
+                                          </div>
+                                        </li>
+                                      ))}
+                                    </ol>
+                                  ) : (
+                                    <p className="discover-state [padding:28px_20px] [border:1px_solid_#252d31] [border-radius:16px] [color:#aebabb] [text-align:center]">
+                                      You have not sent any requests or invitations yet.
                                     </p>
                                   )}
                                 </section>

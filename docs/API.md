@@ -36,7 +36,43 @@ Acceptance returns `200` with `{ "request": { "id": "...", "status": "ACCEPTED" 
 
 ### Poll and read an acceptance alert
 
-`GET /api/chat/notifications/chat-alert` returns the oldest unread chat acceptance or private-message alert for the signed-in member, or `{ "notification": null }`. Acceptance alerts include the accepting member's public identity and conversation ID; message alerts include the sender's public identity and conversation ID. The Chat toast marks the alert read with `PATCH /api/chat/notifications/:id/read`; this endpoint only affects an unread chat alert belonging to the current member and returns `{ "read": true }`. Both routes require authentication; the PATCH also requires same-origin.
+`GET /api/chat/notifications/chat-alert` returns the oldest unread chat acceptance, collaboration-request acceptance, or private-message alert for the signed-in member, or `{ "notification": null }`. Acceptance alerts include the accepting member's public identity. Collaboration acceptance alerts also include the accepted request and its Collabspace destination, if selected; private-chat acceptance includes the conversation ID. Message alerts include the sender's public identity and conversation ID for the small temporary Chat toast. The toast marks an alert read with `PATCH /api/chat/notifications/:id/read`; this endpoint only affects an unread supported alert belonging to the current member and returns `{ "read": true }`. Both routes require authentication; the PATCH also requires same-origin.
+
+`GET /api/chat/notifications` returns up to 50 persisted chat-request and collaboration-request acceptance notifications, newest first, with their read timestamp and accepted-request context. Incoming private-message alerts are intentionally excluded from the Notifications page and remain available through the Chat toast endpoint above. The endpoint requires authentication.
+
+## Collaboration requests
+
+### Create a collaboration request
+
+`POST /api/opportunities/:id/requests`
+
+Requires same-origin and a signed-in member with a completed profile. Accepts an optional `{ "message": "..." }`; the message is trimmed and limited to 1,000 characters, and an omitted or blank message is stored as `null`. The signed-in member is recorded as the requester, and the opportunity owner is the recipient. The request is associated with the opportunity and starts with `PENDING` status. Members cannot request to collaborate on their own opportunity, send a request for a non-Open opportunity, or create another request while a previous one is pending, accepted, or declined. A withdrawn request may be sent again. Missing or deleted opportunities return `404`; invalid IDs or messages and requests to one's own opportunity return `400`; an incomplete profile returns `403`; non-Open opportunities and prior pending, accepted, or declined requests return `409`; unauthenticated requests return `401`.
+
+Success returns `201` with `{ "request": { "id": "...", "status": "PENDING", "message": "...", "createdAt": "...", "opportunity": { "id": "...", "description": "..." }, "recipient": { "id": "...", "name": "...", "username": "..." } } }`.
+
+### List outgoing collaboration request statuses for opportunities
+
+`GET /api/opportunities/requests/statuses`
+
+Requires a signed-in member. Returns the opportunity ID and status for the member's latest pending, accepted, or declined request per opportunity as `{ "requests": [{ "opportunityId": "...", "status": "PENDING|ACCEPTED|DECLINED" }] }`. Withdrawn requests are omitted so the member can request again. Unauthenticated requests return `401`.
+
+### List sent collaboration requests
+
+`GET /api/opportunities/requests`
+
+Requires a signed-in member. Returns that member's collaboration requests, newest first, with each request's ID, status, optional message, creation time, recipient's public identity, and opportunity description/status. Deleted opportunities are identified with `isDeleted: true`; no private account fields are returned. Unauthenticated requests return `401`.
+
+### List incoming collaboration requests
+
+`GET /api/opportunities/requests/incoming`
+
+Requires a signed-in member. Returns pending collaboration requests on the member's own undeleted Open or Paused opportunities and previously accepted or declined requests on the member's opportunities, newest first. Each item includes its status, optional message, creation time, opportunity context, and the sender's public profile fields (name, username, city, experience, description, and skills). Private account fields are excluded. Resolved requests remain available as notification history even if the opportunity is later closed or deleted. Unauthenticated requests return `401`.
+
+### Accept or decline a collaboration request
+
+`PATCH /api/opportunities/requests/:id`
+
+Requires same-origin and the owner of the request's opportunity. Accepts `{ "status": "DECLINED" }` or one of `{ "status": "ACCEPTED", "destination": { "type": "PRIVATE_CHAT" } }`, `{ "status": "ACCEPTED", "destination": { "type": "COLLABSPACE", "workspaceId": "..." } }`, or `{ "status": "ACCEPTED", "destination": { "type": "CREATE_COLLABSPACE", "name": "..." } }`. Open and Paused opportunity requests can be resolved. Private-chat acceptance creates or opens the pair's active conversation. Collabspace acceptance requires an active Owner or Admin membership for the opportunity owner and adds the requester as an active Member. Creating a space, adding the requester, resolving the request, and creating its unread acceptance notification happen in one transaction; canceling in the client sends no request. Acceptance returns `{ "request": { "id": "...", "status": "ACCEPTED", "workspaceId": "...", "conversationId": "..." } }` (the unused destination ID is `null`). Decline returns `{ "request": { "id": "...", "status": "DECLINED", "workspaceId": null, "conversationId": null } }` and creates no notification. A missing request returns `404`; an unauthorized/missing space returns `404`; a resolved or completed/deleted opportunity request returns `409`; invalid status or destination returns `400`; invalid space name returns `400`; transaction conflicts return `409`; unauthenticated requests return `401`.
 
 ## Private conversations
 
@@ -245,6 +281,48 @@ Success returns `200` with `{ "opportunity": ... }`; validation errors return `4
 `PATCH /api/opportunities/:id/status`
 
 Requires the opportunity owner. Send `{ "status": "PAUSED" }`, `{ "status": "OPEN" }`, or `{ "status": "COMPLETED" }` for an allowed status transition. Completion is terminal and must be confirmed in the client; the server rejects attempts to reopen a completed opportunity and all status changes to a deleted post.
+
+Completing an opportunity atomically changes its pending collaboration requests to `CANCELED` and records their resolution time.
+
+## Developer invitations
+
+### Load invitation destinations
+
+`GET /api/invitations/options`
+
+Requires a signed-in member. Returns the member's undeleted Open opportunities, which can be used to invite a developer to private chat, and Collabspaces where they are an active Owner or Admin. Paused and Completed opportunities are not available for new invitations.
+
+### Send an invitation
+
+`POST /api/invitations`
+
+Requires same-origin, a signed-in member with a completed profile, and a different developer as recipient. For a private-chat invitation send `{ "recipientId": "...", "type": "CHAT_INVITATION", "opportunityId": "...", "message": "..." }`; the opportunity must be Open and owned by the inviter. For a Collabspace invitation send `{ "recipientId": "...", "type": "COLLABSPACE_INVITATION", "workspaceId": "...", "message": "..." }`; the inviter must be an active Owner or Admin. `message` is optional, trimmed, and limited to 1,000 characters. Creating an invitation does not create a conversation or membership. Success returns `201` with the invitation ID, type, status, creation time, and recipient's public identity. Invalid input returns `400`; unknown recipients or unauthorized destinations return `404`; closed opportunities, active chats/memberships, and prior pending or declined invitations to the same destination return `409`; unauthenticated requests return `401`.
+
+### List sent invitations
+
+`GET /api/invitations`
+
+Requires a signed-in member. Returns their sent invitations newest first with status, recipient identity, optional message, and opportunity or Collabspace context. Private account fields are excluded.
+
+### List incoming invitations
+
+`GET /api/invitations/incoming`
+
+Requires a signed-in member. Returns pending invitations addressed to them, newest first, with the inviter's public profile, optional message, and destination context. Unauthenticated requests return `401`.
+
+### Accept or decline an invitation
+
+`PATCH /api/invitations/:id`
+
+Requires same-origin and the invitation recipient. Accepts `{ "status": "ACCEPTED" }` or `{ "status": "DECLINED" }`. Acceptance atomically marks the invitation resolved and either creates/opens the private conversation or activates the invitee's Collabspace membership. The invitee gains no access before acceptance. A Collabspace invitation is accepted only while the inviter remains an active Owner or Admin; an invitee already in that space receives `409`. A missing/non-owned invitation returns `404`; an already-resolved or no-longer-authorized destination returns `409`; invalid status returns `400`; transaction conflicts return `409`; unauthenticated requests return `401`.
+
+### Withdraw a sent invitation
+
+`DELETE /api/invitations/:id`
+
+Requires same-origin and the invitation sender. Withdraws only a pending invitation and retains it with `WITHDRAWN` status for history. Success returns `204`; a missing, resolved, or non-owned invitation returns `404`; unauthenticated requests return `401`.
+
+Completing or deleting an opportunity cancels its pending collaboration requests and opportunity-linked private-chat invitations. Deleting a Collabspace cancels its pending invitations before removing the space.
 
 Success returns `200` with `{ "opportunity": ... }`; invalid statuses or transitions return `400`; unauthenticated requests return `401`; unknown, deleted, or non-owned opportunities return `404`.
 

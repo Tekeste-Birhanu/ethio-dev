@@ -181,6 +181,18 @@ export function createDeleteCollabspaceHandler(database) {
   return async (req, res) => {
     try {
       const deleted = await database.$transaction(async (transaction) => {
+        const ownedSpace = await transaction.workspace.findFirst({
+          where: {
+            id: req.params.id,
+            memberships: { some: { userId: req.auth.user.id, role: 'OWNER', status: 'ACTIVE' } },
+          },
+          select: { id: true },
+        })
+        if (!ownedSpace) return false
+        await transaction.request.updateMany({
+          where: { workspaceId: req.params.id, type: 'COLLABSPACE_INVITATION', status: 'PENDING' },
+          data: { status: 'CANCELED', resolvedAt: new Date() },
+        })
         const result = await transaction.workspace.deleteMany({
           where: {
             id: req.params.id,

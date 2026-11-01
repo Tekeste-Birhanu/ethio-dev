@@ -54,6 +54,7 @@ enum RequestStatus {
 enum NotificationType {
   CHAT_REQUEST_ACCEPTED
   PRIVATE_MESSAGE_RECEIVED
+  COLLABORATION_REQUEST_ACCEPTED
 }
 
 enum MembershipRole {
@@ -190,11 +191,12 @@ model SavedOpportunity {
 }
 
 model Workspace {
-  id            String       @id @default(cuid())
-  name          String
-  createdAt     DateTime     @default(now())
-  memberships   Membership[]
-  conversation  Conversation?
+  id           String        @id @default(cuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  memberships  Membership[]
+  conversation Conversation?
+  requests     Request[]
 }
 
 model Membership {
@@ -261,6 +263,7 @@ model Request {
   type          RequestType
   status        RequestStatus @default(PENDING)
   opportunityId String?
+  workspaceId   String?
   message       String?       @db.VarChar(1000)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
@@ -268,11 +271,13 @@ model Request {
   sender        User          @relation("RequestSender", fields: [senderId], references: [id], onDelete: Restrict)
   recipient     User          @relation("RequestRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
   opportunity   Opportunity?  @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  workspace     Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   notification  Notification?
 
   @@index([recipientId, status, createdAt])
   @@index([senderId, createdAt])
   @@index([opportunityId])
+  @@index([workspaceId])
 }
 
 model Notification {

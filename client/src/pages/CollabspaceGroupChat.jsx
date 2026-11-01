@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ConfirmDialog } from "../components/ui.jsx";
 
 function formatTime(value) {
   return new Date(value).toLocaleString([], {
@@ -64,6 +65,8 @@ export default function CollabspaceGroupChat({
   const [actionId, setActionId] = useState("");
   const [socketStatus, setSocketStatus] = useState("connecting");
   const [error, setError] = useState("");
+  const [confirmation, setConfirmation] = useState(null);
+  const closeConfirmation = useCallback(() => setConfirmation(null), []);
   const socketRef = useRef(null);
   const conversationIdRef = useRef("");
   const messagesRef = useRef([]);
@@ -386,7 +389,7 @@ export default function CollabspaceGroupChat({
   }
 
   async function deleteMessage(message) {
-    if (actionId || !window.confirm("Delete this group message?")) return;
+    if (actionId) return;
     setActionId(message.id);
     setError("");
     try {
@@ -406,19 +409,25 @@ export default function CollabspaceGroupChat({
     }
   }
 
+  function requestDeleteMessage(message) {
+    if (actionId) return;
+    setConfirmation({
+      title: "Delete group message?",
+      description: "This message will be removed from the Collabspace conversation.",
+      confirmLabel: "Delete message",
+      onConfirm: () => deleteMessage(message),
+    });
+  }
+
   const visibleMessages = [
     ...messages,
     ...pendingMessages.filter((message) => message.conversationId === conversationId),
   ];
 
   return (
-    <section className="grid h-[min(68dvh,780px)] min-h-[480px] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-[#293236] bg-[#111719]" aria-label="Collabspace group chat">
-      <header className="flex min-h-14 items-center justify-between gap-3 border-b border-[#293236] px-4 py-3">
-        <h2 className="m-0 text-lg font-bold">Group chat</h2>
-        <span className="text-xs text-muted" aria-live="polite">
-          {socketStatus === "connected" ? "" : socketStatus === "reconnecting" ? "Reconnecting…" : "Connecting…"}
-        </span>
-      </header>
+    <>
+    <ConfirmDialog confirmation={confirmation} onClose={closeConfirmation} />
+    <section className="grid h-[min(68dvh,780px)] min-h-[480px] grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-[#293236] bg-[#111719]" aria-label="Collabspace group chat">
       <div
         ref={scrollRef}
         className="flex min-h-0 flex-col gap-3 overflow-y-auto p-4 sm:p-5"
@@ -445,10 +454,7 @@ export default function CollabspaceGroupChat({
             const senderName = message.sender?.name ?? "Member";
           return (
             <article className={`relative grid max-w-[88%] gap-1 rounded-2xl px-4 py-3 sm:max-w-[75%] ${ownMessage ? "self-end bg-[#17483c]" : "self-start bg-[#20292d]"}`} key={message.id ?? message.clientMessageId}>
-              <span className="flex items-center gap-2 text-xs font-semibold text-[#8debc9]">
-                <span className="grid size-6 place-items-center rounded-full bg-[#20332f] text-[10px] text-accent" aria-hidden="true">
-                  {(senderName || message.sender?.username || "M").slice(0, 1).toUpperCase()}
-                </span>
+              <span className="block pr-8 text-xs font-semibold text-[#8debc9]">
                 {ownMessage ? "You" : senderName}
               </span>
               {isEditing ? (
@@ -470,9 +476,9 @@ export default function CollabspaceGroupChat({
                   <summary className="grid size-7 cursor-pointer list-none place-items-center rounded-full text-[#b6c5c6] hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-[#38e6b0]" aria-label="Group message actions">
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
                   </summary>
-                  <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-xl border border-[#303a3e] bg-[#171f23] p-1 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
+                  <div className="absolute right-0 top-full z-20 mt-1 w-28 rounded-xl border border-[#303a3e] bg-[#171f23] p-1 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
                     {ownMessage && <button className="min-h-9 w-full rounded-lg bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:opacity-50" type="button" disabled={Boolean(actionId)} onClick={(event) => { event.currentTarget.closest("details").open = false; setEditingMessageId(message.id); setEditingDraft(message.content); }}>Edit</button>}
-                    {mayDelete && <button className="min-h-9 w-full rounded-lg bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:opacity-50" type="button" disabled={Boolean(actionId)} onClick={(event) => { event.currentTarget.closest("details").open = false; deleteMessage(message); }}>{actionId === message.id ? "Deleting…" : "Delete"}</button>}
+                    {mayDelete && <button className="min-h-9 w-full rounded-lg bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:opacity-50" type="button" disabled={Boolean(actionId)} onClick={(event) => { event.currentTarget.closest("details").open = false; requestDeleteMessage(message); }}>{actionId === message.id ? "Deleting…" : "Delete"}</button>}
                   </div>
                 </details>
               )}
@@ -497,5 +503,6 @@ export default function CollabspaceGroupChat({
         )}
       </div>
     </section>
+    </>
   );
 }

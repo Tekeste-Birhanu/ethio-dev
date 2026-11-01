@@ -24,7 +24,7 @@
 | M4. Discover and search                    | Users can browse opportunities and developers            | M3             | Done        |
 | M5. Private chat                           | Accepted chat requests create one-to-one conversations   | M2             | Done        |
 | M6. Collabspaces and group chat            | Members create independent spaces for group conversation | M3, M5         | Done        |
-| M7. Collaboration requests and invitations | Owners can review requests and invite developers         | M3, M4, M5, M6 | Not started |
+| M7. Collaboration requests and invitations | Owners can review requests and invite developers         | M3, M4, M5, M6 | Done        |
 | M8. Shared taskboard                       | Members coordinate work with tasks and assignees         | M6             | Not started |
 | M9. Release readiness                      | Core flows are polished and ready for release            | M1–M8          | Not started |
 | M10. Production and deployment             | The app is deployed and operational                      | M9             | Not started |
@@ -104,13 +104,13 @@
 
 **Outcome:** Opportunity owners can review collaboration requests and accept developers into private chat or a chosen Collabspace.
 
-- [ ] **T-37 — Create collaboration request records and API.** Associate each request with its opportunity and requester; allow an optional message.
-- [ ] **T-38 — Add the Send collaboration request action.** Require a completed profile, allow requests only for Open opportunities in both UI and API, and prevent duplicate pending requests.
-- [ ] **T-39 — Build outgoing request tracking.** Show a user's sent requests and their current status in the profile's Requests area.
-- [ ] **T-40 — Build incoming request review.** Show pending requests with the requester's profile available to the owner, including requests on Paused opportunities.
-- [ ] **T-41 — Add accept and decline actions.** Let the opportunity owner decide; acceptance notifies the requester and decline does not. Completing an opportunity closes its pending requests.
-- [ ] **T-42 — Add accepted-request routing.** The owner can accept into private chat or choose a Collabspace they own/administer; if needed, create a new standalone space as part of the acceptance action.
-- [ ] **T-43 — Add developer invitations.** Opportunity owners can invite developers to private chat; Collabspace owners/admins can invite developers to their space. Invitees must accept before access is granted. Completing an opportunity closes its opportunity-related pending requests and invitations.
+- [x] **T-37 — Create collaboration request records and API.** Associate each request with its opportunity and requester; allow an optional message.
+- [x] **T-38 — Add the Send collaboration request action.** Require a completed profile, allow requests only for Open opportunities in both UI and API, and prevent duplicate pending requests.
+- [x] **T-39 — Build outgoing request tracking.** Show a user's sent requests and their current status in the profile's Requests area.
+- [x] **T-40 — Build incoming request review.** Show pending requests with the requester's profile available to the owner, including requests on Paused opportunities.
+- [x] **T-41 — Add accept and decline actions.** Let the opportunity owner decide; acceptance notifies the requester and decline does not. Completing an opportunity closes its pending requests.
+- [x] **T-42 — Add accepted-request routing.** The owner can accept into private chat or choose a Collabspace they own/administer; if needed, create a new standalone space as part of the acceptance action.
+- [x] **T-43 — Add developer invitations.** Opportunity owners can invite developers to private chat; Collabspace owners/admins can invite developers to their space from a developer profile, active private conversation, or the Collabspace Members tab by searching for a developer. Invitees must accept before access is granted. Completing an opportunity closes its opportunity-related pending requests and invitations.
 
 ## M8. Shared taskboard
 

@@ -3,6 +3,7 @@ import DiscoverPage from "./pages/DiscoverPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import CollabspacesPage from "./pages/CollabspacesPage.jsx";
+import NotificationsPage from "./pages/NotificationsPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import { emptyOpportunityForm, emptyProfileFields } from "./constants.js";
 import { AppSidebar } from "./components/layout.jsx";
@@ -65,6 +66,10 @@ function readAppRoute() {
 
   if (pathname === "/chat") {
     return { page: "chat", publicUsername: "", sharedOpportunityId: "", chatConversationId };
+  }
+
+  if (pathname === "/notifications") {
+    return { page: "notifications", publicUsername: "", sharedOpportunityId: "" };
   }
 
   if (collabspaceMatch) {
@@ -217,6 +222,11 @@ function App() {
   const [savedOpportunities, setSavedOpportunities] = useState([]);
   const [savedOpportunitiesUserId, setSavedOpportunitiesUserId] = useState("");
   const [savedOpportunitiesError, setSavedOpportunitiesError] = useState("");
+  const [outgoingCollaborationRequests, setOutgoingCollaborationRequests] = useState([]);
+  const [outgoingCollaborationRequestsUserId, setOutgoingCollaborationRequestsUserId] = useState("");
+  const [outgoingCollaborationRequestsLoading, setOutgoingCollaborationRequestsLoading] = useState(false);
+  const [outgoingCollaborationRequestsError, setOutgoingCollaborationRequestsError] = useState("");
+  const [sendingCollaborationOpportunityId, setSendingCollaborationOpportunityId] = useState("");
   const [profileTab, setProfileTab] = useState("opportunities");
   const [profileChatRequest, setProfileChatRequest] = useState({ username: "", status: "NONE", direction: "" });
   const [isSendingChatRequest, setIsSendingChatRequest] = useState(false);
@@ -248,6 +258,10 @@ function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
   const [user, setUser] = useState(null);
+  const [collaborationRequestStatusSnapshot, setCollaborationRequestStatusSnapshot] = useState({ userId: "", statuses: new Map() });
+  const collaborationRequestStatuses = collaborationRequestStatusSnapshot.userId === user?.id
+    ? collaborationRequestStatusSnapshot.statuses
+    : new Map();
   const [chatAlertToast, setChatAlertToast] = useState(null);
   const [requestedChatConversationId, setRequestedChatConversationId] = useState(initialRoute.chatConversationId ?? "");
   const seenChatAlerts = useRef(new Set());
@@ -279,6 +293,32 @@ function App() {
   const [completeOpportunityError, setCompleteOpportunityError] = useState("");
 
   useEffect(() => {
+    function dismissMenusOnClick(event) {
+      const clickedMenu = event.target?.closest?.("details");
+      const clickedSummary = event.target?.closest?.("summary");
+      document.querySelectorAll("details[open]").forEach((menu) => {
+        if (menu !== clickedMenu || !clickedSummary) menu.open = false;
+      });
+    }
+
+    function dismissMenusOnEscape(event) {
+      if (event.key !== "Escape") return;
+      const openMenus = [...document.querySelectorAll("details[open]")];
+      if (!openMenus.length) return;
+      openMenus.forEach((menu) => { menu.open = false; });
+      openMenus.at(-1)?.querySelector("summary")?.focus();
+      event.preventDefault();
+    }
+
+    document.addEventListener("click", dismissMenusOnClick);
+    document.addEventListener("keydown", dismissMenusOnEscape);
+    return () => {
+      document.removeEventListener("click", dismissMenusOnClick);
+      document.removeEventListener("keydown", dismissMenusOnEscape);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!user?.id || isCheckingSession) return undefined;
     let active = true;
     let isPolling = false;
@@ -292,6 +332,17 @@ function App() {
         if (!active || !notification || seenChatAlerts.current.has(notification.id)) return;
         seenChatAlerts.current.add(notification.id);
         setChatAlertToast(notification);
+        if (notification.type === "COLLABORATION_REQUEST_ACCEPTED") {
+          setOutgoingCollaborationRequests((current) => current.map((request) => (
+            request.id === notification.request?.id ? { ...request, status: "ACCEPTED" } : request
+          )));
+          if (notification.request?.opportunityId) {
+            setCollaborationRequestStatusSnapshot((current) => ({
+              userId: user.id,
+              statuses: new Map(current.userId === user.id ? current.statuses : []).set(notification.request.opportunityId, "ACCEPTED"),
+            }));
+          }
+        }
         await fetch(`/api/chat/notifications/${encodeURIComponent(notification.id)}/read`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -316,6 +367,24 @@ function App() {
     const timeoutId = window.setTimeout(() => setChatAlertToast(null), 8000);
     return () => window.clearTimeout(timeoutId);
   }, [chatAlertToast]);
+
+  useEffect(() => {
+    let active = true;
+    if (!user?.id || isCheckingSession) return undefined;
+    fetch("/api/opportunities/requests/statuses")
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message ?? "Could not check pending requests.");
+        if (active) setCollaborationRequestStatusSnapshot({
+          userId: user.id,
+          statuses: new Map((result.requests ?? []).map(({ opportunityId, status }) => [opportunityId, status])),
+        });
+      })
+      .catch(() => {
+        if (active) setCollaborationRequestStatusSnapshot({ userId: user.id, statuses: new Map() });
+      });
+    return () => { active = false; };
+  }, [user?.id, isCheckingSession]);
 
   useEffect(() => {
     writeDiscoverUrlState(initialDiscoverUrl.tab);
@@ -699,6 +768,31 @@ function App() {
       isCurrent = false;
     };
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || isCheckingSession) return undefined;
+    let isCurrent = true;
+    fetch("/api/opportunities/requests")
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error?.message ?? "Could not load your sent requests.");
+        if (isCurrent) {
+          setOutgoingCollaborationRequests(result.requests ?? []);
+          setOutgoingCollaborationRequestsUserId(user.id);
+        }
+      })
+      .catch((error) => {
+        if (isCurrent) {
+          setOutgoingCollaborationRequests([]);
+          setOutgoingCollaborationRequestsUserId(user.id);
+          setOutgoingCollaborationRequestsError(error.message);
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setOutgoingCollaborationRequestsLoading(false);
+      });
+    return () => { isCurrent = false; };
+  }, [user?.id, isCheckingSession, page, profileTab]);
 
   useEffect(() => {
     if (page !== "profile" && page !== "public-profile") return undefined;
@@ -1318,6 +1412,62 @@ function App() {
     }
   }
 
+  async function handleSendCollaborationRequest(opportunity, requestMessage) {
+    if (!user?.name || !user?.username) {
+      return { ok: false, message: "Complete your profile before sending a collaboration request." };
+    }
+    const existingStatus = collaborationRequestStatuses.get(opportunity.id);
+    if (existingStatus) {
+      return { ok: false, message: existingStatus === "PENDING" ? "You already have a pending request for this opportunity." : "You cannot request to collaborate on this opportunity again." };
+    }
+    if (sendingCollaborationOpportunityId) {
+      return { ok: false, message: "A request is already being sent. Try again in a moment." };
+    }
+
+    setSendingCollaborationOpportunityId(opportunity.id);
+    try {
+      const response = await fetch(
+        `/api/opportunities/${encodeURIComponent(opportunity.id)}/requests`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: requestMessage }),
+        },
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        if (["REQUEST_PENDING", "REQUEST_ACCEPTED", "REQUEST_DECLINED"].includes(result.error?.code)) {
+          const status = {
+            REQUEST_PENDING: "PENDING",
+            REQUEST_ACCEPTED: "ACCEPTED",
+            REQUEST_DECLINED: "DECLINED",
+          }[result.error.code];
+          setCollaborationRequestStatusSnapshot((current) => ({
+            userId: user.id,
+            statuses: new Map(current.userId === user.id ? current.statuses : []).set(opportunity.id, status),
+          }));
+        }
+        return { ok: false, message: result.error?.message ?? "Could not send the collaboration request." };
+      }
+      setCollaborationRequestStatusSnapshot((current) => ({
+        userId: user.id,
+        statuses: new Map(current.userId === user.id ? current.statuses : []).set(opportunity.id, "PENDING"),
+      }));
+      if (result.request) {
+        setOutgoingCollaborationRequests((current) => [
+          result.request,
+          ...current.filter((request) => request.id !== result.request.id),
+        ]);
+        setOutgoingCollaborationRequestsUserId(user.id);
+      }
+      return { ok: true };
+    } catch {
+      return { ok: false, message: "Could not reach the server. Check your connection and try again." };
+    } finally {
+      setSendingCollaborationOpportunityId("");
+    }
+  }
+
   async function handleLoadMoreOpportunities() {
     if (!nextOpportunityCursor || isLoadingMoreOpportunities) return;
     const requestedQuery = getDiscoverRequestKey(
@@ -1543,6 +1693,22 @@ function App() {
         : "/collabspaces";
       if (`${window.location.pathname}${window.location.search}` !== path) {
         window.history.pushState(window.history.state, "", path);
+      }
+      return;
+    }
+
+    if (destination === "notifications") {
+      if (!user) {
+        setMode("login");
+        setMessage("Sign in to view your notifications.");
+        setPage("auth");
+        return;
+      }
+      setPublicUsername("");
+      setSharedOpportunityId("");
+      setPage("notifications");
+      if (window.location.pathname !== "/notifications") {
+        window.history.pushState(window.history.state, "", "/notifications");
       }
       return;
     }
@@ -1876,6 +2042,7 @@ function App() {
       handleProfileFormChange,
       handleProfileSave,
       handleSaveOpportunity,
+      handleSendCollaborationRequest,
       handleShareOpportunity,
       handleSignOut,
       handleToggleOpportunityComments,
@@ -1898,9 +2065,14 @@ function App() {
       myOpportunities,
       myOpportunitiesError,
       myOpportunitiesLoading,
+      outgoingCollaborationRequests: outgoingCollaborationRequestsUserId === user?.id ? outgoingCollaborationRequests : [],
+      outgoingCollaborationRequestsLoading: Boolean(user?.id && (outgoingCollaborationRequestsUserId !== user.id || outgoingCollaborationRequestsLoading)),
+      outgoingCollaborationRequestsError: outgoingCollaborationRequestsUserId === user?.id ? outgoingCollaborationRequestsError : "",
       opportunitiesError,
       opportunitiesLoadedQuery,
       opportunitiesLoading,
+      collaborationRequestStatuses,
+      sendingCollaborationOpportunityId,
       opportunityForm,
       opportunityReturnPage,
       opportunitySkillDraft,
@@ -1967,6 +2139,8 @@ function App() {
                 ? "chat"
                 : page === "collabspaces"
                   ? "collabspaces"
+                  : page === "notifications"
+                    ? "notifications"
                 : page === "discover" ||
               page === "public-profile" ||
               (page === "create-opportunity" &&
@@ -1994,16 +2168,33 @@ function App() {
               <span>
                 {chatAlertToast.type === "CHAT_REQUEST_ACCEPTED"
                   ? `Your chat request was accepted by ${chatAlertToast.request?.recipient?.name ?? "a developer"}.`
-                  : `New message from ${chatAlertToast.message?.sender?.name ?? "a developer"}.`}
+                  : chatAlertToast.type === "COLLABORATION_REQUEST_ACCEPTED"
+                    ? chatAlertToast.request?.workspace
+                      ? `Your collaboration request was accepted. You were added to ${chatAlertToast.request.workspace.name}.`
+                      : `Your collaboration request was accepted by ${chatAlertToast.request?.recipient?.name ?? "the opportunity owner"}.`
+                    : `New message from ${chatAlertToast.message?.sender?.name ?? "a developer"}.`}
               </span>
               <button
                 className="shrink-0 text-[#38e6b0] hover:text-white"
                 onClick={() => {
                   setChatAlertToast(null);
-                  handleAppNavigation("chat", chatAlertToast.conversationId ?? chatAlertToast.message?.conversationId ?? "");
+                  if (chatAlertToast.type === "COLLABORATION_REQUEST_ACCEPTED") {
+                    if (chatAlertToast.request?.workspaceId) {
+                      handleAppNavigation(`collabspace:${chatAlertToast.request.workspaceId}`);
+                    } else if (chatAlertToast.conversationId) {
+                      handleAppNavigation("chat", chatAlertToast.conversationId);
+                    } else {
+                      setProfileTab("requests");
+                      handleAppNavigation("profile");
+                    }
+                  } else {
+                    handleAppNavigation("chat", chatAlertToast.conversationId ?? chatAlertToast.message?.conversationId ?? "");
+                  }
                 }}
               >
-                Open Chat
+                {chatAlertToast.type === "COLLABORATION_REQUEST_ACCEPTED"
+                  ? chatAlertToast.request?.workspaceId ? "Open Collabspace" : "Open Chat"
+                  : "Open Chat"}
               </button>
               <button
                 className="shrink-0 text-[#aab8bf] hover:text-white"
@@ -2029,6 +2220,8 @@ function App() {
               onOpen={(collabspaceId) => handleAppNavigation(`collabspace:${collabspaceId}`)}
               onBack={() => handleAppNavigation("collabspaces")}
             />
+          ) : page === "notifications" ? (
+            <NotificationsPage handleAppNavigation={handleAppNavigation} />
           ) : (
             <ProfilePage {...pageProps} />
           )}

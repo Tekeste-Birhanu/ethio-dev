@@ -30,11 +30,20 @@ test('deleting a Collabspace is restricted to its active Owner', async () => {
       transactionOptions = options
       return callback({
         workspace: {
+          async findFirst(args) {
+            assert.deepEqual(args.where.memberships.some, {
+              userId: 'owner-1',
+              role: 'OWNER',
+              status: 'ACTIVE',
+            })
+            return { id: 'space-1' }
+          },
           async deleteMany(args) {
             query = args
             return { count: 1 }
           },
         },
+        request: { async updateMany() { return { count: 0 } } },
       })
     },
   }
@@ -58,7 +67,10 @@ test('deleting a Collabspace is restricted to its active Owner', async () => {
 test('non-owners cannot delete a Collabspace', async () => {
   const database = {
     async $transaction(callback) {
-      return callback({ workspace: { async deleteMany() { return { count: 0 } } } })
+      return callback({
+        workspace: { async findFirst() { return null } },
+        request: { async updateMany() { throw new Error('Must not update requests for a non-owner') } },
+      })
     },
   }
   const response = createResponse()

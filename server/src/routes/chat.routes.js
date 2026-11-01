@@ -3,6 +3,7 @@ import { prisma } from '../lib/prisma.js'
 import { authenticate } from '../middleware/authenticate.js'
 import { requireSameOrigin } from '../middleware/require-same-origin.js'
 import { broadcastConversationEnded, broadcastPrivateMessageChanged } from '../lib/chat-websocket.js'
+import { findOrCreatePrivateConversation } from '../lib/private-conversation.js'
 
 const router = Router()
 
@@ -20,48 +21,6 @@ async function findActivePrivateConversation(client, firstUserId, secondUserId) 
       ],
     },
     select: { id: true },
-  })
-}
-
-async function findOrCreatePrivateConversation(transaction, firstUserId, secondUserId) {
-  const conversation = await transaction.conversation.findFirst({
-    where: {
-      type: 'PRIVATE',
-      endedAt: null,
-      participants: { some: { userId: firstUserId } },
-      AND: [
-        { participants: { some: { userId: secondUserId } } },
-        { participants: { every: { userId: { in: [firstUserId, secondUserId] } } } },
-      ],
-    },
-    select: {
-      id: true,
-      createdAt: true,
-      participants: { select: { user: { select: senderSelect } } },
-    },
-  })
-  if (conversation) {
-    if (conversation.participants.length !== 2) {
-      throw new Error('Private conversation must have exactly two participants.')
-    }
-    return conversation
-  }
-
-  return transaction.conversation.create({
-    data: {
-      type: 'PRIVATE',
-      participants: {
-        create: [
-          { user: { connect: { id: firstUserId } } },
-          { user: { connect: { id: secondUserId } } },
-        ],
-      },
-    },
-    select: {
-      id: true,
-      createdAt: true,
-      participants: { select: { user: { select: senderSelect } } },
-    },
   })
 }
 
@@ -718,6 +677,57 @@ router.patch('/requests/:id', requireSameOrigin, authenticate, async (req, res) 
   }
 })
 
+router.get('/notifications', authenticate, async (req, res) => {
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: {
+        recipientId: req.auth.user.id,
+        type: { in: ['CHAT_REQUEST_ACCEPTED', 'COLLABORATION_REQUEST_ACCEPTED'] },
+      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: 50,
+      select: {
+        id: true,
+        type: true,
+        createdAt: true,
+        readAt: true,
+        request: {
+          select: {
+            id: true,
+            status: true,
+            senderId: true,
+            recipientId: true,
+            workspaceId: true,
+            recipient: { select: senderSelect },
+            workspace: { select: { id: true, name: true } },
+          },
+        },
+      },
+    })
+    const enriched = await Promise.all(notifications.map(async (notification) => {
+      if (!['CHAT_REQUEST_ACCEPTED', 'COLLABORATION_REQUEST_ACCEPTED'].includes(notification.type)
+        || notification.request?.workspaceId) return notification
+      const conversation = await prisma.conversation.findFirst({
+        where: {
+          type: 'PRIVATE',
+          endedAt: null,
+          participants: { some: { userId: notification.request.senderId } },
+          AND: [
+            { participants: { some: { userId: notification.request.recipientId } } },
+            { participants: { every: { userId: { in: [notification.request.senderId, notification.request.recipientId] } } } },
+          ],
+        },
+        select: { id: true },
+      })
+      return { ...notification, conversationId: conversation?.id ?? null }
+    }))
+    return res.json({ notifications: enriched })
+  } catch {
+    console.error('Notifications could not be loaded')
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Could not load notifications.' } })
+  }
+})
+
 router.get('/notifications/chat-alert', authenticate, async (req, res) => {
   try {
     const notification = await prisma.notification.findFirst({
@@ -725,6 +735,7 @@ router.get('/notifications/chat-alert', authenticate, async (req, res) => {
         recipientId: req.auth.user.id,
         OR: [
           { type: 'CHAT_REQUEST_ACCEPTED' },
+          { type: 'COLLABORATION_REQUEST_ACCEPTED' },
           {
             type: 'PRIVATE_MESSAGE_RECEIVED',
             message: {
@@ -749,9 +760,14 @@ router.get('/notifications/chat-alert', authenticate, async (req, res) => {
         createdAt: true,
         request: {
           select: {
+            id: true,
+            status: true,
+            opportunityId: true,
             senderId: true,
             recipientId: true,
+            workspaceId: true,
             recipient: { select: senderSelect },
+            workspace: { select: { id: true, name: true } },
           },
         },
         message: {
@@ -762,7 +778,8 @@ router.get('/notifications/chat-alert', authenticate, async (req, res) => {
         },
       },
     })
-    if (notification?.type === 'CHAT_REQUEST_ACCEPTED') {
+    if (notification?.type === 'CHAT_REQUEST_ACCEPTED'
+      || (notification?.type === 'COLLABORATION_REQUEST_ACCEPTED' && !notification.request.workspaceId)) {
       const conversation = await prisma.conversation.findFirst({
         where: {
           type: 'PRIVATE',
@@ -798,7 +815,7 @@ router.patch('/notifications/:id/read', requireSameOrigin, authenticate, async (
       where: {
         id: req.params.id,
         recipientId: req.auth.user.id,
-        type: { in: ['CHAT_REQUEST_ACCEPTED', 'PRIVATE_MESSAGE_RECEIVED'] },
+        type: { in: ['CHAT_REQUEST_ACCEPTED', 'COLLABORATION_REQUEST_ACCEPTED', 'PRIVATE_MESSAGE_RECEIVED'] },
         readAt: null,
       },
       data: { readAt: new Date() },

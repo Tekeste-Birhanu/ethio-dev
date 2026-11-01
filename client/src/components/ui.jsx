@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 const buttonVariants = {
   primary:
     "min-h-12 w-full cursor-pointer rounded-xl border-0 bg-accent px-4 font-bold text-[#06251a] transition-[background,transform] duration-[120ms] hover:enabled:bg-[#28dfa5] hover:enabled:-translate-y-px focus-visible:outline-3 focus-visible:outline-[#9af1d0] focus-visible:outline-offset-3 disabled:cursor-wait disabled:opacity-70",
@@ -60,5 +62,59 @@ export function ModalCloseButton({
     >
       {children}
     </button>
+  );
+}
+export function ConfirmDialog({ confirmation, onClose }) {
+  const [isConfirming, setIsConfirming] = useState(false);
+  const cancelRef = useRef(null);
+
+  useEffect(() => {
+    if (!confirmation) return undefined;
+    cancelRef.current?.focus();
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !isConfirming) onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [confirmation, isConfirming, onClose]);
+
+  if (!confirmation) return null;
+
+  async function confirm() {
+    if (isConfirming) return;
+    setIsConfirming(true);
+    try {
+      await confirmation.onConfirm();
+    } finally {
+      onClose();
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] grid place-items-center bg-black/70 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !isConfirming) onClose();
+      }}
+    >
+      <section
+        className="w-full max-w-lg rounded-2xl border border-[#354044] bg-[#111719] p-5 shadow-[0_24px_72px_rgb(0_0_0_/_55%)] sm:p-6"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirmation-title"
+        aria-describedby="confirmation-description"
+      >
+        <h2 className="m-0 text-lg font-bold text-ink" id="confirmation-title">{confirmation.title}</h2>
+        <p className="mb-0 mt-3 whitespace-pre-line text-sm leading-6 text-muted" id="confirmation-description">{confirmation.description}</p>
+        <div className="mt-6 flex flex-wrap justify-end gap-2">
+          <button ref={cancelRef} className="min-h-[42px] cursor-pointer rounded-[10px] border border-[#303a3e] bg-[#1b2327] px-[15px] font-semibold text-ink hover:border-[#59696c] hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-70" type="button" disabled={isConfirming} onClick={onClose}>
+            Cancel
+          </button>
+          <Button variant="danger" type="button" disabled={isConfirming} onClick={confirm}>
+            {isConfirming ? "Working…" : confirmation.confirmLabel ?? "Confirm"}
+          </Button>
+        </div>
+      </section>
+    </div>
   );
 }

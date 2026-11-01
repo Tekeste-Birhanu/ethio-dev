@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "../components/ui.jsx";
+import { Button, ConfirmDialog } from "../components/ui.jsx";
 
 function formatMessageTime(value) {
   return new Date(value).toLocaleString([], {
@@ -51,15 +51,26 @@ export default function ChatPage({ user, requestedConversationId, onConversation
   const [actionId, setActionId] = useState("");
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const [isUpdatingMute, setIsUpdatingMute] = useState(false);
+  const [collabspaceInviteOpen, setCollabspaceInviteOpen] = useState(false);
+  const [collabspaceInviteConversation, setCollabspaceInviteConversation] = useState(null);
+  const [collabspaceInviteOptions, setCollabspaceInviteOptions] = useState([]);
+  const [collabspaceInviteLoading, setCollabspaceInviteLoading] = useState(false);
+  const [collabspaceInviteSubmitting, setCollabspaceInviteSubmitting] = useState(false);
+  const [collabspaceInviteId, setCollabspaceInviteId] = useState("");
+  const [collabspaceInviteSearch, setCollabspaceInviteSearch] = useState("");
+  const [collabspaceInviteError, setCollabspaceInviteError] = useState("");
   const [editingMessageId, setEditingMessageId] = useState("");
   const [editingDraft, setEditingDraft] = useState("");
   const [messageActionId, setMessageActionId] = useState("");
   const [message, setMessage] = useState("");
+  const [confirmation, setConfirmation] = useState(null);
+  const closeConfirmation = useCallback(() => setConfirmation(null), []);
   const [draft, setDraft] = useState("");
   const [socketStatus, setSocketStatus] = useState("connecting");
   const [socketError, setSocketError] = useState("");
   const [pendingMessages, setPendingMessages] = useState([]);
   const messageLoadId = useRef(0);
+  const invitationNoticeRef = useRef(null);
   const previousRequestedConversationId = useRef(requestedConversationId);
   const socketRef = useRef(null);
   const conversationMenuRef = useRef(null);
@@ -68,6 +79,21 @@ export default function ChatPage({ user, requestedConversationId, onConversation
   selectedConversationRef.current = selectedConversation;
   const conversationsRef = useRef(conversations);
   conversationsRef.current = conversations;
+
+  useEffect(() => {
+    if (message === "Invitation sent.") {
+      invitationNoticeRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+    }
+  }, [message]);
+
+  useEffect(() => {
+    if (!collabspaceInviteOpen) return undefined;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !collabspaceInviteSubmitting) setCollabspaceInviteOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [collabspaceInviteOpen, collabspaceInviteSubmitting]);
 
   function updatePendingMessages(updater) {
     const nextMessages = updater(pendingMessagesRef.current);
@@ -527,7 +553,6 @@ export default function ChatPage({ user, requestedConversationId, onConversation
 
   async function deleteMessage(chatMessage) {
     if (!selectedConversation || messageActionId) return;
-    if (!window.confirm("Delete this message for both participants?")) return;
     setMessageActionId(chatMessage.id);
     setMessage("");
     try {
@@ -550,6 +575,16 @@ export default function ChatPage({ user, requestedConversationId, onConversation
     } finally {
       setMessageActionId("");
     }
+  }
+
+  function requestDeleteMessage(chatMessage) {
+    if (!selectedConversation || messageActionId) return;
+    setConfirmation({
+      title: "Delete message?",
+      description: "This message will be deleted for both participants.",
+      confirmLabel: "Delete message",
+      onConfirm: () => deleteMessage(chatMessage),
+    });
   }
 
   function retryPendingMessage(pending) {
@@ -601,14 +636,57 @@ export default function ChatPage({ user, requestedConversationId, onConversation
     }
   }
 
+  async function openCollabspaceInvite(conversation = selectedConversation) {
+    if (conversationMenuRef.current) conversationMenuRef.current.open = false;
+    if (!conversation) return;
+    if (selectedConversation?.id !== conversation.id) void openConversation(conversation);
+    setCollabspaceInviteConversation(conversation);
+    setCollabspaceInviteOpen(true);
+    setCollabspaceInviteLoading(true);
+    setCollabspaceInviteError("");
+    setCollabspaceInviteSearch("");
+    try {
+      const response = await fetch("/api/invitations/options");
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not load your Collabspaces.");
+      const spaces = result.collabspaces ?? [];
+      setCollabspaceInviteOptions(spaces);
+      setCollabspaceInviteId((current) => spaces.some((space) => space.id === current) ? current : spaces[0]?.id ?? "");
+    } catch (error) {
+      setCollabspaceInviteError(error.message || "Could not load your Collabspaces.");
+    } finally {
+      setCollabspaceInviteLoading(false);
+    }
+  }
+
+  async function sendCollabspaceInvitation(event) {
+    event.preventDefault();
+    if (!collabspaceInviteConversation || !collabspaceInviteId || collabspaceInviteSubmitting) return;
+    setCollabspaceInviteSubmitting(true);
+    setCollabspaceInviteError("");
+    try {
+      const response = await fetch("/api/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientId: collabspaceInviteConversation.participant.id,
+          type: "COLLABSPACE_INVITATION",
+          workspaceId: collabspaceInviteId,
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not send the Collabspace invitation.");
+      setCollabspaceInviteOpen(false);
+      setMessage("Invitation sent.");
+    } catch (error) {
+      setCollabspaceInviteError(error.message || "Could not reach the server. Try again.");
+    } finally {
+      setCollabspaceInviteSubmitting(false);
+    }
+  }
+
   async function deleteConversation(conversation = selectedConversation) {
     if (!conversation || isDeletingConversation) return;
-    if (conversationMenuRef.current) conversationMenuRef.current.open = false;
-    const confirmed = window.confirm(
-      `Delete your chat with ${conversation.participant.name}? This removes the conversation and all its messages for both participants, and ends the chat. This cannot be undone.`,
-    );
-    if (!confirmed) return;
-
     setIsDeletingConversation(true);
     setMessage("");
     try {
@@ -637,6 +715,17 @@ export default function ChatPage({ user, requestedConversationId, onConversation
     }
   }
 
+  function requestDeleteConversation(conversation = selectedConversation) {
+    if (!conversation || isDeletingConversation) return;
+    if (conversationMenuRef.current) conversationMenuRef.current.open = false;
+    setConfirmation({
+      title: `Delete chat with ${conversation.participant.name}?`,
+      description: "This removes the conversation and all its messages for both participants, and ends the chat. This cannot be undone.",
+      confirmLabel: "Delete chat",
+      onConfirm: () => deleteConversation(conversation),
+    });
+  }
+
   function openRequest(request) {
     messageLoadId.current += 1;
     setSelectedConversation(null);
@@ -652,9 +741,13 @@ export default function ChatPage({ user, requestedConversationId, onConversation
   const panelClass = "h-full min-h-0 bg-[#111719]";
   const hasSidebarContent = isLoading || conversations.length > 0 || requests.length > 0;
   const hasSelectedChatItem = Boolean(selectedConversation || selectedRequest);
+  const filteredCollabspaceInviteOptions = collabspaceInviteOptions.filter((space) => (
+    space.name.toLocaleLowerCase().includes(collabspaceInviteSearch.trim().toLocaleLowerCase())
+  ));
 
   return (
     <section className="app-page app-page--chat app-main-content" aria-label="Chat">
+      <ConfirmDialog confirmation={confirmation} onClose={closeConfirmation} />
       <div className="h-full w-full">
         {loadError ? (
           <div className={`${panelClass} grid place-items-center rounded-2xl border border-[#252d31] p-6 text-center max-[760px]:rounded-none max-[760px]:border-x-0`} role="alert">
@@ -667,7 +760,6 @@ export default function ChatPage({ user, requestedConversationId, onConversation
           <div className={`grid h-[calc(100dvh-32px)] overflow-hidden rounded-2xl border border-[#252d31] bg-[#111719] ${hasSidebarContent ? "grid-cols-[minmax(240px,_320px)_minmax(0,_1fr)]" : "grid-cols-1"} max-[1100px]:grid-cols-1 max-[760px]:h-full max-[760px]:rounded-none max-[760px]:border-x-0`}>
             <aside className={`${panelClass} overflow-hidden border-r border-[#252d31] max-[1100px]:border-r-0 ${hasSelectedChatItem ? "max-[1100px]:hidden" : "max-[1100px]:bg-transparent"} ${hasSidebarContent ? "" : "hidden"}`} aria-label="Chats and incoming requests">
               <h1 className="m-0 border-b border-[#252d31] px-5 py-4 text-lg font-semibold text-ink">Chats</h1>
-              {message && <p className="m-0 border-b border-[#252d31] px-5 py-3 text-sm text-[#aebabb]" role="status">{message}</p>}
               {isLoading ? (
                 <p className="p-5 text-sm text-[#aebabb]" role="status">Loading conversations...</p>
               ) : conversations.length > 0 && (
@@ -716,7 +808,18 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                             <circle cx="19" cy="12" r="1.7" />
                           </svg>
                         </summary>
-                        <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-[#303a3e] bg-[#171f23] p-1.5 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
+                        <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-xl border border-[#303a3e] bg-[#171f23] p-1.5 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
+                          <button
+                            className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60"
+                            type="button"
+                            disabled={isDeletingConversation}
+                            onClick={(event) => {
+                              event.currentTarget.closest("details").open = false;
+                              void openCollabspaceInvite(conversation);
+                            }}
+                          >
+                            Invite to Collabspace
+                          </button>
                           <button
                             className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60"
                             type="button"
@@ -738,7 +841,7 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                             disabled={isDeletingConversation}
                             onClick={(event) => {
                               event.currentTarget.closest("details").open = false;
-                              void deleteConversation(conversation);
+                              void requestDeleteConversation(conversation);
                             }}
                           >
                             {isDeletingConversation ? "Deleting…" : "Delete chat"}
@@ -831,18 +934,21 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                       <summary className="grid size-10 cursor-pointer list-none place-items-center rounded-full text-[26px] leading-none text-[#aebabb] hover:bg-[#20292d] hover:text-ink focus-visible:outline-2 focus-visible:outline-[#38e6b0]" aria-label="Conversation settings">
                         <span aria-hidden="true">⋯</span>
                       </summary>
-                      <div className="absolute right-0 top-full z-20 mt-2 w-44 rounded-xl border border-[#303a3e] bg-[#171f23] p-1.5 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
+                      <div className="absolute right-0 top-full z-20 mt-1 w-56 rounded-xl border border-[#303a3e] bg-[#171f23] p-1.5 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
+                        <button className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60" type="button" disabled={isDeletingConversation} onClick={() => openCollabspaceInvite(selectedConversation)}>
+                          Invite to Collabspace
+                        </button>
                         <button className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60" type="button" disabled={isUpdatingMute || isDeletingConversation} onClick={toggleConversationMute}>
                           {isUpdatingMute ? "Updating…" : selectedConversation.isMuted ? "Unmute notifications" : "Mute notifications"}
                         </button>
-                        <button className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60" type="button" disabled={isDeletingConversation} onClick={deleteConversation}>
+                        <button className="min-h-10 w-full cursor-pointer rounded-lg border-0 bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:cursor-wait disabled:opacity-60" type="button" disabled={isDeletingConversation} onClick={() => requestDeleteConversation()}>
                           {isDeletingConversation ? "Deleting…" : "Delete chat"}
                         </button>
                       </div>
                     </details>
                   </header>
                   <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-5" aria-live="polite" aria-label="Conversation messages">
-                    {message && <p className="self-center text-sm text-[#aebabb]" role="status">{message}</p>}
+                    {message && message !== "Invitation sent." && <p className="self-center text-sm text-[#aebabb]" role="status">{message}</p>}
                     {olderMessagesError && <p className="self-center text-sm text-[#f2bd79]" role="alert">{olderMessagesError}</p>}
                     {messagesHaveMore && (
                       <Button className="self-center" variant="secondary" type="button" disabled={isLoadingOlder} onClick={loadOlderMessages}>
@@ -889,7 +995,7 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                                 </summary>
                                 <div className="absolute right-0 top-full z-20 mt-1 w-36 rounded-xl border border-[#303a3e] bg-[#171f23] p-1 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
                                   <button className="min-h-9 w-full rounded-lg bg-transparent px-3 text-left font-semibold text-ink hover:bg-[#222d31] disabled:opacity-50" type="button" disabled={Boolean(messageActionId)} onClick={(event) => { event.currentTarget.closest("details").open = false; setEditingMessageId(chatMessage.id); setEditingDraft(chatMessage.content); }}>Edit</button>
-                                  <button className="min-h-9 w-full rounded-lg bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:opacity-50" type="button" disabled={Boolean(messageActionId)} onClick={(event) => { event.currentTarget.closest("details").open = false; deleteMessage(chatMessage); }}>{messageActionId === chatMessage.id ? "Deleting…" : "Delete"}</button>
+                                  <button className="min-h-9 w-full rounded-lg bg-transparent px-3 text-left font-semibold text-[#ff9ba3] hover:bg-[#222d31] disabled:opacity-50" type="button" disabled={Boolean(messageActionId)} onClick={(event) => { event.currentTarget.closest("details").open = false; requestDeleteMessage(chatMessage); }}>{messageActionId === chatMessage.id ? "Deleting…" : "Delete"}</button>
                                 </div>
                               </details>
                             )}
@@ -901,6 +1007,9 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                           </article>
                         );
                       })
+                    )}
+                    {message === "Invitation sent." && selectedConversation?.id === collabspaceInviteConversation?.id && (
+                      <p ref={invitationNoticeRef} className="m-0 max-w-[80%] self-end rounded-2xl bg-[#17483c] px-4 py-3 text-sm text-ink" role="status">{message}</p>
                     )}
                   </div>
                   <div className="border-t border-[#252d31] px-5 py-4">
@@ -921,6 +1030,64 @@ export default function ChatPage({ user, requestedConversationId, onConversation
                       </Button>
                     </form>
                   </div>
+                  {collabspaceInviteOpen && (
+                    <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !collabspaceInviteSubmitting) setCollabspaceInviteOpen(false); }}>
+                      <section className="grid w-full max-w-lg gap-4 rounded-2xl border border-[#303a3e] bg-[#111719] p-5 shadow-2xl sm:p-6" role="dialog" aria-modal="true" aria-labelledby="invite-collabspace-heading">
+                        <header className="flex items-start justify-between gap-4">
+                          <div>
+                            <h2 className="m-0 text-xl font-bold text-ink" id="invite-collabspace-heading">Invite {collabspaceInviteConversation?.participant.name} to a Collabspace</h2>
+                          </div>
+                          <button type="button" className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-xl text-[#aebabb] hover:bg-[#222d31] hover:text-ink" aria-label="Close invitation dialog" disabled={collabspaceInviteSubmitting} onClick={() => setCollabspaceInviteOpen(false)}>×</button>
+                        </header>
+                        {collabspaceInviteLoading ? (
+                          <p className="m-0 text-sm text-[#aebabb]" role="status">Loading Collabspaces…</p>
+                        ) : (
+                          <form className="grid gap-4" onSubmit={sendCollabspaceInvitation}>
+                            {collabspaceInviteOptions.length > 0 ? (
+                              <div className="grid gap-2">
+                                <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="collabspace-invite-search">Search Collabspaces</label>
+                                <input
+                                  id="collabspace-invite-search"
+                                  className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink outline-none focus:border-[#38e6b0]"
+                                  type="search"
+                                  value={collabspaceInviteSearch}
+                                  onChange={(event) => {
+                                    const search = event.target.value;
+                                    setCollabspaceInviteSearch(search);
+                                    const matches = collabspaceInviteOptions.filter((space) => space.name.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
+                                    setCollabspaceInviteId((current) => matches.some((space) => space.id === current) ? current : matches[0]?.id ?? "");
+                                  }}
+                                  placeholder="Search by space name"
+                                />
+                                <div className="grid max-h-56 gap-1 overflow-y-auto" role="group" aria-label="Collabspaces">
+                                  {filteredCollabspaceInviteOptions.length > 0 ? filteredCollabspaceInviteOptions.map((space) => (
+                                    <button
+                                      className={`min-h-11 cursor-pointer rounded-lg border px-3 text-left font-medium ${collabspaceInviteId === space.id ? "border-[#38e6b0] bg-[#17352e] text-[#6be9c1]" : "border-[#303a3e] bg-transparent text-ink hover:bg-[#20292d]"}`}
+                                      key={space.id}
+                                      type="button"
+                                      aria-pressed={collabspaceInviteId === space.id}
+                                      onClick={() => setCollabspaceInviteId(space.id)}
+                                    >
+                                      {space.name}
+                                    </button>
+                                  )) : (
+                                    <p className="m-0 py-2 text-sm text-[#aebabb]" role="status">No Collabspaces match your search.</p>
+                                  )}
+                                </div>
+                              </div>
+                            ) : !collabspaceInviteError ? (
+                              <p className="m-0 text-sm text-[#aebabb]">You need to own or administer a Collabspace before you can invite someone.</p>
+                            ) : null}
+                            {collabspaceInviteError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{collabspaceInviteError}</p>}
+                            <footer className="flex justify-end gap-2">
+                              <button className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-transparent px-4 text-sm font-semibold text-ink hover:bg-[#222d31]" type="button" disabled={collabspaceInviteSubmitting} onClick={() => setCollabspaceInviteOpen(false)}>Cancel</button>
+                              {collabspaceInviteOptions.length > 0 && <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={collabspaceInviteSubmitting || !collabspaceInviteId}>{collabspaceInviteSubmitting ? "Sending…" : "Send invitation"}</button>}
+                            </footer>
+                          </form>
+                        )}
+                      </section>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="grid flex-1 place-items-center p-8 text-center">

@@ -5,6 +5,7 @@ import profileRouter from "./routes/profile.routes.js";
 import opportunityRouter from "./routes/opportunity.routes.js";
 import chatRouter from "./routes/chat.routes.js";
 import collabspaceRouter from "./routes/collabspace.routes.js";
+import invitationRouter from "./routes/invitation.routes.js";
 import { attachChatWebSocket } from "./lib/chat-websocket.js";
 
 const app = express();
@@ -17,6 +18,7 @@ app.use("/api/profiles", profileRouter);
 app.use("/api/opportunities", opportunityRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/collabspaces", collabspaceRouter);
+app.use("/api/invitations", invitationRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

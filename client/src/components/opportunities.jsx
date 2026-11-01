@@ -38,12 +38,29 @@ function OpportunityCard({
   onToggleComments,
   onSave,
   onShare,
+  onRequest,
+  requestStatus = "",
+  isSendingRequest = false,
 }) {
   const descriptionRef = useRef(null);
   const ownerMenuRef = useRef(null);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [hasLongDescription, setHasLongDescription] = useState(false);
   const [isOwnerMenuOpen, setIsOwnerMenuOpen] = useState(false);
+  const [isRequestComposerOpen, setIsRequestComposerOpen] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
+  const [requestError, setRequestError] = useState("");
+
+  useEffect(() => {
+    if (!isRequestComposerOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape" && !isSendingRequest) {
+        setIsRequestComposerOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isRequestComposerOpen, isSendingRequest]);
   const categories = opportunity.categories.map(
     (category) =>
       opportunityCategoryOptions.find(([value]) => value === category)?.[1] ??
@@ -264,6 +281,25 @@ function OpportunityCard({
         </div>
       )}
       <footer className="opportunity-card-actions mt-4 flex flex-wrap items-center gap-2">
+        {onRequest && !isOwner && opportunity.status === "OPEN" && (
+          requestStatus ? (
+            <span className="rounded-lg border border-[#28634f] bg-[#1b3029] px-3 py-2 text-[13px] font-semibold text-accent-light" role="status">
+              {requestStatus === "PENDING" ? "Request pending" : requestStatus === "ACCEPTED" ? "Request accepted" : "Request declined"}
+            </span>
+          ) : (
+            <button
+              className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-[13px] font-semibold text-accent-light hover:bg-[#223b32] disabled:cursor-wait disabled:opacity-60"
+              type="button"
+              disabled={isSendingRequest}
+              onClick={() => {
+                setRequestError("");
+                setIsRequestComposerOpen((open) => !open);
+              }}
+            >
+              {isSendingRequest ? "Sending…" : "Request to collab"}
+            </button>
+          )
+        )}
         <button
           className={`inline-flex cursor-pointer items-center gap-[7px] rounded-lg border-0 bg-transparent px-2 py-1.5 text-[13px] text-[#91a4aa] hover:bg-[#1b2529] hover:text-accent-light [&>svg]:size-[18px] [&>svg]:shrink-0${isSaved ? " text-accent-light" : ""}`}
           type="button"
@@ -330,6 +366,71 @@ function OpportunityCard({
           <span>{isLinkCopied ? "Copied" : "Share"}</span>
         </button>
       </footer>
+      {isRequestComposerOpen && onRequest && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-[rgb(3_8_10_/_78%)] p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !isSendingRequest) {
+              setIsRequestComposerOpen(false);
+            }
+          }}
+        >
+          <form
+            className="grid w-full max-w-[480px] gap-4 rounded-2xl border border-[#303a3e] bg-[#141a1e] p-5 shadow-[0_24px_80px_rgb(0_0_0_/_45%)]"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`collab-request-heading-${opportunity.id}`}
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setRequestError("");
+              const result = await onRequest(opportunity, requestMessage);
+              if (result?.ok) {
+                setRequestMessage("");
+                setIsRequestComposerOpen(false);
+              } else {
+                setRequestError(result?.message ?? "Could not send the request. Try again.");
+              }
+            }}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="m-0 text-xl font-bold text-ink" id={`collab-request-heading-${opportunity.id}`}>
+                  Request to collab
+                </h2>
+                <p className="mb-0 mt-1 text-sm text-muted">Send {opportunity.owner.name} an optional message.</p>
+              </div>
+              <button
+                className="grid size-9 flex-none cursor-pointer place-items-center rounded-full border border-[#303a3e] bg-transparent text-2xl leading-none text-[#c0cece] hover:bg-[#222d31] hover:text-white disabled:cursor-wait disabled:opacity-60"
+                type="button"
+                aria-label="Close request dialog"
+                disabled={isSendingRequest}
+                onClick={() => setIsRequestComposerOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <label className="grid gap-2 text-sm font-semibold text-ink">
+              Optional message
+              <textarea
+                className="min-h-28 resize-y rounded-lg border border-[#303a3e] bg-[#111719] p-3 text-sm text-ink outline-none placeholder:text-[#788588] focus:border-accent"
+                value={requestMessage}
+                onChange={(event) => setRequestMessage(event.target.value.slice(0, 1000))}
+                maxLength={1000}
+                placeholder="Tell the owner why you’d like to collaborate"
+              />
+            </label>
+            {requestError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{requestError}</p>}
+            <div className="flex justify-end gap-2">
+              <button className="min-h-9 cursor-pointer rounded-lg border border-[#303a3e] bg-transparent px-3 text-sm text-muted hover:text-ink disabled:cursor-wait disabled:opacity-60" type="button" disabled={isSendingRequest} onClick={() => setIsRequestComposerOpen(false)}>
+                Cancel
+              </button>
+              <button className="min-h-9 cursor-pointer rounded-lg border-0 bg-accent px-3 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-wait disabled:opacity-60" type="submit" disabled={isSendingRequest}>
+                {isSendingRequest ? "Sending…" : "Send request"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </article>
   );
 }

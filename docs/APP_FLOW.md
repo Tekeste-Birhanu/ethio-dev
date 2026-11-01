@@ -24,25 +24,25 @@ Signed-in navigation
   │       └── Opportunity post expands inline; comments open in a dialog
   ├── Chat → Private conversation list → Conversation history
   ├── Collabspaces → Collabspace → Group chat / Taskboard / Members / Settings
-  ├── Notifications → Incoming request or invitation → Review context → Accept / Decline
-  └── My profile
+  ├── My profile
       ├── Profile card
       ├── Requests → Outgoing requests and invitations
       ├── My Opportunities → Opportunity post / owner controls
       ├── Saved → Private saved opportunities
       ├── Edit profile
       └── Settings → Change password (password accounts only)
+  └── Notifications → Incoming request or invitation → Review context → Accept / Decline
 
 Collabspaces → Create Collabspace → New standalone space
 ```
 
 Discover is one page with Opportunities and Developers tabs. The Post opportunity action sits beside those tabs. Search stays inline, and only the active tab is stored in the URL (for example `/?tab=developers`); search text clears on reload. Switching between Discover and Profile updates the path; browser back and forward restore the previous destination and Discover tab. Chat remains visibly accessible as a primary destination. The owner's profile has Requests, My Opportunities, and Saved tabs; Requests and Saved are private. Other visitors see the public profile and My Opportunities only.
 
-Requests are organized by direction. The Requests tab lists requests and invitations the member has sent in one chronological list. Each item identifies the recipient, related opportunity or Collabspace, and status. Pending items can be withdrawn; resolved items remain as history without further actions. Notifications is one chronological list of incoming requests, invitations, and private-message alerts, with unread items clearly indicated. Requests and invitations open their review context; message alerts open the relevant private chat. Comments do not create notifications.
+Requests are organized by direction. The Requests tab lists requests and invitations the member has sent in one chronological list. Each item identifies the recipient, related opportunity or Collabspace, and status. Pending items can be withdrawn; resolved items remain as history without further actions. Notifications is one chronological list of incoming collaboration requests, invitations, and acceptance alerts, with unread items clearly indicated. Incoming collaboration requests remain in Notifications after acceptance or decline and show their outcome; opening one shows its request context without response actions. Requests and invitations open their review context; acceptance alerts open the relevant chat or Collabspace. Incoming private messages use a small temporary toast in Chat and do not appear in the Notifications list. Comments do not create notifications.
 
 ## 3. Main journeys
 
-### J-01 — Find an opportunity and request to join
+### J-01 — Find an opportunity and request to collab
 
 - **Actor / role:** Developer seeking a project
 - **Entry point:** Discover → Opportunities tab
@@ -71,7 +71,8 @@ Requests are organized by direction. The Requests tab lists requests and invitat
   4. The owner receives incoming collaboration requests through Notifications. Opening a request shows the applicant profile and opportunity context before a decision.
   5. For each request, the owner can accept into private chat, choose a Collabspace they own or administer, create a new space during acceptance, or decline. Canceling the space choice keeps the request pending.
   6. The opportunity owner may invite a developer to private chat. A Collabspace owner or admin may invite a developer to that space; the recipient must accept before membership begins.
-  7. The owner can find and manage posts in My Opportunities under their profile. The post card has a three-dot actions menu for editing, pausing/resuming, marking Completed, and deleting. Marking a post Completed opens a warning and confirmation. Choosing Delete opens a separate confirmation before the post is removed.
+  7. Send invitations from a developer's public profile by choosing an Open opportunity for private chat or a Collabspace the inviter owns/administers. An optional note can be included. The invitation appears in the recipient's Notifications for review, and the sender can withdraw it from Requests while it is pending.
+  8. The owner can find and manage posts in My Opportunities under their profile. The post card has a three-dot actions menu for editing, pausing/resuming, marking Completed, and deleting. Marking a post Completed opens a warning and confirmation. Choosing Delete opens a separate confirmation before the post is removed.
 - **Success outcome:** A public opportunity is available for discovery, and the owner can independently create or select a Collabspace when accepting a request.
 - **Failure and recovery:** Validation errors keep the owner in the creation flow with entered content available to correct. Paused opportunities stop new requests and opportunity invitations while pending requests remain reviewable. Completing the opportunity requires confirmation and closes pending requests and opportunity invitations. Deleting it requires confirmation and does not alter standalone Collabspaces.
 - **Related requirements:** F-01, F-05, F-07, F-09, F-10, F-12, F-18
@@ -88,9 +89,10 @@ Requests are organized by direction. The Requests tab lists requests and invitat
   4. The recipient sees the incoming request in Chat. Selecting it shows the sender and request actions in the conversation pane, where the recipient accepts or declines.
   5. If accepted, a private conversation opens for both members. The requester receives a saved unread alert, shown as a temporary Chat toast when they next poll while signed in.
   6. Either participant can choose Delete chat. After a warning, confirming ends the conversation for both and removes its messages; connected participants are notified and the chat disappears from their lists.
-  7. After deletion, either member can start a new chat request from the other's profile; the other member must accept it before a new conversation opens.
+  7. From the conversation settings menu, an active Collabspace owner or admin can invite the other participant to one of their Collabspaces, optionally adding a note. The participant must accept from Notifications before joining.
+  8. After deletion, either member can start a new chat request from the other's profile; the other member must accept it before a new conversation opens.
 - **Success outcome:** The members can communicate in a private chat after the recipient accepts.
-- **Failure and recovery:** A declined request sends no notification to the requester; its Requests row changes to Declined. The requester may send another chat request later, which appears as a new Requests row. A chat request does not create Collabspace membership.
+- **Failure and recovery:** A declined request sends no notification to the requester; its Requests row changes to Declined. The requester may send another chat request later, which appears as a new Requests row. A chat request does not create Collabspace membership. A Collabspace invitation sent from an active private chat also does not add membership until the invitee accepts it.
 - **Related requirements:** F-02, F-04, F-08, F-17
 
 ### J-04 — Work together in a Collabspace
@@ -99,12 +101,12 @@ Requests are organized by direction. The Requests tab lists requests and invitat
 - **Entry point:** Collabspaces list or accepted invitation
 - **Preconditions / access:** The developer is an accepted member. Direct addition after acceptance of a collaboration request takes effect immediately; a separately invited developer joins only after accepting the invitation.
 - **Steps:**
-  1. Open the Collabspace. Its tabs are Group chat, Taskboard, Members, and Settings; Group chat opens by default. Members contains the roster and access controls. Settings contains space-level actions.
+  1. Open the Collabspace. Its tabs are Group chat, Taskboard, Members, and Settings; Group chat opens by default. Members contains the roster, access controls, and an Add members action for the Owner or an Admin. That action searches developers and sends a Collabspace invitation to the selected person; the recipient must accept before joining. Settings contains space-level actions.
   2. Use the persisted, live group chat to communicate with the team. Unread group messages are counted per member in the Collabspaces list; reading the conversation clears messages through the last one shown. Group messages do not create notifications.
   3. Open the shared taskboard and view milestones and tasks with To do, In progress, and Done statuses.
   4. An owner or admin creates, edits, and deletes empty milestones; creates and edits tasks, optionally sets due dates, and assigns one member to each task. Adding a task from a status column makes it inherit that milestone and status. An admin may assign a task to themselves. Tasks can be moved to another milestone before an empty milestone is deleted.
   5. An assignee updates the status of their own task by moving it between columns. Other current members see saved task changes live; the milestone's completed/total count updates too.
-  6. In Members, the owner appoints or removes admins. Owners and admins manage regular member access; only the owner changes admin privileges. A member can also leave. New members enter through an accepted collaboration request or invitation, not direct addition from the Members panel.
+  6. In Members, the owner appoints or removes admins. Owners and admins can search for and invite developers from Add members; the invitation does not add membership until accepted. Owners and admins manage regular member access; only the owner changes admin privileges. A member can also leave. New members enter through an accepted collaboration request or invitation, not direct addition.
   7. In Settings, the owner can rename the Collabspace. The new name appears for all members.
   8. The owner can permanently delete the Collabspace from Settings after confirming that everyone loses access and all group chat and task history is removed.
   9. When someone leaves or is removed, access ends and their open tasks become unassigned. Other members retain the team history.
@@ -158,7 +160,7 @@ Discover uses `/`; a public developer profile uses `/profile/:username`; the sig
 | Chat                           | Review incoming profile chat requests, view private conversations and message history, and see per-chat unread counts                                               | Signed-in member; requests are recipient-only and conversations participant-only | J-03              |
 | Collabspaces                   | Create, view, and open standalone Collabspaces                                                                                                                    | Signed-in member                                                           | J-01, J-02, J-04       |
 | Collabspace                    | Use group chat, membership controls, and taskboard                                                                                                               | Current members                                                             | J-02, J-04             |
-| Notifications                  | Review incoming requests/invitations and private-message alerts in one chronological list; unread items are indicated and each item opens its relevant context   | Signed-in member                                                           | J-01, J-02, J-03, J-04 |
+| Notifications                  | Review incoming collaboration requests/invitations and acceptance alerts in one chronological list; unread items are indicated and each item opens its relevant context | Signed-in member | J-01, J-02, J-03, J-04 |
 | Sign in / profile setup        | Register with required account fields, then invite the signed-in member to add optional city, experience, skills, and description; the invitation can be skipped | Signed-out visitor / new member                                            | J-01, J-02, J-03       |
 
 ## 5. Shared states and edge cases
@@ -177,7 +179,7 @@ Discover uses `/`; a public developer profile uses `/profile/:username`; the sig
 - Discover has Opportunities and Developers tabs. Search offers both result tabs and defaults to the Discover tab from which it was opened. Closing Search returns to that prior Discover tab.
 - A public profile shows its profile card and My Opportunities across all statuses. The owner's profile has Requests, My Opportunities, and Saved tabs. Requests shows outgoing requests and invitations; Saved shows only that member's saved opportunities.
 - Saved opportunities are private to their saver, appear in most-recently-saved order, and can be unsaved from the Saved tab.
-- For M5, incoming profile chat requests appear in Chat; the recipient reviews the sender's profile and accepts or declines there. Accepted private conversations appear in each participant's list. Opening one loads persisted message history and marks the messages shown as read. Members exchange text and links over an authenticated WebSocket; messages are saved before delivery and history reloads after reconnect. Each sender can edit or delete their own messages, with updates delivered to both participants; deleting a message refreshes the preview and unread count. Acceptance and private-message alerts appear as temporary Chat toasts using polling; the shared Notifications screen is planned outside M5 in T-58. Comments do not create notifications.
+- Incoming profile chat requests appear in Chat; the recipient reviews the sender's profile and accepts or declines there. Accepted private conversations appear in each participant's list. Opening one loads persisted message history and marks the messages shown as read. Members exchange text and links over an authenticated WebSocket; messages are saved before delivery and history reloads after reconnect. Each sender can edit or delete their own messages, with updates delivered to both participants; deleting a message refreshes the preview and unread count. Private-message alerts appear as small temporary Chat toasts using polling; they do not appear in Notifications. The Notifications destination shows incoming collaboration requests and invitations alongside persisted acceptance alerts in chronological order. Muted chats suppress private-message toasts; comments and Collabspace group messages do not create notifications.
 - Acceptance notifies the sender. Decline sends no notification; the sender sees the declined status in Requests. Withdrawal removes the incoming item silently.
 - Any sender can withdraw an outgoing pending request or invitation from Requests. A new request after withdrawal creates a new Requests row. Declined chat requests may be sent again as new rows; declined collaboration requests and declined invitations cannot be repeated.
 - Accepting a collaboration request into a private chat opens the chat immediately and does not add the applicant to a Collabspace. Accepting into a Collabspace selects one the owner owns or administers, or creates a new one during acceptance; the accepted applicant joins immediately. A separate private-chat or Collabspace invitation requires recipient acceptance.
