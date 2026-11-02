@@ -1049,7 +1049,7 @@ export default function ProfilePage(props) {
                               }}
                             >
                               <section
-                                className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 confirmation-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none] [width:min(100%,_380px)] [max-height:min(80dvh,_420px)] [height:auto] [max-height:80dvh]"
+                                className="profile-edit-modal confirmation-modal flex max-h-[80dvh] w-[min(100%,_420px)] flex-col overflow-hidden rounded-[18px] border border-[#303a3e] bg-[#141a1e] p-0 shadow-[0_24px_80px_rgb(0_0_0_/_45%)] [&::-webkit-scrollbar]:hidden"
                                 role="alertdialog"
                                 aria-modal="true"
                                 aria-labelledby="delete-opportunity-heading"

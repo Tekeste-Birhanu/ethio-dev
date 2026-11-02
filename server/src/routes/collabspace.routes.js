@@ -177,6 +177,408 @@ router.get('/:id', authenticate, async (req, res) => {
   }
 })
 
+export function createGetCollabspaceTaskboardHandler(database) {
+  return async (req, res) => {
+    try {
+      const collabspace = await database.workspace.findFirst({
+        where: {
+          id: req.params.id,
+          memberships: { some: { userId: req.auth.user.id, status: 'ACTIVE' } },
+        },
+        select: {
+          milestones: {
+            orderBy: [{ position: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+            select: {
+              id: true,
+              name: true,
+              position: true,
+              tasks: {
+                orderBy: [{ position: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+                select: {
+                  id: true,
+                  title: true,
+                  description: true,
+                  status: true,
+                  position: true,
+                  dueAt: true,
+                  assignee: { select: publicUserSelect },
+                },
+              },
+            },
+          },
+          memberships: {
+            where: { status: 'ACTIVE' },
+            orderBy: [{ joinedAt: 'asc' }, { userId: 'asc' }],
+            select: {
+              role: true,
+              user: { select: publicUserSelect },
+            },
+          },
+        },
+      })
+
+      if (!collabspace) {
+        return res.status(404).json({
+          error: { code: 'COLLABSPACE_NOT_FOUND', message: 'This Collabspace could not be found.' },
+        })
+      }
+
+      return res.json({
+        milestones: collabspace.milestones,
+        members: collabspace.memberships.map(({ user, role }) => ({ ...user, role })),
+      })
+    } catch {
+      console.error('Collabspace taskboard could not be loaded')
+      return res.status(500).json({
+        error: { code: 'INTERNAL_ERROR', message: 'Could not load this taskboard.' },
+      })
+    }
+  }
+}
+
+router.get('/:id/taskboard', authenticate, createGetCollabspaceTaskboardHandler(prisma))
+
+export function createUpdateCollabspaceTaskHandler(database, broadcast = broadcastGroupMessage) {
+  return async (req, res) => {
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
+    const allowedFields = new Set(['title', 'description', 'assigneeId', 'dueAt', 'status', 'milestoneId'])
+    const fields = Object.keys(body)
+    if (!fields.length || fields.some((field) => !allowedFields.has(field))) {
+      return res.status(400).json({ error: { code: 'INVALID_TASK', message: 'Update at least one task field.' } })
+    }
+
+    const data = {}
+    if (Object.hasOwn(body, 'title')) {
+      const title = typeof body.title === 'string' ? body.title.trim() : ''
+      if (!title || title.length > 200) {
+        return res.status(400).json({ error: { code: 'INVALID_TITLE', message: 'Enter a task title up to 200 characters.' } })
+      }
+      data.title = title
+    }
+    if (Object.hasOwn(body, 'description')) {
+      if (body.description !== null && typeof body.description !== 'string') {
+        return res.status(400).json({ error: { code: 'INVALID_DESCRIPTION', message: 'Enter task details as text.' } })
+      }
+      const description = typeof body.description === 'string' ? body.description.trim() : ''
+      if (description.length > 5000) {
+        return res.status(400).json({ error: { code: 'INVALID_DESCRIPTION', message: 'Task details must be 5,000 characters or fewer.' } })
+      }
+      data.description = description || null
+    }
+    if (Object.hasOwn(body, 'assigneeId')) {
+      if (body.assigneeId !== null && (typeof body.assigneeId !== 'string' || !body.assigneeId.trim())) {
+        return res.status(400).json({ error: { code: 'INVALID_ASSIGNEE', message: 'Choose a valid assignee.' } })
+      }
+      data.assigneeId = body.assigneeId?.trim() || null
+    }
+    if (Object.hasOwn(body, 'dueAt')) {
+      if (body.dueAt !== null && (typeof body.dueAt !== 'string' || Number.isNaN(Date.parse(body.dueAt)))) {
+        return res.status(400).json({ error: { code: 'INVALID_DUE_DATE', message: 'Choose a valid due date.' } })
+      }
+      data.dueAt = body.dueAt ? new Date(body.dueAt) : null
+    }
+    if (Object.hasOwn(body, 'status')) {
+      if (!['TODO', 'IN_PROGRESS', 'DONE'].includes(body.status)) {
+        return res.status(400).json({ error: { code: 'INVALID_STATUS', message: 'Choose To do, In progress, or Done.' } })
+      }
+      data.status = body.status
+    }
+    if (Object.hasOwn(body, 'milestoneId')) {
+      if (typeof body.milestoneId !== 'string' || !body.milestoneId.trim()) {
+        return res.status(400).json({ error: { code: 'INVALID_MILESTONE', message: 'Choose a milestone in this Collabspace.' } })
+      }
+      data.milestoneId = body.milestoneId.trim()
+    }
+
+    try {
+      const result = await database.$transaction(async (transaction) => {
+        const workspace = await transaction.workspace.findFirst({
+          where: {
+            id: req.params.id,
+            memberships: { some: { userId: req.auth.user.id, status: 'ACTIVE' } },
+          },
+          select: {
+            memberships: {
+              where: { status: 'ACTIVE' },
+              select: { userId: true, role: true },
+            },
+          },
+        })
+        if (!workspace) return null
+
+        const actor = workspace.memberships.find((membership) => membership.userId === req.auth.user.id)
+        const task = await transaction.task.findFirst({
+          where: { id: req.params.taskId, milestone: { is: { workspaceId: req.params.id } } },
+          select: { id: true, assigneeId: true, milestoneId: true, status: true },
+        })
+        if (!actor || !task) return null
+
+        const canManage = ['OWNER', 'ADMIN'].includes(actor.role)
+        const statusOnly = fields.length === 1 && fields[0] === 'status'
+        if (!canManage && !(statusOnly && task.assigneeId === req.auth.user.id)) return null
+        if (!canManage && !statusOnly) return null
+
+        if (data.assigneeId && !workspace.memberships.some((membership) => membership.userId === data.assigneeId)) {
+          return { invalidAssignee: true }
+        }
+
+        const destinationMilestoneId = data.milestoneId ?? task.milestoneId
+        const destinationStatus = data.status ?? task.status
+        if (destinationMilestoneId !== task.milestoneId) {
+          const milestone = await transaction.milestone.findFirst({
+            where: { id: destinationMilestoneId, workspaceId: req.params.id },
+            select: { id: true },
+          })
+          if (!milestone) return { invalidMilestone: true }
+        }
+        if (destinationMilestoneId !== task.milestoneId || destinationStatus !== task.status) {
+          const position = await transaction.task.aggregate({
+            where: { milestoneId: destinationMilestoneId, status: destinationStatus },
+            _max: { position: true },
+          })
+          data.position = (position._max.position ?? -1) + 1
+        }
+
+        const updatedTask = await transaction.task.update({
+          where: { id: task.id },
+          data,
+          select: {
+            id: true,
+            milestoneId: true,
+            title: true,
+            description: true,
+            status: true,
+            position: true,
+            dueAt: true,
+            assignee: { select: publicUserSelect },
+          },
+        })
+        return { task: updatedTask, memberIds: workspace.memberships.map((membership) => membership.userId) }
+      }, { isolationLevel: 'Serializable' })
+
+      if (result?.invalidAssignee) {
+        return res.status(400).json({ error: { code: 'INVALID_ASSIGNEE', message: 'Choose an active member of this Collabspace.' } })
+      }
+      if (result?.invalidMilestone) {
+        return res.status(400).json({ error: { code: 'INVALID_MILESTONE', message: 'Choose a milestone in this Collabspace.' } })
+      }
+      if (!result) {
+        return res.status(404).json({ error: { code: 'TASK_NOT_FOUND', message: 'This task is not available to update.' } })
+      }
+
+      broadcast(result.memberIds, { type: 'task.updated', workspaceId: req.params.id, task: result.task })
+      return res.json({ task: result.task })
+    } catch (error) {
+      if (error?.code === 'P2034') {
+        return res.status(409).json({ error: { code: 'TASK_CHANGED', message: 'The task changed. Refresh and try again.' } })
+      }
+      console.error('Collabspace task could not be updated')
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Could not update this task.' } })
+    }
+  }
+}
+
+router.patch('/:id/tasks/:taskId', requireSameOrigin, authenticate, createUpdateCollabspaceTaskHandler(prisma))
+
+async function findTaskboardManager(transaction, workspaceId, userId) {
+  const workspace = await transaction.workspace.findFirst({
+    where: {
+      id: workspaceId,
+      memberships: { some: { userId, status: 'ACTIVE', role: { in: ['OWNER', 'ADMIN'] } } },
+    },
+    select: {
+      memberships: {
+        where: { status: 'ACTIVE' },
+        select: { userId: true, role: true },
+      },
+    },
+  })
+  const actor = workspace?.memberships.find((membership) => membership.userId === userId)
+  return actor && ['OWNER', 'ADMIN'].includes(actor.role) ? workspace : null
+}
+
+function taskboardActionError(res, error) {
+  if (error?.code === 'P2034') {
+    return res.status(409).json({ error: { code: 'TASKBOARD_CHANGED', message: 'The taskboard changed. Refresh and try again.' } })
+  }
+  console.error('Collabspace taskboard could not be updated')
+  return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Could not update this taskboard.' } })
+}
+
+export function createMilestoneHandler(database, broadcast = broadcastGroupMessage) {
+  return async (req, res) => {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
+    if (!name || name.length > 100) {
+      return res.status(400).json({ error: { code: 'INVALID_NAME', message: 'Enter a milestone name up to 100 characters.' } })
+    }
+    try {
+      const result = await database.$transaction(async (transaction) => {
+        const workspace = await findTaskboardManager(transaction, req.params.id, req.auth.user.id)
+        if (!workspace) return null
+        const position = await transaction.milestone.aggregate({
+          where: { workspaceId: req.params.id },
+          _max: { position: true },
+        })
+        const milestone = await transaction.milestone.create({
+          data: { workspaceId: req.params.id, name, position: (position._max.position ?? -1) + 1 },
+          select: { id: true, name: true, position: true },
+        })
+        return { milestone, memberIds: workspace.memberships.map((membership) => membership.userId) }
+      }, { isolationLevel: 'Serializable' })
+      if (!result) return res.status(404).json({ error: { code: 'COLLABSPACE_NOT_FOUND', message: 'This Collabspace could not be found.' } })
+      broadcast(result.memberIds, { type: 'milestone.created', workspaceId: req.params.id, milestone: result.milestone })
+      return res.status(201).json({ milestone: result.milestone })
+    } catch (error) {
+      return taskboardActionError(res, error)
+    }
+  }
+}
+
+router.post('/:id/milestones', requireSameOrigin, authenticate, createMilestoneHandler(prisma))
+
+export function createRenameMilestoneHandler(database, broadcast = broadcastGroupMessage) {
+  return async (req, res) => {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : ''
+    if (!name || name.length > 100) {
+      return res.status(400).json({ error: { code: 'INVALID_NAME', message: 'Enter a milestone name up to 100 characters.' } })
+    }
+    try {
+      const result = await database.$transaction(async (transaction) => {
+        const workspace = await findTaskboardManager(transaction, req.params.id, req.auth.user.id)
+        if (!workspace) return null
+        const milestone = await transaction.milestone.findFirst({
+          where: { id: req.params.milestoneId, workspaceId: req.params.id },
+          select: { id: true, name: true, position: true },
+        })
+        if (!milestone) return null
+        const updatedMilestone = await transaction.milestone.update({
+          where: { id: milestone.id },
+          data: { name },
+          select: { id: true, name: true, position: true },
+        })
+        return { milestone: updatedMilestone, memberIds: workspace.memberships.map((membership) => membership.userId) }
+      }, { isolationLevel: 'Serializable' })
+      if (!result) return res.status(404).json({ error: { code: 'MILESTONE_NOT_FOUND', message: 'This milestone is not available to rename.' } })
+      broadcast(result.memberIds, { type: 'milestone.updated', workspaceId: req.params.id, milestone: result.milestone })
+      return res.json({ milestone: result.milestone })
+    } catch (error) {
+      return taskboardActionError(res, error)
+    }
+  }
+}
+
+router.patch('/:id/milestones/:milestoneId', requireSameOrigin, authenticate, createRenameMilestoneHandler(prisma))
+
+export function createDeleteMilestoneHandler(database, broadcast = broadcastGroupMessage) {
+  return async (req, res) => {
+    const expectedTaskCount = req.body?.expectedTaskCount
+    if (!Number.isInteger(expectedTaskCount) || expectedTaskCount < 0) {
+      return res.status(400).json({ error: { code: 'INVALID_TASK_COUNT', message: 'Review the milestone tasks and confirm deletion.' } })
+    }
+    try {
+      const result = await database.$transaction(async (transaction) => {
+        const workspace = await findTaskboardManager(transaction, req.params.id, req.auth.user.id)
+        if (!workspace) return null
+        const milestone = await transaction.milestone.findFirst({
+          where: { id: req.params.milestoneId, workspaceId: req.params.id },
+          select: { id: true, _count: { select: { tasks: true } } },
+        })
+        if (!milestone) return null
+        if (milestone._count.tasks !== expectedTaskCount) return { taskCountChanged: true }
+        await transaction.milestone.delete({ where: { id: milestone.id } })
+        return { milestoneId: milestone.id, memberIds: workspace.memberships.map((membership) => membership.userId) }
+      }, { isolationLevel: 'Serializable' })
+      if (!result) return res.status(404).json({ error: { code: 'MILESTONE_NOT_FOUND', message: 'This milestone is not available to delete.' } })
+      if (result.taskCountChanged) return res.status(409).json({ error: { code: 'MILESTONE_TASK_COUNT_CHANGED', message: 'The tasks in this milestone changed. Review it and confirm deletion again.' } })
+      broadcast(result.memberIds, { type: 'milestone.deleted', workspaceId: req.params.id, milestoneId: result.milestoneId })
+      return res.status(204).end()
+    } catch (error) {
+      return taskboardActionError(res, error)
+    }
+  }
+}
+
+router.delete('/:id/milestones/:milestoneId', requireSameOrigin, authenticate, createDeleteMilestoneHandler(prisma))
+
+export function createTaskHandler(database, broadcast = broadcastGroupMessage) {
+  return async (req, res) => {
+    const body = req.body && typeof req.body === 'object' && !Array.isArray(req.body) ? req.body : {}
+    const title = typeof body.title === 'string' ? body.title.trim() : ''
+    if (!title || title.length > 200) {
+      return res.status(400).json({ error: { code: 'INVALID_TITLE', message: 'Enter a task title up to 200 characters.' } })
+    }
+    if (body.description !== undefined && body.description !== null && typeof body.description !== 'string') {
+      return res.status(400).json({ error: { code: 'INVALID_DESCRIPTION', message: 'Enter task details as text.' } })
+    }
+    const description = typeof body.description === 'string' ? body.description.trim() : ''
+    if (description.length > 5000) {
+      return res.status(400).json({ error: { code: 'INVALID_DESCRIPTION', message: 'Task details must be 5,000 characters or fewer.' } })
+    }
+    const assigneeId = typeof body.assigneeId === 'string' && body.assigneeId.trim() ? body.assigneeId.trim() : null
+    if (body.assigneeId !== undefined && body.assigneeId !== null && !assigneeId) {
+      return res.status(400).json({ error: { code: 'INVALID_ASSIGNEE', message: 'Choose a valid assignee.' } })
+    }
+    const dueAt = body.dueAt === undefined || body.dueAt === null || body.dueAt === '' ? null : body.dueAt
+    if (dueAt !== null && (typeof dueAt !== 'string' || Number.isNaN(Date.parse(dueAt)))) {
+      return res.status(400).json({ error: { code: 'INVALID_DUE_DATE', message: 'Choose a valid due date.' } })
+    }
+    const status = body.status === undefined ? 'TODO' : body.status
+    if (!['TODO', 'IN_PROGRESS', 'DONE'].includes(status)) {
+      return res.status(400).json({ error: { code: 'INVALID_STATUS', message: 'Choose To do, In progress, or Done.' } })
+    }
+    try {
+      const result = await database.$transaction(async (transaction) => {
+        const workspace = await findTaskboardManager(transaction, req.params.id, req.auth.user.id)
+        if (!workspace) return null
+        const milestone = await transaction.milestone.findFirst({
+          where: { id: req.params.milestoneId, workspaceId: req.params.id },
+          select: { id: true },
+        })
+        if (!milestone) return null
+        if (assigneeId && !workspace.memberships.some((membership) => membership.userId === assigneeId)) {
+          return { invalidAssignee: true }
+        }
+        const position = await transaction.task.aggregate({
+          where: { milestoneId: milestone.id, status },
+          _max: { position: true },
+        })
+        const task = await transaction.task.create({
+          data: {
+            milestoneId: milestone.id,
+            title,
+            description: description || null,
+            assigneeId,
+            dueAt: dueAt ? new Date(dueAt) : null,
+            status,
+            position: (position._max.position ?? -1) + 1,
+          },
+          select: {
+            id: true,
+            milestoneId: true,
+            title: true,
+            description: true,
+            status: true,
+            position: true,
+            dueAt: true,
+            assignee: { select: publicUserSelect },
+          },
+        })
+        return { task, memberIds: workspace.memberships.map((membership) => membership.userId) }
+      }, { isolationLevel: 'Serializable' })
+      if (result?.invalidAssignee) {
+        return res.status(400).json({ error: { code: 'INVALID_ASSIGNEE', message: 'Choose an active member of this Collabspace.' } })
+      }
+      if (!result) return res.status(404).json({ error: { code: 'MILESTONE_NOT_FOUND', message: 'This milestone is not available.' } })
+      broadcast(result.memberIds, { type: 'task.created', workspaceId: req.params.id, task: result.task })
+      return res.status(201).json({ task: result.task })
+    } catch (error) {
+      return taskboardActionError(res, error)
+    }
+  }
+}
+
+router.post('/:id/milestones/:milestoneId/tasks', requireSameOrigin, authenticate, createTaskHandler(prisma))
+
 export function createDeleteCollabspaceHandler(database) {
   return async (req, res) => {
     try {
@@ -309,46 +711,58 @@ router.patch('/:id/members/:userId/role', requireSameOrigin, authenticate, async
   }
 })
 
-router.delete('/:id/members/:userId', requireSameOrigin, authenticate, async (req, res) => {
-  try {
-    const removed = await prisma.$transaction(async (transaction) => {
-      const workspace = await transaction.workspace.findUnique({
-        where: { id: req.params.id },
-        select: {
-          memberships: {
-            where: { userId: { in: [req.auth.user.id, req.params.userId] } },
-            select: { id: true, userId: true, role: true, status: true },
+export function createRemoveCollabspaceMemberHandler(database) {
+  return async (req, res) => {
+    try {
+      const removed = await database.$transaction(async (transaction) => {
+        const workspace = await transaction.workspace.findUnique({
+          where: { id: req.params.id },
+          select: {
+            memberships: {
+              where: { userId: { in: [req.auth.user.id, req.params.userId] } },
+              select: { id: true, userId: true, role: true, status: true },
+            },
           },
-        },
-      })
-      if (!workspace) return false
-      const actor = workspace.memberships.find((membership) => membership.userId === req.auth.user.id && membership.status === 'ACTIVE')
-      const target = workspace.memberships.find((membership) => membership.userId === req.params.userId && membership.status === 'ACTIVE')
-      if (!actor || !target || target.role === 'OWNER') return false
-      const isOwner = actor.role === 'OWNER'
-      const isAdmin = actor.role === 'ADMIN'
-      const isSelfLeave = req.params.userId === req.auth.user.id
-      if (isSelfLeave) {
-        if (isOwner) return false
-      } else if (!isOwner && !(isAdmin && target.role === 'MEMBER')) {
-        return false
+        })
+        if (!workspace) return false
+        const actor = workspace.memberships.find((membership) => membership.userId === req.auth.user.id && membership.status === 'ACTIVE')
+        const target = workspace.memberships.find((membership) => membership.userId === req.params.userId && membership.status === 'ACTIVE')
+        if (!actor || !target || target.role === 'OWNER') return false
+        const isOwner = actor.role === 'OWNER'
+        const isAdmin = actor.role === 'ADMIN'
+        const isSelfLeave = req.params.userId === req.auth.user.id
+        if (isSelfLeave) {
+          if (isOwner) return false
+        } else if (!isOwner && !(isAdmin && target.role === 'MEMBER')) {
+          return false
+        }
+        await transaction.task.updateMany({
+          where: {
+            milestone: { is: { workspaceId: req.params.id } },
+            assigneeId: target.userId,
+            status: { not: 'DONE' },
+          },
+          data: { assigneeId: null },
+        })
+        await transaction.membership.update({
+          where: { id: target.id },
+          data: { status: isSelfLeave ? 'LEFT' : 'REMOVED', endedAt: new Date() },
+        })
+        return true
+      }, { isolationLevel: 'Serializable' })
+      if (!removed) {
+        return res.status(404).json({ error: { code: 'MEMBER_NOT_FOUND', message: 'This member cannot be removed from the Collabspace.' } })
       }
-      await transaction.membership.update({
-        where: { id: target.id },
-        data: { status: isSelfLeave ? 'LEFT' : 'REMOVED', endedAt: new Date() },
-      })
-      return true
-    }, { isolationLevel: 'Serializable' })
-    if (!removed) {
-      return res.status(404).json({ error: { code: 'MEMBER_NOT_FOUND', message: 'This member cannot be removed from the Collabspace.' } })
+      return res.status(204).end()
+    } catch (error) {
+      if (error?.code === 'P2034') return res.status(409).json({ error: { code: 'MEMBERSHIP_CHANGED', message: 'The member list changed. Refresh and try again.' } })
+      console.error('Collabspace member access could not be ended')
+      return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Could not update Collabspace membership.' } })
     }
-    return res.status(204).end()
-  } catch (error) {
-    if (error?.code === 'P2034') return res.status(409).json({ error: { code: 'MEMBERSHIP_CHANGED', message: 'The member list changed. Refresh and try again.' } })
-    console.error('Collabspace member access could not be ended')
-    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Could not update Collabspace membership.' } })
   }
-})
+}
+
+router.delete('/:id/members/:userId', requireSameOrigin, authenticate, createRemoveCollabspaceMemberHandler(prisma))
 
 router.get('/:id/messages', authenticate, async (req, res) => {
   try {

@@ -109,18 +109,18 @@
 - [x] **T-39 — Build outgoing request tracking.** Show a user's sent requests and their current status in the profile's Requests area.
 - [x] **T-40 — Build incoming request review.** Show pending requests with the requester's profile available to the owner, including requests on Paused opportunities.
 - [x] **T-41 — Add accept and decline actions.** Let the opportunity owner decide; acceptance notifies the requester and decline does not. Completing an opportunity closes its pending requests.
-- [x] **T-42 — Add accepted-request routing.** The owner can accept into private chat or choose a Collabspace they own/administer; if needed, create a new standalone space as part of the acceptance action.
+- [x] **T-42 — Add accepted-request routing.** The owner can accept into private chat or choose a Collabspace they own/administer. If no eligible space exists, the owner creates one first; the request remains pending until they select it and accept.
 - [x] **T-43 — Add developer invitations.** Opportunity owners can invite developers to private chat; Collabspace owners/admins can invite developers to their space from a developer profile, active private conversation, or the Collabspace Members tab by searching for a developer. Invitees must accept before access is granted. Completing an opportunity closes its opportunity-related pending requests and invitations.
 
 ## M8. Shared taskboard
 
 **Outcome:** Collabspace members can organize work in a three-column taskboard.
 
-- [ ] **T-44 — Create task records and milestone grouping.** Organize tasks under milestones and support one assignee per task.
-- [ ] **T-45 — Build the three-column board.** Show To do, In progress, and Done, with task cards grouped under their milestone.
-- [ ] **T-46 — Add task details and editing.** Expand a task to view and update its details, assignee, and status.
-- [ ] **T-47 — Add task creation and milestone controls.** Allow authorized Collabspace members to create tasks and milestones and manage them according to the approved roles.
-- [ ] **T-48 — Add drag-and-drop task movement.** Allow tasks to move between status columns and persist the updated status.
+- [x] **T-44 — Create task records and milestone grouping.** Organize tasks under milestones and support one assignee per task. Store status, ordering, due date, and timestamps; unassign unfinished tasks atomically when a member leaves or is removed.
+- [x] **T-45 — Build the three-column board.** Show To do, In progress, and Done, with task cards grouped under their milestone. The board loads member-only milestone and task data, shows assignees and optional due dates, and adapts to mobile status tabs.
+- [x] **T-46 — Add task details and editing.** Expand a task to view and update its details, assignee, and status. Owners/admins can edit task fields and assign active members; assignees can change only their own task status. Persisted changes are broadcast to active members.
+- [x] **T-47 — Add task creation and milestone controls.** Owners/admins can add tasks from a status column, create and rename milestones, and delete milestones after a clear confirmation; the warning states the number of tasks that will also be permanently deleted. Assignees are limited to active space members; created and changed items update for connected members.
+- [x] **T-48 — Add drag-and-drop task movement.** Owners/admins and task assignees can drag an authorized task between desktop status columns; the keyboard-accessible status selector remains available on all screen sizes. The client moves a task only after the server persists the change, then broadcasts it to active members.
 
 ## M9. Release readiness
 

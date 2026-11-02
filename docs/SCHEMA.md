@@ -58,9 +58,10 @@ The initial M5 migration creates the private-conversation and message tables. `w
 ### Milestone and Task
 
 - **Purpose:** Milestones organize a Collabspace's tasks; tasks track assigned work.
-- **Milestone fields:** `id`; `workspaceId`; `name`; `position`; `createdAt`; `updatedAt`.
-- **Task fields:** `id`; `milestoneId`; `title`; optional `description`, `assigneeId`, and `dueAt`; `status` (ToDo, InProgress, Done); `position`; `createdAt`; `updatedAt`.
-- **Constraints:** A milestone belongs to one Collabspace. A task belongs to one milestone and has zero or one assignee. A task can be assigned only to an active member of the same Collabspace. Only empty milestones can be deleted; tasks are moved before milestone deletion. When a member leaves or is removed, their unfinished tasks become unassigned; completed tasks remain as history and may retain the former assignee for attribution.
+- **Milestone fields:** `id`; `workspaceId`; `name` (up to 100 characters); `position`; `createdAt`; `updatedAt`.
+- **Task fields:** `id`; `milestoneId`; `title`; optional `description`, `assigneeId`, and `dueAt`; `status` (`TODO`, `IN_PROGRESS`, `DONE`; defaults to `TODO`); `position`; `createdAt`; `updatedAt`.
+- **Constraints:** A milestone belongs to one Collabspace and is ordered within it. A task belongs to one milestone and has at most one assignee. A task can be assigned only to an active member of the same Collabspace; enforce this cross-record rule in trusted server logic. Deleting a milestone cascades to its tasks after the API checks the reviewed task count and the user confirms the consequence; perform the count check and delete in one transaction. Deleting a Collabspace cascades its milestones and tasks. When a member leaves or is removed, their unfinished tasks become unassigned in the same transaction; completed tasks retain their assignee as history.
+- **Invitation history:** Deleting a Collabspace cancels its pending invitations before removing the space. Resolved invitation records remain as history with a null `workspaceId`; pending Collabspace invitations must always reference an existing space.
 - **Related requirements:** F-13, F-16, F-18.
 
 ### Message
@@ -110,6 +111,7 @@ These records support the main entities without changing their ownership model:
 | Collabspace | One-to-many | Request | A space may be retained as the destination of a resolved request; deleting the space clears that optional reference. |
 | Collabspace | One-to-many | Milestone | A space may have multiple milestones. |
 | Milestone | One-to-many | Task | Tasks move between milestones only within their Collabspace. |
+| Task | Optional many-to-one | User as assignee | A task has at most one assignee; active membership in the task's Collabspace is required. |
 | User | One-to-many as assignee | Task | Assignee is optional and must be an active member of that task's Collabspace. |
 | Opportunity | One-to-many | Comment / OpportunityLink | Comments and completed-project links belong to one opportunity. |
 | User | Many-to-many through SavedOpportunity | Opportunity | Each user can save an opportunity once. |

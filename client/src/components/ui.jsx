@@ -65,7 +65,8 @@ export function ModalCloseButton({
   );
 }
 export function ConfirmDialog({ confirmation, onClose }) {
-  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmingConfirmation, setConfirmingConfirmation] = useState(null);
+  const isConfirming = confirmation != null && confirmingConfirmation === confirmation;
   const cancelRef = useRef(null);
 
   useEffect(() => {
@@ -82,7 +83,7 @@ export function ConfirmDialog({ confirmation, onClose }) {
 
   async function confirm() {
     if (isConfirming) return;
-    setIsConfirming(true);
+    setConfirmingConfirmation(confirmation);
     try {
       await confirmation.onConfirm();
     } finally {

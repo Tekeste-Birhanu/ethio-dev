@@ -190,6 +190,48 @@ Requires an active member of a Collabspace. Returns its name, member identities 
 
 Success returns `200` with `{ "collabspace": { ... } }`.
 
+### Read a Collabspace taskboard
+
+`GET /api/collabspaces/:id/taskboard`
+
+Requires an active member of the Collabspace. Returns milestones in position order, each with its tasks in position order, and current active members for task assignment. Task records include title, optional details, status, optional due date, and the assignee's public identity (`id`, `name`, and `username`); private account fields are excluded. Unknown Collabspaces and nonmembers receive the same `404` response; unauthenticated requests return `401`.
+
+Success returns `200` with `{ "milestones": [{ "id": "...", "name": "...", "position": 0, "tasks": [{ "id": "...", "title": "...", "description": null, "status": "TODO|IN_PROGRESS|DONE", "position": 0, "dueAt": null, "assignee": null }] }], "members": [{ "id": "...", "name": "...", "username": "...", "role": "OWNER|ADMIN|MEMBER" }] }`. An empty milestone list is valid.
+
+### Create a taskboard milestone
+
+`POST /api/collabspaces/:id/milestones`
+
+Requires same-origin and an active Collabspace Owner or Admin. Accepts `{ "name": "Planning" }`; the trimmed name must contain 1â€“100 characters. The milestone is appended after existing milestones. Success returns `201` with `{ "milestone": { "id": "...", "name": "Planning", "position": 0 } }` and broadcasts `milestone.created` to active members. Invalid names return `400`; inaccessible spaces or members without management rights return `404`; concurrent changes return `409`.
+
+### Rename a taskboard milestone
+
+`PATCH /api/collabspaces/:id/milestones/:milestoneId`
+
+Requires same-origin and an active Collabspace Owner or Admin. Accepts `{ "name": "Planning" }` with a trimmed name of 1â€“100 characters. Success returns `{ "milestone": { "id": "...", "name": "Planning", "position": 0 } }` and broadcasts `milestone.updated`. Invalid names return `400`; inaccessible milestones or members without management rights return `404`.
+
+### Delete a taskboard milestone
+
+`DELETE /api/collabspaces/:id/milestones/:milestoneId`
+
+Requires same-origin and an active Collabspace Owner or Admin. Accepts `{ "expectedTaskCount": 3 }`, matching the number of tasks the user saw in the deletion confirmation. The server checks this count and deletes the milestone in one transaction; the database also deletes all tasks in that milestone. Success returns `204` and broadcasts `milestone.deleted` to active members. A changed task count or a concurrent taskboard update returns `409` so the client can refresh and ask for confirmation again; an invalid count returns `400`; inaccessible milestones or members without management rights return `404`.
+
+### Create a task
+
+`POST /api/collabspaces/:id/milestones/:milestoneId/tasks`
+
+Requires same-origin and an active Collabspace Owner or Admin. Accepts a required `title` (trimmed, 1â€“200 characters), optional `description` (up to 5,000 characters), optional active-member `assigneeId`, optional `dueAt`, and optional `status` (`TODO`, `IN_PROGRESS`, or `DONE`, default `TODO`). The selected column supplies the status. Position is appended within the selected milestone and status. Success returns `201` with `{ "task": { ... } }` and broadcasts `task.created` to active members. Invalid fields return `400`; inaccessible milestones or members without management rights return `404`; concurrent changes return `409`.
+
+### Edit a Collabspace task
+
+`PATCH /api/collabspaces/:id/tasks/:taskId`
+
+Requires same-origin and active Collabspace membership. Owners and admins may update any combination of `title` (trimmed, 1â€“200 characters), `description` (trimmed, up to 5,000 characters or `null`), `assigneeId` (an active member ID or `null`), `dueAt` (a valid date or `null`), `status` (`TODO`, `IN_PROGRESS`, or `DONE`), and `milestoneId` (another milestone in the same Collabspace). An assignee may update only `status` on their own task. Other members may read task details but cannot modify them. A task outside the Collabspace, or an unauthorized member, returns `404`; invalid fields return `400`; a concurrent task change returns `409`; unauthenticated requests return `401`.
+
+Success returns `200` with `{ "task": { "id": "...", "milestoneId": "...", "title": "...", "description": null, "status": "TODO", "position": 0, "dueAt": null, "assignee": null } }`. After persistence, the server broadcasts `{ "type": "task.updated", "workspaceId": "...", "task": { ... } }` to current active Collabspace members.
+
+The client uses this endpoint to persist status changes from drag-and-drop or the task's keyboard-accessible status selector. A successful status change is moved to the end of its destination status column before the update is broadcast.
+
 ### Rename a Collabspace
 
 `PATCH /api/collabspaces/:id`
@@ -206,7 +248,7 @@ Requires same-origin and the active Collabspace Owner. Accepts `{ "name": "Study
 
 `DELETE /api/collabspaces/:id`
 
-Requires same-origin and the active Collabspace Owner. Permanently deletes the Collabspace and its dependent memberships, group conversation, and messages. The client must show a clear warning that all members lose access and group chat history is permanently removed before calling this endpoint. Success returns `204`; non-owners and unknown spaces return `404`; concurrent changes return `409`; unauthenticated requests return `401`.
+Requires same-origin and the active Collabspace Owner. Permanently deletes the Collabspace, memberships, group conversation and messages, milestones, and tasks. Pending Collabspace invitations are canceled; resolved invitation records remain as history without a linked workspace. The client must show a clear warning that all members lose access and group chat and task history is permanently removed before calling this endpoint. Success returns `204`; non-owners and unknown spaces return `404`; concurrent changes return `409`; unauthenticated requests return `401`.
 
 ### Read Collabspace group chat history
 

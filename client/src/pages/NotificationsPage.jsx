@@ -27,6 +27,8 @@ export default function NotificationsPage({ handleAppNavigation }) {
   const [selectedSpaceId, setSelectedSpaceId] = useState("");
   const [createSpace, setCreateSpace] = useState(false);
   const [spaceName, setSpaceName] = useState("");
+  const [spaceCreationError, setSpaceCreationError] = useState("");
+  const [isCreatingSpace, setIsCreatingSpace] = useState(false);
 
   async function resolveRequest(requestId, status, destination) {
     if (actionRequestId) return;
@@ -60,6 +62,7 @@ export default function NotificationsPage({ handleAppNavigation }) {
     setRoutingRequestId(requestId);
     setSpacesLoading(true);
     setSpacesError("");
+    setSpaceCreationError("");
     setCreateSpace(false);
     setSpaceName("");
     try {
@@ -73,6 +76,31 @@ export default function NotificationsPage({ handleAppNavigation }) {
       setSpacesError(loadError.message || "Could not load your Collabspaces.");
     } finally {
       setSpacesLoading(false);
+    }
+  }
+
+  async function createCollabspace() {
+    const name = spaceName.trim();
+    if (!name || isCreatingSpace) return;
+    setIsCreatingSpace(true);
+    setSpaceCreationError("");
+    try {
+      const response = await fetch("/api/collabspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error?.message ?? "Could not create the Collabspace.");
+      const createdSpace = { ...result.collabspace, role: "OWNER" };
+      setSpaces((current) => [createdSpace, ...current]);
+      setSelectedSpaceId(createdSpace.id);
+      setSpaceName("");
+      setCreateSpace(false);
+    } catch (createError) {
+      setSpaceCreationError(createError.message || "Could not create the Collabspace.");
+    } finally {
+      setIsCreatingSpace(false);
     }
   }
 
@@ -319,21 +347,35 @@ export default function NotificationsPage({ handleAppNavigation }) {
                   </div>
                   {spacesLoading ? <p className="m-0 text-sm text-muted" role="status">Loading Collabspaces…</p> : spacesError ? <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{spacesError}</p> : (
                     <>
-                      <label className="grid gap-1 text-sm text-muted">
-                        <span>Choose a space you own or administer</span>
-                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={createSpace ? "create" : selectedSpaceId} onChange={(event) => {
-                          if (event.target.value === "create") setCreateSpace(true);
-                          else { setCreateSpace(false); setSelectedSpaceId(event.target.value); }
-                        }}>
-                          {spaces.map((space) => <option key={space.id} value={space.id}>{space.name}</option>)}
-                          <option value="create">Create a new Collabspace…</option>
-                        </select>
-                      </label>
-                      {createSpace && <label className="grid gap-1 text-sm text-muted"><span>New Collabspace name</span><input className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={spaceName} onChange={(event) => setSpaceName(event.target.value)} maxLength={100} autoFocus /></label>}
-                      {spaces.length === 0 && !createSpace && <p className="m-0 text-sm text-muted">You do not own or administer a Collabspace yet. Create one to continue.</p>}
+                      {createSpace ? (
+                        <>
+                          <label className="grid gap-1 text-sm text-muted"><span>Collabspace name</span><input className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={spaceName} onChange={(event) => setSpaceName(event.target.value)} maxLength={100} autoFocus /></label>
+                          {spaceCreationError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{spaceCreationError}</p>}
+                        </>
+                      ) : spaces.length === 0 ? (
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="m-0 text-sm text-muted">Create a Collabspace first to add someone here.</p>
+                          <button className="min-h-10 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-4 text-sm font-semibold text-accent-light hover:bg-[#223b32]" type="button" onClick={() => { setSpaceCreationError(""); setCreateSpace(true); }}>Create Collabspace</button>
+                        </div>
+                      ) : (
+                        <label className="grid gap-1 text-sm text-muted">
+                          <span>Choose a space you own or administer</span>
+                          <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={createSpace ? "create" : selectedSpaceId} onChange={(event) => {
+                            if (event.target.value === "create") { setSpaceCreationError(""); setCreateSpace(true); }
+                            else { setCreateSpace(false); setSelectedSpaceId(event.target.value); }
+                          }}>
+                            {spaces.map((space) => <option key={space.id} value={space.id}>{space.name}</option>)}
+                            <option value="create">Create a new Collabspace…</option>
+                          </select>
+                        </label>
+                      )}
                       <div className="flex flex-wrap justify-end gap-2">
-                        <button className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] px-4 text-sm text-ink hover:bg-[#222d31]" type="button" onClick={() => setRoutingRequestId("")}>Cancel</button>
-                        <button className="min-h-10 cursor-pointer rounded-lg bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={Boolean(actionRequestId) || spacesLoading || (!createSpace && !selectedSpaceId) || (createSpace && !spaceName.trim())} onClick={() => resolveRequest(activeRequest.id, "ACCEPTED", createSpace ? { type: "CREATE_COLLABSPACE", name: spaceName } : { type: "COLLABSPACE", workspaceId: selectedSpaceId })}>{actionRequestId === activeRequest.id ? "Accepting…" : createSpace ? "Create and accept" : "Add and accept"}</button>
+                        <button className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] px-4 text-sm text-ink hover:bg-[#222d31]" type="button" disabled={isCreatingSpace} onClick={() => createSpace ? setCreateSpace(false) : setRoutingRequestId("")}>{createSpace ? "Cancel" : "Close"}</button>
+                        {createSpace ? (
+                          <button className="min-h-10 cursor-pointer rounded-lg bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={isCreatingSpace || !spaceName.trim()} onClick={createCollabspace}>{isCreatingSpace ? "Creating…" : "Create"}</button>
+                        ) : spaces.length > 0 ? (
+                          <button className="min-h-10 cursor-pointer rounded-lg bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={Boolean(actionRequestId) || spacesLoading || !selectedSpaceId} onClick={() => resolveRequest(activeRequest.id, "ACCEPTED", { type: "COLLABSPACE", workspaceId: selectedSpaceId })}>{actionRequestId === activeRequest.id ? "Accepting…" : "Add and accept"}</button>
+                        ) : null}
                       </div>
                     </>
                   )}

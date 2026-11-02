@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ConfirmDialog } from "../components/ui.jsx";
 import CollabspaceGroupChat from "./CollabspaceGroupChat.jsx";
+import CollabspaceTaskboard from "./CollabspaceTaskboard.jsx";
 
 function getErrorMessage(result, fallback) {
   return result.error?.message ?? fallback;
@@ -31,18 +32,6 @@ function CollabspaceItem({ collabspace, isSelected, onOpen }) {
         )}
       </div>
     </div>
-  );
-}
-
-function OverviewEntry({ title, description }) {
-  return (
-    <section className="grid gap-2 rounded-2xl border border-[#293236] bg-[#111719] p-5 sm:p-6">
-      <h2 className="text-lg font-bold text-ink">{title}</h2>
-      <p className="m-0 text-sm leading-6 text-muted">{description}</p>
-      <span className="mt-1 w-fit rounded-full border border-[#354044] px-3 py-1 text-xs text-muted">
-        Coming soon
-      </span>
-    </section>
   );
 }
 
@@ -406,14 +395,19 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
     setIsDeletingCollabspace(true);
     setDeleteCollabspaceError("");
     try {
-      const response = await fetch(`/api/collabspaces/${encodeURIComponent(selected.id)}`, { method: "DELETE" });
+      const response = await fetch(`/api/collabspaces/${encodeURIComponent(selected.id)}`, {
+        method: "DELETE",
+        signal: AbortSignal.timeout(20000),
+      });
       if (!response.ok) {
         const result = await response.json();
         throw new Error(getErrorMessage(result, "Could not delete this Collabspace."));
       }
       onBack();
     } catch (deleteError) {
-      setDeleteCollabspaceError(deleteError.message || "Could not reach the server. Check your connection and try again.");
+      setDeleteCollabspaceError(deleteError.name === "TimeoutError"
+        ? "The request timed out. Check your connection and try again."
+        : deleteError.message || "Could not reach the server. Check your connection and try again.");
     } finally {
       setIsDeletingCollabspace(false);
     }
@@ -490,7 +484,7 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
                   </section>
                 ) : selectedTab === "taskboard" ? (
                   <section id="collabspace-taskboard-panel" role="tabpanel" aria-labelledby="collabspace-taskboard-tab">
-                    <OverviewEntry title="Taskboard" description="Plan work together with milestones and tasks. The shared board will appear here." />
+                    <CollabspaceTaskboard key={selected.id} collabspaceId={selected.id} role={selected.memberships.find((membership) => membership.user.id === user?.id)?.role} userId={user?.id} />
                   </section>
                 ) : selectedTab === "members" ? (
                   <section id="collabspace-members-panel" role="tabpanel" aria-labelledby="collabspace-members-tab">
