@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import DiscoverPage from "./pages/DiscoverPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
@@ -32,9 +32,8 @@ const registrationFields = [
     label: "Username",
     type: "text",
     autoComplete: "username",
-    maxLength: 30,
-    pattern: "[A-Za-z0-9_]{3,30}",
-    title: "Use 3-30 letters, numbers, or underscores.",
+    minLength: 4,
+    maxLength: 20,
   },
   {
     name: "email",
@@ -895,7 +894,16 @@ function App() {
 
       if (!response.ok) {
         setFieldErrors(result.error?.fields ?? {});
-        setMessage(result.error?.message ?? "Could not complete the request.");
+        setMessage(
+          result.error?.fields
+            ? ""
+            : (result.error?.message ?? "Could not complete the request."),
+        );
+        if (isRegistration) {
+          setRegistration((current) => ({ ...current, password: "" }));
+        } else {
+          setCredentials((current) => ({ ...current, password: "" }));
+        }
         return;
       }
 
@@ -909,6 +917,11 @@ function App() {
         handleAppNavigation("discover");
       }
     } catch {
+      if (isRegistration) {
+        setRegistration((current) => ({ ...current, password: "" }));
+      } else {
+        setCredentials((current) => ({ ...current, password: "" }));
+      }
       setMessage(
         "Could not reach the server. Check your connection and try again.",
       );
@@ -1677,7 +1690,7 @@ function App() {
     if (destination === "collabspaces" || destination.startsWith("collabspace:")) {
       if (!user) {
         setMode("login");
-        setMessage("Sign in to view your Collabspaces.");
+        setMessage("");
         setPage("auth");
         return;
       }
@@ -1700,7 +1713,7 @@ function App() {
     if (destination === "notifications") {
       if (!user) {
         setMode("login");
-        setMessage("Sign in to view your notifications.");
+        setMessage("");
         setPage("auth");
         return;
       }
@@ -1716,7 +1729,7 @@ function App() {
     if (destination === "chat") {
       if (!user) {
         setMode("login");
-        setMessage("Sign in to view chat requests.");
+        setMessage("");
         setPage("auth");
         return;
       }
@@ -1734,6 +1747,13 @@ function App() {
     }
 
     if (destination === "profile") {
+      if (!user) {
+        setMode("login");
+        setMessage("");
+        setPage("auth");
+        return;
+      }
+
       const alreadyOnOwnProfile =
         page === "profile" &&
         !publicUsername &&
@@ -1909,9 +1929,9 @@ function App() {
                     name="username"
                     type="text"
                     autoComplete="username"
-                    minLength={3}
-                    maxLength={30}
-                    pattern="[A-Za-z0-9_]{3,30}"
+                    minLength={4}
+                    maxLength={20}
+                    pattern="[A-Za-z0-9_]{4,20}"
                     value={googleUsername}
                     onChange={(event) => {
                       handleGoogleProfileChange(event);

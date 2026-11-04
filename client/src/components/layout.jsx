@@ -1,6 +1,97 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "./ui.jsx";
 
+const navigationItems = [
+  { id: "discover", label: "Discover", icon: "discover", requiresAuth: false },
+  { id: "chat", label: "Messages", icon: "chat", requiresAuth: true },
+  {
+    id: "collabspaces",
+    label: "Collabspaces",
+    icon: "collabspaces",
+    requiresAuth: true,
+  },
+  { id: "profile", label: "Profile", icon: "profile", requiresAuth: true },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: "notifications",
+    requiresAuth: true,
+  },
+];
+
+function NavigationIcon({ name }) {
+  const commonProps = {
+    className: "size-[21px] shrink-0",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+    focusable: false,
+  };
+
+  if (name === "discover") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="m15.8 8.2-2.4 5.2-5.2 2.4 2.4-5.2 5.2-2.4Z" />
+      </svg>
+    );
+  }
+  if (name === "chat") {
+    return (
+      <svg {...commonProps}>
+        <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-2.5 2v-6A7.5 7.5 0 1 1 20 11.5Z" />
+        <path d="M8 11h8M8 14h5" />
+      </svg>
+    );
+  }
+  if (name === "collabspaces") {
+    return (
+      <svg {...commonProps}>
+        <rect x="3.5" y="4" width="7" height="7" rx="1.5" />
+        <rect x="13.5" y="4" width="7" height="7" rx="1.5" />
+        <rect x="3.5" y="13" width="7" height="7" rx="1.5" />
+        <rect x="13.5" y="13" width="7" height="7" rx="1.5" />
+      </svg>
+    );
+  }
+  if (name === "profile") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5 20a7 7 0 0 1 14 0" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...commonProps}>
+      <path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9ZM10 21h4" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      className="size-3.5 shrink-0"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect x="3" y="7" width="10" height="7" rx="1.5" />
+      <path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" />
+    </svg>
+  );
+}
+
 function AppSidebar({
   user,
   activePage,
@@ -46,55 +137,30 @@ function AppSidebar({
       >
         EthioDev
       </a>
-      <nav className="app-nav grid gap-[7px] max-[760px]:fixed max-[760px]:inset-x-0 max-[760px]:bottom-0 max-[760px]:z-[30] max-[760px]:flex max-[760px]:min-w-0 max-[760px]:justify-stretch max-[760px]:gap-2 max-[760px]:border-t max-[760px]:border-[#303a3e] max-[760px]:bg-[rgb(16_22_25_/_96%)] max-[760px]:px-4 max-[760px]:pb-[calc(8px+env(safe-area-inset-bottom))] max-[760px]:pt-2 max-[760px]:backdrop-blur-xl">
-        <button
-          className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "discover" ? " is-active bg-accent-dark text-accent-light" : ""}`}
-          type="button"
-          onClick={() => onNavigate("discover")}
-          aria-current={activePage === "discover" ? "page" : undefined}
-        >
-          Discover
-        </button>
-        {user && (
-          <button
-            className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "chat" ? " is-active bg-accent-dark text-accent-light" : ""}`}
-            type="button"
-            onClick={() => onNavigate("chat")}
-            aria-current={activePage === "chat" ? "page" : undefined}
-          >
-            Chat
-          </button>
-        )}
-        {user && (
-          <button
-            className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "collabspaces" ? " is-active bg-accent-dark text-accent-light" : ""}`}
-            type="button"
-            onClick={() => onNavigate("collabspaces")}
-            aria-current={activePage === "collabspaces" ? "page" : undefined}
-          >
-            Collabspaces
-          </button>
-        )}
-        {user && (
-          <button
-            className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "profile" ? " is-active bg-accent-dark text-accent-light" : ""}`}
-            type="button"
-            onClick={() => onNavigate("profile")}
-            aria-current={activePage === "profile" ? "page" : undefined}
-          >
-            Profile
-          </button>
-        )}
-        {user && (
-          <button
-            className={`app-nav-link min-h-12 cursor-pointer rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:px-3 max-[760px]:text-center max-[760px]:text-sm max-[420px]:min-h-12 max-[420px]:px-2 max-[420px]:text-[13px]${activePage === "notifications" ? " is-active bg-accent-dark text-accent-light" : ""}`}
-            type="button"
-            onClick={() => onNavigate("notifications")}
-            aria-current={activePage === "notifications" ? "page" : undefined}
-          >
-            Notifications
-          </button>
-        )}
+      <nav className="app-nav grid gap-[7px] max-[760px]:fixed max-[760px]:inset-x-0 max-[760px]:bottom-0 max-[760px]:z-[30] max-[760px]:flex max-[760px]:min-w-0 max-[760px]:justify-stretch max-[760px]:gap-1 max-[760px]:border-t max-[760px]:border-[#303a3e] max-[760px]:bg-[rgb(16_22_25_/_96%)] max-[760px]:px-2 max-[760px]:pb-[calc(8px+env(safe-area-inset-bottom))] max-[760px]:pt-2 max-[760px]:backdrop-blur-xl">
+        {navigationItems.map((item) => {
+          const isLocked = item.requiresAuth && !user;
+          const isActive = activePage === item.id;
+          return (
+            <button
+              key={item.id}
+              className={`app-nav-link relative flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border-0 bg-transparent px-[13px] text-left font-semibold text-[#c0cece] transition-colors hover:bg-accent-dark hover:text-accent-light max-[760px]:min-w-0 max-[760px]:flex-1 max-[760px]:flex-col max-[760px]:justify-center max-[760px]:gap-0.5 max-[760px]:px-1 max-[760px]:py-1 max-[760px]:text-[10px] max-[420px]:min-h-12${isActive ? " is-active bg-accent-dark text-accent-light" : ""}${isLocked ? " cursor-pointer text-[#8b999b] opacity-60 hover:bg-transparent hover:text-[#8b999b]" : ""}`}
+              type="button"
+              onClick={() => onNavigate(item.id)}
+              aria-current={isActive ? "page" : undefined}
+              aria-label={isLocked ? `${item.label}, sign in required` : item.label}
+              title={isLocked ? `${item.label} — sign in required` : item.label}
+            >
+              <NavigationIcon name={item.icon} />
+              <span className="max-[760px]:sr-only">{item.label}</span>
+              {isLocked && (
+                <span className="ml-auto inline-flex items-center gap-1.5 text-[#7f8d90] max-[760px]:absolute max-[760px]:top-1.5 max-[760px]:right-[calc(50%-18px)] max-[760px]:ml-0">
+                  <LockIcon />
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
       {!user && (
         <div className="app-auth-actions mt-6 grid gap-2.5 max-[760px]:m-0 max-[760px]:flex max-[760px]:items-center max-[760px]:gap-2 max-[760px]:[grid-area:account] max-[420px]:gap-[6px] [display:flex] [grid-area:account] [align-items:center] [gap:8px] [margin:0] [gap:6px]">

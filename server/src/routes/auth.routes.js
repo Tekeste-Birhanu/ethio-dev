@@ -1,5 +1,14 @@
 import { Router } from "express";
-import { hashPassword, verifyPassword } from "../lib/password.js";
+import {
+  DUMMY_PASSWORD_HASH,
+  hashPassword,
+  verifyPassword,
+} from "../lib/password.js";
+import {
+  clearLoginFailures,
+  getLoginRetryAfter,
+  recordFailedLogin,
+} from "../lib/login-throttle.js";
 import { prisma } from "../lib/prisma.js";
 import { parseProfileInput, syncUserSkills } from "../lib/profile-input.js";
 import {
@@ -16,7 +25,7 @@ import googleAuthRouter from "./google-auth.routes.js";
 
 const router = Router();
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const usernamePattern = /^[a-z0-9_]{3,30}$/;
+const usernamePattern = /^[a-z0-9_]{4,20}$/;
 
 router.use("/google", googleAuthRouter);
 
@@ -39,12 +48,12 @@ router.post("/register", requireSameOrigin, async (req, res) => {
   }
 
   if (!usernamePattern.test(username)) {
-    errors.username = "Use 3-30 letters, numbers, or underscores.";
+    errors.username = "Use 4-20 letters, numbers, or underscores.";
   }
 
   const passwordLength = Array.from(password).length;
   if (passwordLength < 8 || passwordLength > 128) {
-    errors.password = "Password must be 8-128 characters.";
+    errors.password = "Password must be at least 8 characters.";
   }
 
   if (Object.keys(errors).length > 0) {
@@ -185,6 +194,17 @@ router.post("/login", requireSameOrigin, async (req, res) => {
     });
   }
 
+  const retryAfter = getLoginRetryAfter(identifier, req.ip);
+  if (retryAfter > 0) {
+    res.set("Retry-After", String(retryAfter));
+    return res.status(429).json({
+      error: {
+        code: "LOGIN_TEMPORARILY_THROTTLED",
+        message: "Unable to sign in right now. Try again later.",
+      },
+    });
+  }
+
   try {
     const user = await prisma.user.findFirst({
       where: { OR: [{ email: identifier }, { username: identifier }] },
@@ -197,10 +217,13 @@ router.post("/login", requireSameOrigin, async (req, res) => {
       },
     });
 
-    if (
-      !user?.passwordHash ||
-      !(await verifyPassword(password, user.passwordHash))
-    ) {
+    const passwordMatches = await verifyPassword(
+      password,
+      user?.passwordHash ?? DUMMY_PASSWORD_HASH,
+    );
+
+    if (!user?.passwordHash || !passwordMatches) {
+      recordFailedLogin(identifier, req.ip);
       return res.status(401).json({
         error: {
           code: "INVALID_CREDENTIALS",
@@ -209,6 +232,7 @@ router.post("/login", requireSameOrigin, async (req, res) => {
       });
     }
 
+    clearLoginFailures(identifier, req.ip);
     const { sessionId } = await createSession(user.id);
     setSessionCookie(res, sessionId);
     return res.json({

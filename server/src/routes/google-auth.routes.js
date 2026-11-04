@@ -14,7 +14,7 @@ const router = Router()
 const stateCookieName = 'ethio_dev_oauth_state'
 const verifierCookieName = 'ethio_dev_oauth_verifier'
 const oauthCookieDurationSeconds = 600
-const usernamePattern = /^[a-z0-9_]{3,30}$/
+const usernamePattern = /^[a-z0-9_]{4,20}$/
 
 function googleConfig() {
   const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env
@@ -232,8 +232,8 @@ router.post('/complete-profile', requireSameOrigin, authenticate, async (req, re
     return res.status(400).json({
       error: {
         code: 'VALIDATION_ERROR',
-        message: 'Use 3-30 letters, numbers, or underscores for your username.',
-        fields: { username: 'Use 3-30 letters, numbers, or underscores.' },
+        message: 'Use 4-20 letters, numbers, or underscores for your username.',
+        fields: { username: 'Use 4-20 letters, numbers, or underscores.' },
       },
     })
   }

@@ -6,7 +6,7 @@ import { authenticate } from '../middleware/authenticate.js'
 import { requireSameOrigin } from '../middleware/require-same-origin.js'
 
 const router = Router()
-const usernamePattern = /^[a-z0-9_]{3,30}$/
+const usernamePattern = /^[a-z0-9_]{4,20}$/
 
 function toProfile(user) {
   if (!user) return null
@@ -138,7 +138,7 @@ router.patch('/me', requireSameOrigin, authenticate, async (req, res) => {
 
   if (!name || name.length > 100) errors.name = 'Enter a name up to 100 characters.'
   if (!usernamePattern.test(username)) {
-    errors.username = 'Use 3-30 letters, numbers, or underscores.'
+    errors.username = 'Use 4-20 letters, numbers, or underscores.'
   }
   if (Object.keys(errors).length > 0) {
     return res.status(400).json({
@@ -207,7 +207,7 @@ router.post('/me/password', requireSameOrigin, authenticate, async (req, res) =>
     errors.currentPassword = 'Enter your current password.'
   }
   if (passwordLength < 8 || passwordLength > 128) {
-    errors.newPassword = 'Password must be 8-128 characters.'
+    errors.newPassword = 'Password must be at least 8 characters.'
   }
   if (Object.keys(errors).length > 0) {
     return res.status(400).json({

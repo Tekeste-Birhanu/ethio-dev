@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { prisma } from './prisma.js'
 
 export const SESSION_COOKIE = 'ethio_dev_session'
-export const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000
+export const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000
 
 function hashSessionId(sessionId) {
   return createHash('sha256').update(sessionId).digest('hex')
@@ -51,7 +51,13 @@ export async function createSession(userId) {
   const sessionId = randomBytes(32).toString('base64url')
   const expiresAt = new Date(Date.now() + SESSION_DURATION_MS)
 
-  await prisma.session.deleteMany({ where: { expiresAt: { lte: new Date() } } })
+  const now = new Date()
+  const absoluteExpiry = new Date(now.getTime() - SESSION_DURATION_MS)
+  await prisma.session.deleteMany({
+    where: {
+      OR: [{ expiresAt: { lte: now } }, { createdAt: { lte: absoluteExpiry } }],
+    },
+  })
   await prisma.session.create({
     data: { id: hashSessionId(sessionId), userId, expiresAt },
   })
@@ -62,8 +68,15 @@ export async function createSession(userId) {
 export async function findSession(sessionId) {
   if (!sessionId) return null
 
+  const now = new Date()
+  const absoluteExpiry = new Date(now.getTime() - SESSION_DURATION_MS)
+
   return prisma.session.findFirst({
-    where: { id: hashSessionId(sessionId), expiresAt: { gt: new Date() } },
+    where: {
+      id: hashSessionId(sessionId),
+      expiresAt: { gt: now },
+      createdAt: { gt: absoluteExpiry },
+    },
     select: {
       id: true,
       user: {

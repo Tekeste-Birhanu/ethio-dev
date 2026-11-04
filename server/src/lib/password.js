@@ -11,6 +11,8 @@ const BLOCK_SIZE = 8
 const PARALLELIZATION = 3
 const KEY_LENGTH = 64
 const MAX_MEMORY = 64 * 1024 * 1024
+export const DUMMY_PASSWORD_HASH =
+  'scrypt$32768$8$3$RXRoaW9EZXZEdW1teVNhbHQ$4F46izttHHtWNhprUTj23iAGqxlLX6sII2RZ4VvDoIed1qirz-Y3deADB8feB9OPGVCq2t6RheNpExyqIsVE0w'
 
 export async function hashPassword(password) {
   const salt = randomBytes(16)

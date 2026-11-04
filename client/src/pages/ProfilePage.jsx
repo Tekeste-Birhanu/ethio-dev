@@ -850,9 +850,9 @@ export default function ProfilePage(props) {
                                           name="username"
                                           value={profileForm.username}
                                           onChange={handleProfileFormChange}
-                                          minLength={3}
-                                          maxLength={30}
-                                          pattern="[A-Za-z0-9_]{3,30}"
+                                          minLength={4}
+                                          maxLength={20}
+                                          pattern="[A-Za-z0-9_]{4,20}"
                                           required
                                           aria-invalid={Boolean(
                                             fieldErrors.username,

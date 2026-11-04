@@ -9,6 +9,7 @@ import invitationRouter from "./routes/invitation.routes.js";
 import { attachChatWebSocket } from "./lib/chat-websocket.js";
 
 const app = express();
+app.set("trust proxy", 1);
 const port = process.env.PORT ?? 3000;
 const server = createServer(app);
 
