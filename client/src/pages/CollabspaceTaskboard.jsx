@@ -20,7 +20,7 @@ function TaskCard({ task, onOpen, canMove, onTaskDragStart, onDragEnd, isMoving 
 
   return (
     <article
-      className={`rounded-xl border border-[#293236] bg-[#111719] ${canMove ? "cursor-grab active:cursor-grabbing" : ""} ${isMoving ? "opacity-60" : ""}`}
+      className={`rounded-xl border border-[#293236] bg-[#101512] ${canMove ? "cursor-grab active:cursor-grabbing" : ""} ${isMoving ? "opacity-60" : ""}`}
       draggable={canMove && !isMoving}
       onDragStart={(event) => onTaskDragStart(event, task)}
       onDragEnd={onDragEnd}
@@ -39,7 +39,7 @@ function TaskCard({ task, onOpen, canMove, onTaskDragStart, onDragEnd, isMoving 
 function TaskColumn({ column, tasks, onOpenTask, onCreateTask, onMoveTask, onTaskDragStart, onTaskDragEnd, canMoveTask, draggedTaskId, dropTargetStatus, setDropTargetStatus, movingTaskId }) {
   return (
     <section
-      className={`grid min-w-0 content-start gap-3 rounded-xl border p-2 transition-colors ${dropTargetStatus === column.id ? "border-[#38e6b0] bg-[#14221f]" : "border-transparent"}`}
+      className={`grid min-w-0 content-start gap-3 rounded-xl border p-2 transition-colors ${dropTargetStatus === column.id ? "border-[#45BD76] bg-[#14221f]" : "border-transparent"}`}
       aria-label={`${column.label} tasks`}
       onDragOver={(event) => {
         if (!draggedTaskId) return;
@@ -482,7 +482,7 @@ export default function CollabspaceTaskboard({ collabspaceId, role, userId }) {
             {columns.map((column) => (
               <button
                 key={column.id}
-                className={`min-h-10 shrink-0 border-b-2 px-3 text-sm font-semibold ${selectedStatus === column.id ? "border-[#38e6b0] text-accent" : "border-transparent text-muted"}`}
+                className={`min-h-10 shrink-0 border-b-2 px-3 text-sm font-semibold ${selectedStatus === column.id ? "border-[#45BD76] text-accent" : "border-transparent text-muted"}`}
                 type="button"
                 role="tab"
                 aria-selected={selectedStatus === column.id}
@@ -509,7 +509,7 @@ export default function CollabspaceTaskboard({ collabspaceId, role, userId }) {
 
       {selectedTask && draft && (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 p-0 sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeTask(); }} onKeyDown={(event) => { if (event.key === "Escape") closeTask(); }}>
-          <form className="grid h-full w-full content-start gap-4 overflow-y-auto border border-[#293236] bg-[#111719] p-5 sm:h-auto sm:max-h-[min(90dvh,760px)] sm:max-w-xl sm:rounded-2xl sm:p-6" onSubmit={saveTask} role="dialog" aria-modal="true" aria-labelledby="task-details-title">
+          <form className="grid h-full w-full content-start gap-4 overflow-y-auto border border-[#293236] bg-[#101512] p-5 sm:h-auto sm:max-h-[min(90dvh,760px)] sm:max-w-xl sm:rounded-2xl sm:p-6" onSubmit={saveTask} role="dialog" aria-modal="true" aria-labelledby="task-details-title">
             <div className="flex items-start justify-between gap-4">
               <h2 className="m-0 text-lg font-bold text-ink" id="task-details-title">{!selectedTask.id ? "Add task" : canManage ? "Edit task" : "Task details"}</h2>
               <button className="grid size-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-muted hover:bg-[#20292d] hover:text-ink" type="button" aria-label="Close task details" onClick={closeTask}>×</button>
@@ -518,35 +518,35 @@ export default function CollabspaceTaskboard({ collabspaceId, role, userId }) {
             {canManage ? (
               <>
                 <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-title">Title
-                  <input className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="task-title" maxLength={200} required value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} />
+                  <input className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="task-title" maxLength={200} required value={draft.title} onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))} />
                 </label>
                 <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-description">Details
-                  <textarea className="min-h-[72px] resize-y rounded-lg border border-[#354044] bg-[#0d1315] p-3 text-base outline-none focus:border-[#38e6b0]" id="task-description" maxLength={5000} value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} />
+                  <textarea className="min-h-[72px] resize-y rounded-lg border border-[#354044] bg-[#141A16] p-3 text-base outline-none focus:border-[#48C97B]" id="task-description" maxLength={5000} value={draft.description} onChange={(event) => setDraft((current) => ({ ...current, description: event.target.value }))} />
                 </label>
                 <div className={`grid gap-3 sm:grid-cols-2 ${selectedTask.id ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}>
                   <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-assignee">Assignee
-                    <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="task-assignee" value={draft.assigneeId} onChange={(event) => setDraft((current) => ({ ...current, assigneeId: event.target.value }))}>
+                    <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="task-assignee" value={draft.assigneeId} onChange={(event) => setDraft((current) => ({ ...current, assigneeId: event.target.value }))}>
                       <option value="">Unassigned</option>
                       {members.map((member) => <option key={member.id} value={member.id}>{member.name}{member.id === userId ? " (you)" : ""}</option>)}
                     </select>
                   </label>
                   {selectedTask.id && <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-milestone">Milestone
-                    <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="task-milestone" value={draft.milestoneId} onChange={(event) => setDraft((current) => ({ ...current, milestoneId: event.target.value }))}>
+                    <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="task-milestone" value={draft.milestoneId} onChange={(event) => setDraft((current) => ({ ...current, milestoneId: event.target.value }))}>
                       {milestones.map((milestone) => <option key={milestone.id} value={milestone.id}>{milestone.name}</option>)}
                     </select>
                   </label>}
                   <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-due-date">Due date
-                    <input className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="task-due-date" type="date" value={draft.dueAt} onChange={(event) => setDraft((current) => ({ ...current, dueAt: event.target.value }))} />
+                    <input className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="task-due-date" type="date" value={draft.dueAt} onChange={(event) => setDraft((current) => ({ ...current, dueAt: event.target.value }))} />
                   </label>
                   <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-status">Status
-                    <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="task-status" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
+                    <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="task-status" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
                       {columns.map((column) => <option key={column.id} value={column.id}>{column.label}</option>)}
                     </select>
                   </label>
                 </div>
               </>
             ) : (
-              <div className="grid gap-3 rounded-xl border border-[#293236] bg-[#0d1315] p-4">
+              <div className="grid gap-3 rounded-xl border border-[#293236] bg-[#141A16] p-4">
                 <h3 className="m-0 break-words font-semibold text-ink">{selectedTask.title}</h3>
                 <p className="m-0 whitespace-pre-wrap break-words text-sm leading-6 text-ink">{selectedTask.description || "No details."}</p>
                 <p className="m-0 text-sm text-muted">Assigned to {selectedTask.assignee?.name ?? "no one"}{selectedTask.dueAt ? ` · Due ${formatDueDate(selectedTask.dueAt)}` : ""}</p>
@@ -555,7 +555,7 @@ export default function CollabspaceTaskboard({ collabspaceId, role, userId }) {
 
             {!canManage && selectedTask.assignee?.id === userId && (
               <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="task-status">Status
-                <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="task-status" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
+                <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="task-status" value={draft.status} onChange={(event) => setDraft((current) => ({ ...current, status: event.target.value }))}>
                   {columns.map((column) => <option key={column.id} value={column.id}>{column.label}</option>)}
                 </select>
               </label>
@@ -572,13 +572,13 @@ export default function CollabspaceTaskboard({ collabspaceId, role, userId }) {
 
       {milestoneDraft && (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 p-0 sm:p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMilestoneDialog(); }} onKeyDown={(event) => { if (event.key === "Escape") closeMilestoneDialog(); }}>
-          <form className="grid h-full w-full content-start gap-4 border border-[#293236] bg-[#111719] p-5 sm:h-auto sm:max-w-lg sm:rounded-2xl sm:p-6" onSubmit={saveMilestone} role="dialog" aria-modal="true" aria-labelledby="milestone-dialog-title">
+          <form className="grid h-full w-full content-start gap-4 border border-[#293236] bg-[#101512] p-5 sm:h-auto sm:max-w-lg sm:rounded-2xl sm:p-6" onSubmit={saveMilestone} role="dialog" aria-modal="true" aria-labelledby="milestone-dialog-title">
             <div className="flex items-start justify-between gap-4">
               <h2 className="m-0 text-lg font-bold text-ink" id="milestone-dialog-title">{milestoneDraft.id ? "Rename milestone" : "Add milestone"}</h2>
               <button className="grid size-9 shrink-0 place-items-center rounded-lg border-0 bg-transparent text-muted hover:bg-[#20292d] hover:text-ink" type="button" aria-label="Close milestone dialog" disabled={isSavingMilestone} onClick={closeMilestoneDialog}>×</button>
             </div>
             <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="milestone-name">Milestone name
-              <input autoFocus className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base outline-none focus:border-[#38e6b0]" id="milestone-name" maxLength={100} required value={milestoneDraft.name} onChange={(event) => setMilestoneDraft((current) => ({ ...current, name: event.target.value }))} />
+              <input autoFocus className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base outline-none focus:border-[#48C97B]" id="milestone-name" maxLength={100} required value={milestoneDraft.name} onChange={(event) => setMilestoneDraft((current) => ({ ...current, name: event.target.value }))} />
             </label>
             {actionError && <p className="m-0 text-sm text-[#ffb6be]" role="alert">{actionError}</p>}
             <div className="flex justify-end gap-2 border-t border-[#293236] pt-4">

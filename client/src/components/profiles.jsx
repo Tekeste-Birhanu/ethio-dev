@@ -23,7 +23,7 @@ function OptionalProfileFields({
           )}
         </label>
         <input
-          className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+          className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
           id={`${prefix}-city`}
           name="city"
           type="text"
@@ -52,7 +52,7 @@ function OptionalProfileFields({
           )}
         </label>
         <select
-          className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [height:48px] [padding:0_40px_0_14px] [appearance:none] [background-color:#0d1215] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2]"
+          className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [height:48px] [padding:0_40px_0_14px] [appearance:none] [background-color:#141A16] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2]"
           id={`${prefix}-experience`}
           name="experience"
           value={values.experience}
@@ -60,14 +60,14 @@ function OptionalProfileFields({
           aria-invalid={Boolean(errors.experience)}
         >
           <option
-            className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+            className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
             value=""
           >
             Choose a level
           </option>
           {experienceOptions.map(([value, label]) => (
             <option
-              className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+              className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
               key={value}
               value={value}
             >
@@ -92,7 +92,7 @@ function OptionalProfileFields({
           </span>
         </label>
         <input
-          className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+          className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
           id={`${prefix}-skills`}
           name="skills"
           type="text"
@@ -121,7 +121,7 @@ function OptionalProfileFields({
           )}
         </label>
         <textarea
-          className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [min-height:92px] [padding:12px_14px] [resize:vertical]"
+          className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [min-height:92px] [padding:12px_14px] [resize:vertical]"
           id={`${prefix}-description`}
           name="description"
           maxLength={2000}
@@ -146,10 +146,10 @@ function DeveloperCard({ developer }) {
     : null;
 
   return (
-    <article className="developer-card [display:flex] [min-width:0] [flex-direction:column] [padding:18px] [border:1px_solid_#252d31] [border-radius:16px] [background:#141a1e]">
+    <article className="developer-card [display:flex] [min-width:0] [flex-direction:column] [padding:18px] [border:1px_solid_#252d31] [border-radius:16px] [background:#151C18]">
       <header className="developer-card-header [display:flex] [min-width:0] [align-items:center] [gap:12px]">
         <div
-          className="developer-card-avatar [display:grid] [width:44px] [height:44px] [flex:0_0_auto] [place-items:center] [border:1px_solid_#28634f] [border-radius:50%] [background:#1b3029] [color:#65e7b7] [font-weight:700]"
+          className="developer-card-avatar [display:grid] [width:44px] [height:44px] [flex:0_0_auto] [place-items:center] [border:1px_solid_#28634f] [border-radius:50%] [background:#18231C] [color:#58CE87] [font-weight:700]"
           aria-hidden="true"
         >
           {developer.name.slice(0, 1).toUpperCase()}
@@ -191,7 +191,7 @@ function DeveloperCard({ developer }) {
         </ul>
       )}
       <a
-        className="developer-card-link [align-self:flex-start] [margin-top:auto] [padding-top:18px] [color:#65e7b7] [font-size:13px] [font-weight:650] [text-decoration:none] hover:[color:#9af1d0] hover:[text-decoration:underline]"
+        className="developer-card-link [align-self:flex-start] [margin-top:auto] [padding-top:18px] [color:#58CE87] [font-size:13px] [font-weight:650] [text-decoration:none] hover:[color:#9af1d0] hover:[text-decoration:underline]"
         href={`/profile/${encodeURIComponent(developer.username)}`}
       >
         View profile

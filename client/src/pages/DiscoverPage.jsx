@@ -73,7 +73,7 @@ export default function DiscoverPage(props) {
 
   return (
     <section
-      className="app-page discover-content mx-auto w-full max-w-[1440px]"
+      className="discover-content mx-auto min-h-[100dvh] w-full max-w-[1200px] min-w-0 p-8 max-[760px]:px-4 max-[760px]:pt-4 max-[760px]:pb-[calc(104px+env(safe-area-inset-bottom))]"
                   aria-label={sharedOpportunityId ? undefined : "Discover"}
                   aria-labelledby={
                     sharedOpportunityId ? "discover-heading" : undefined
@@ -96,7 +96,7 @@ export default function DiscoverPage(props) {
                           Search {discoverTab}
                         </span>
                         <input
-                          className="min-h-12 w-full rounded-xl border border-[#303b40] bg-[#0d1215] px-[14px] py-[11px] text-ink placeholder:text-[#82969d] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+                          className="min-h-12 w-full rounded-xl border border-[#303b40] bg-[#141A16] px-[14px] py-[11px] text-ink placeholder:text-[#82969d] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
                           type="search"
                           value={discoverQuery}
                           onChange={(event) => {
@@ -139,7 +139,7 @@ export default function DiscoverPage(props) {
                     )}
                     {!sharedOpportunityId && (
                       <button
-                        className={`inline-flex min-h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${activeDiscoverFilterCount ? "border-accent/50 bg-accent-dark text-accent-light" : "border-[#303b40] bg-surface text-ink hover:bg-[#1b2529]"}`}
+                        className={`inline-flex min-h-12 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${activeDiscoverFilterCount ? "border-accent/50 bg-selected text-accent-light" : "border-[#303b40] bg-surface text-ink hover:bg-[#1b2529]"}`}
                         type="button"
                         aria-expanded={areDiscoverFiltersOpen}
                         aria-controls={
@@ -153,7 +153,7 @@ export default function DiscoverPage(props) {
                       >
                         Filters
                         {activeDiscoverFilterCount > 0 && (
-                          <span className="inline-flex size-5 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-[#06251a]">
+                          <span className="inline-flex size-5 items-center justify-center rounded-full bg-selection text-[11px] font-bold text-[#061d16]">
                             {activeDiscoverFilterCount}
                           </span>
                         )}
@@ -161,7 +161,7 @@ export default function DiscoverPage(props) {
                     )}
                     {sharedOpportunityId && user && (
                       <button
-                        className="app-post-button m-0 min-h-[46px] cursor-pointer rounded-xl border-0 bg-accent px-[15px] font-bold text-[#06251a] hover:bg-[#28dfa5]"
+                        className="app-post-button m-0 min-h-[46px] cursor-pointer rounded-xl border-0 bg-button px-[15px] font-bold text-[#f4fff7] hover:bg-button-hover"
                         type="button"
                         onClick={handleOpenOpportunityComposer}
                       >
@@ -179,7 +179,7 @@ export default function DiscoverPage(props) {
                           <label className="grid gap-1.5 text-xs font-semibold text-[#aebabb]">
                             Skill
                             <input
-                              className="min-h-10 w-full rounded-lg border border-[#303b40] bg-[#0d1215] px-3 py-2 text-sm text-ink placeholder:text-[#82969d] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+                              className="min-h-10 w-full rounded-lg border border-[#303b40] bg-[#141A16] px-3 py-2 text-sm text-ink placeholder:text-[#82969d] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
                               type="search"
                               value={discoverFilters.skill}
                               onChange={(event) =>
@@ -195,7 +195,7 @@ export default function DiscoverPage(props) {
                           <label className="grid gap-1.5 text-xs font-semibold text-[#aebabb]">
                             City
                             <input
-                              className="min-h-10 w-full rounded-lg border border-[#303b40] bg-[#0d1215] px-3 py-2 text-sm text-ink placeholder:text-[#82969d] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+                              className="min-h-10 w-full rounded-lg border border-[#303b40] bg-[#141A16] px-3 py-2 text-sm text-ink placeholder:text-[#82969d] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
                               type="search"
                               value={discoverFilters.city}
                               onChange={(event) =>
@@ -211,7 +211,7 @@ export default function DiscoverPage(props) {
                           <label className="grid gap-1.5 text-xs font-semibold text-[#aebabb]">
                             Experience
                             <select
-                              className="min-h-10 w-full rounded-lg border border-[#303b40] bg-[#0d1215] px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+                              className="min-h-10 w-full rounded-lg border border-[#303b40] bg-[#141A16] px-3 py-2 text-sm text-ink focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
                               value={discoverFilters.experience}
                               onChange={(event) =>
                                 handleDiscoverFilterChange(
@@ -333,7 +333,7 @@ export default function DiscoverPage(props) {
                       </nav>
                       {user && (
                         <button
-                          className="app-post-button m-0 min-h-[46px] shrink-0 cursor-pointer self-center rounded-xl border-0 bg-accent px-[15px] font-bold text-[#06251a] hover:bg-[#28dfa5] max-[760px]:min-h-[38px] max-[760px]:px-[10px] max-[760px]:text-xs"
+                          className="app-post-button m-0 min-h-[46px] shrink-0 cursor-pointer self-center rounded-xl border-0 bg-button px-[15px] font-bold text-[#f4fff7] hover:bg-button-hover max-[760px]:min-h-[38px] max-[760px]:px-[10px] max-[760px]:text-xs"
                           type="button"
                           onClick={handleOpenOpportunityComposer}
                         >

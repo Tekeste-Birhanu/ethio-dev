@@ -123,7 +123,7 @@ function OpportunityCard({
     <article className="opportunity-card min-w-0 rounded-2xl border border-border bg-surface p-5 max-[420px]:p-4">
       <header className="opportunity-card-author flex min-w-0 items-center gap-3">
         <a
-          className="opportunity-card-avatar grid size-11 shrink-0 place-items-center rounded-full border border-[#28634f] bg-accent-dark font-bold text-accent-light no-underline"
+          className="opportunity-card-avatar grid size-11 shrink-0 place-items-center rounded-full border border-[#28634f] bg-selected font-bold text-accent-light no-underline"
           href={`/profile/${encodeURIComponent(opportunity.owner.username)}`}
           aria-label={`${opportunity.owner.name}'s profile`}
         >
@@ -143,7 +143,7 @@ function OpportunityCard({
         </div>
         {opportunity.status !== "OPEN" && (
           <span
-            className={`opportunity-status opportunity-status-${opportunity.status.toLowerCase()} [margin-left:auto] [padding:5px_9px] [border-radius:999px] [background:#1b3029] [color:#65e7b7] [font-size:11px] [font-weight:700]`}
+            className={`opportunity-status opportunity-status-${opportunity.status.toLowerCase()} [margin-left:auto] [padding:5px_9px] [border-radius:999px] [background:#18231C] [color:#58CE87] [font-size:11px] [font-weight:700]`}
           >
             {opportunity.status[0] + opportunity.status.slice(1).toLowerCase()}
           </span>
@@ -283,12 +283,12 @@ function OpportunityCard({
       <footer className="opportunity-card-actions mt-4 flex flex-wrap items-center gap-2">
         {onRequest && !isOwner && opportunity.status === "OPEN" && (
           requestStatus ? (
-            <span className="rounded-lg border border-[#28634f] bg-[#1b3029] px-3 py-2 text-[13px] font-semibold text-accent-light" role="status">
+            <span className="rounded-lg border border-[#28634f] bg-[#18231C] px-3 py-2 text-[13px] font-semibold text-accent-light" role="status">
               {requestStatus === "PENDING" ? "Request pending" : requestStatus === "ACCEPTED" ? "Request accepted" : "Request declined"}
             </span>
           ) : (
             <button
-              className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-[13px] font-semibold text-accent-light hover:bg-[#223b32] disabled:cursor-wait disabled:opacity-60"
+              className="inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-[#28634f] bg-[#18231C] px-3 text-[13px] font-semibold text-accent-light hover:bg-[#223b32] disabled:cursor-wait disabled:opacity-60"
               type="button"
               disabled={isSendingRequest}
               onClick={() => {
@@ -376,7 +376,7 @@ function OpportunityCard({
           }}
         >
           <form
-            className="grid w-full max-w-[480px] gap-4 rounded-2xl border border-[#303a3e] bg-[#141a1e] p-5 shadow-[0_24px_80px_rgb(0_0_0_/_45%)]"
+            className="grid w-full max-w-[480px] gap-4 rounded-2xl border border-[#303a3e] bg-[#151C18] p-5 shadow-[0_24px_80px_rgb(0_0_0_/_45%)]"
             role="dialog"
             aria-modal="true"
             aria-labelledby={`collab-request-heading-${opportunity.id}`}
@@ -412,7 +412,7 @@ function OpportunityCard({
             <label className="grid gap-2 text-sm font-semibold text-ink">
               Optional message
               <textarea
-                className="min-h-28 resize-y rounded-lg border border-[#303a3e] bg-[#111719] p-3 text-sm text-ink outline-none placeholder:text-[#788588] focus:border-accent"
+                className="min-h-28 resize-y rounded-lg border border-[#303a3e] bg-[#101512] p-3 text-sm text-ink outline-none placeholder:text-[#788588] focus:border-accent"
                 value={requestMessage}
                 onChange={(event) => setRequestMessage(event.target.value.slice(0, 1000))}
                 maxLength={1000}
@@ -424,7 +424,7 @@ function OpportunityCard({
               <button className="min-h-9 cursor-pointer rounded-lg border border-[#303a3e] bg-transparent px-3 text-sm text-muted hover:text-ink disabled:cursor-wait disabled:opacity-60" type="button" disabled={isSendingRequest} onClick={() => setIsRequestComposerOpen(false)}>
                 Cancel
               </button>
-              <button className="min-h-9 cursor-pointer rounded-lg border-0 bg-accent px-3 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-wait disabled:opacity-60" type="submit" disabled={isSendingRequest}>
+              <button className="min-h-9 cursor-pointer rounded-lg border-0 bg-button px-3 text-sm font-bold text-[#f4fff7] hover:enabled:bg-button-hover disabled:cursor-wait disabled:opacity-60" type="submit" disabled={isSendingRequest}>
                 {isSendingRequest ? "Sending…" : "Send request"}
               </button>
             </div>
@@ -604,7 +604,7 @@ function CommentsDialog({
       }}
     >
       <section
-        className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 comments-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none] [width:min(100%,_560px)]"
+        className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 comments-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none] [width:min(100%,_560px)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="comments-heading"
@@ -643,7 +643,7 @@ function CommentsDialog({
                 <li key={comment.id}>
                   <article className="comment-item [position:relative] [display:flex] [align-items:flex-start] [gap:11px]">
                     <div
-                      className="comment-avatar [display:grid] [width:36px] [height:36px] [flex:0_0_auto] [place-items:center] [border:1px_solid_#28634f] [border-radius:50%] [background:#1b3029] [color:#65e7b7] [font-weight:700]"
+                      className="comment-avatar [display:grid] [width:36px] [height:36px] [flex:0_0_auto] [place-items:center] [border:1px_solid_#28634f] [border-radius:50%] [background:#18231C] [color:#58CE87] [font-weight:700]"
                       aria-hidden="true"
                     >
                       {comment.author.name.slice(0, 1).toUpperCase()}
@@ -662,7 +662,7 @@ function CommentsDialog({
                         </span>
                       </header>
                       {editingCommentId === comment.id ? (
-                        <div className="comment-edit-form [&>button:last-child]:border-[#19c990] [&>button:last-child]:bg-[#19c990] [&>button:last-child]:text-[#07120f] [&>button:last-child]:font-bold [display:grid] [gap:8px] [margin-top:8px]">
+                        <div className="comment-edit-form [&>button:last-child]:border-[#55D188] [&>button:last-child]:bg-button [&>button:last-child]:text-[#f4fff7] [&>button:last-child]:font-bold [display:grid] [gap:8px] [margin-top:8px]">
                           <label
                             className="visually-hidden [position:absolute] [width:1px] [height:1px] [overflow:hidden] [clip:rect(0,_0,_0,_0)] [white-space:nowrap] [clip-path:inset(50%)]"
                             htmlFor={`edit-comment-${comment.id}`}
@@ -670,7 +670,7 @@ function CommentsDialog({
                             Edit your comment
                           </label>
                           <textarea
-                            className="[width:100%] [min-height:72px] [resize:vertical] [padding:10px_12px] [border:1px_solid_#303a3e] [border-radius:10px] [background:#0d1215] [color:#edf3f4] [font:inherit]"
+                            className="[width:100%] [min-height:72px] [resize:vertical] [padding:10px_12px] [border:1px_solid_#303a3e] [border-radius:10px] [background:#141A16] [color:#edf3f4] [font:inherit]"
                             id={`edit-comment-${comment.id}`}
                             value={editDraft}
                             onChange={(event) =>
@@ -749,7 +749,7 @@ function CommentsDialog({
                         >
                           •••
                         </summary>
-                        <div className="comment-menu-items [&>button]:[padding:8px_10px] [&>button]:[border:0] [&>button]:[border-radius:7px] [&>button]:[background:transparent] [&>button]:[color:#dce5e6] [&>button]:[cursor:pointer] [&>button]:[font:inherit] [&>button]:[text-align:left] [&>button:hover]:bg-[#222d31] [&>button:disabled]:cursor-wait [&>button:disabled]:opacity-60 [position:fixed] [z-index:1000] [top:var(--comment-menu-top,_0)] [left:var(--comment-menu-left,_0)] [display:grid] [min-width:126px] [padding:5px] [border:1px_solid_#303a3e] [border-radius:10px] [background:#141a1e] [box-shadow:0_10px_28px_rgb(0_0_0_/_35%)]">
+                        <div className="comment-menu-items [&>button]:[padding:8px_10px] [&>button]:[border:0] [&>button]:[border-radius:7px] [&>button]:[background:transparent] [&>button]:[color:#dce5e6] [&>button]:[cursor:pointer] [&>button]:[font:inherit] [&>button]:[text-align:left] [&>button:hover]:bg-[#222d31] [&>button:disabled]:cursor-wait [&>button:disabled]:opacity-60 [position:fixed] [z-index:1000] [top:var(--comment-menu-top,_0)] [left:var(--comment-menu-left,_0)] [display:grid] [min-width:126px] [padding:5px] [border:1px_solid_#303a3e] [border-radius:10px] [background:#151C18] [box-shadow:0_10px_28px_rgb(0_0_0_/_35%)]">
                           {user.id === comment.author.id &&
                             editingCommentId !== comment.id && (
                               <button
@@ -818,7 +818,7 @@ function CommentsDialog({
                 Write a comment
               </label>
               <textarea
-                className="focus:[outline:2px_solid_#19c990] focus:[outline-offset:1px] w-auto min-w-0 min-h-10 flex-1 resize-y py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="focus:[outline:2px_solid_#55D188] focus:[outline-offset:1px] w-auto min-w-0 min-h-10 flex-1 resize-y py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 id="new-opportunity-comment"
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
@@ -874,7 +874,7 @@ function OpportunityComposer({
       }}
     >
       <section
-        className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 opportunity-composer-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none]"
+        className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 opportunity-composer-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-opportunity-heading"
@@ -953,7 +953,7 @@ function OpportunityComposer({
                 </label>
                 <div className="opportunity-skill-entry [display:grid] [min-width:0] [grid-template-columns:minmax(0,_1fr)_auto] [align-items:center] [gap:8px] [grid-template-columns:minmax(0,_1fr)]">
                   <input
-                    className="[width:100%] [min-width:0] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+                    className="[width:100%] [min-width:0] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
                     id="opportunity-skills"
                     type="text"
                     maxLength={40}
@@ -1032,11 +1032,11 @@ function OpportunityComposer({
                   <div className="opportunity-category-options [display:flex] [flex-wrap:wrap] [gap:8px]">
                     {opportunityCategoryOptions.map(([value, label]) => (
                       <label
-                        className="opportunity-category-option [&:has(input:checked)]:border-[#28634f] [&:has(input:checked)]:bg-[#1b3029] [&:has(input:checked)]:text-[#65e7b7] [display:inline-flex] [min-height:38px] [align-items:center] [gap:8px] [padding:7px_11px] [border:1px_solid_#303a3e] [border-radius:999px] [background:#0d1215] [color:#c7d2d3] [cursor:pointer] [font-size:13px]"
+                        className="opportunity-category-option [&:has(input:checked)]:border-[#28634f] [&:has(input:checked)]:bg-[#18231C] [&:has(input:checked)]:text-[#58CE87] [display:inline-flex] [min-height:38px] [align-items:center] [gap:8px] [padding:7px_11px] [border:1px_solid_#303a3e] [border-radius:999px] [background:#141A16] [color:#c7d2d3] [cursor:pointer] [font-size:13px]"
                         key={value}
                       >
                         <input
-                          className="[width:15px] [height:15px] [margin:0] [accent-color:#19c990]"
+                          className="[width:15px] [height:15px] [margin:0] [accent-color:#55D188]"
                           type="checkbox"
                           name="categories"
                           value={value}
@@ -1062,7 +1062,7 @@ function OpportunityComposer({
                       Experience sought
                     </label>
                     <select
-                      className="[display:block] [width:100%] [height:48px] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [padding:0_40px_0_14px] [appearance:none] [background-color:#0d1215] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2] focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+                      className="[display:block] [width:100%] [height:48px] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [padding:0_40px_0_14px] [appearance:none] [background-color:#141A16] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2] focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
                       id="opportunity-experience"
                       name="experienceSought"
                       value={opportunityForm.experienceSought}
@@ -1090,7 +1090,7 @@ function OpportunityComposer({
                       City (optional)
                     </label>
                     <input
-                      className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+                      className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
                       id="opportunity-city"
                       name="city"
                       type="text"

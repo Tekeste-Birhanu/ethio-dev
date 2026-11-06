@@ -189,14 +189,14 @@ export default function NotificationsPage({ handleAppNavigation }) {
   const activeRequest = requests.find((request) => request.id === activeRequestId);
 
   return (
-    <main className="app-page app-main-content min-w-0">
+    <main className="app-main-content mx-auto min-h-[100dvh] w-full max-w-[1200px] min-w-0 p-8 max-[760px]:px-4 max-[760px]:pt-4 max-[760px]:pb-[calc(104px+env(safe-area-inset-bottom))]">
       <div className="mx-auto w-full max-w-[1120px] min-w-0">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h1 className="m-0 text-[clamp(26px,_4vw,_36px)] font-extrabold tracking-[-0.04em] text-ink">
             Notifications
           </h1>
           <button
-            className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-[#141a1e] px-3 text-sm font-semibold text-ink hover:bg-[#222d31]"
+            className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-[#151C18] px-3 text-sm font-semibold text-ink hover:bg-[#222d31]"
             type="button"
             onClick={() => {
               setIsLoading(true);
@@ -210,14 +210,14 @@ export default function NotificationsPage({ handleAppNavigation }) {
 
         <section className="grid gap-3" aria-label="Notifications">
           {isLoading ? (
-            <p className="rounded-2xl border border-[#252d31] bg-[#111719] p-7 text-center text-muted" role="status">
+            <p className="rounded-2xl border border-[#252d31] bg-[#101512] p-7 text-center text-muted" role="status">
               Loading notifications…
             </p>
           ) : error ? (
-            <div className="grid justify-items-center gap-3 rounded-2xl border border-[#252d31] bg-[#111719] p-7 text-center">
+            <div className="grid justify-items-center gap-3 rounded-2xl border border-[#252d31] bg-[#101512] p-7 text-center">
               <p className="m-0 text-[#ffaaaa]" role="alert">{error}</p>
               <button
-                className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-[#141a1e] px-3 text-sm font-semibold text-ink hover:bg-[#222d31]"
+                className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-[#151C18] px-3 text-sm font-semibold text-ink hover:bg-[#222d31]"
                 type="button"
                 onClick={() => {
                   setIsLoading(true);
@@ -228,12 +228,12 @@ export default function NotificationsPage({ handleAppNavigation }) {
               </button>
             </div>
           ) : incomingItems.length === 0 ? (
-            <p className="rounded-2xl border border-[#252d31] bg-[#111719] p-7 text-center text-muted">
+            <p className="rounded-2xl border border-[#252d31] bg-[#101512] p-7 text-center text-muted">
               You’re all caught up.
             </p>
           ) : (
             incomingItems.map((request) => request.itemType === "ALERT" ? (
-              <article className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 ${request.readAt ? "border-[#252d31] bg-[#111719]" : "border-[#28634f] bg-[#14211d]"}`} key={`alert-${request.id}`}>
+              <article className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl border p-4 ${request.readAt ? "border-[#252d31] bg-[#101512]" : "border-[#28634f] bg-[#14211d]"}`} key={`alert-${request.id}`}>
                 <header className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <h2 className="m-0 text-lg font-bold text-ink">
@@ -244,18 +244,18 @@ export default function NotificationsPage({ handleAppNavigation }) {
                   {!request.readAt && <span className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-[#06251a]">New</span>}
                 </header>
                 {actionError.requestId === request.id && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{actionError.message}</p>}
-                <button className="min-h-10 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-4 text-sm font-semibold text-accent-light hover:bg-[#223b32]" type="button" onClick={() => openAlert(request)}>
+                <button className="min-h-10 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#18231C] px-4 text-sm font-semibold text-accent-light hover:bg-[#223b32]" type="button" onClick={() => openAlert(request)}>
                   {request.request?.workspace?.id ? "Open Collabspace" : "Open chat"}
                 </button>
               </article>
             ) : request.itemType === "INVITATION" ? (
-              <article className="grid gap-3 rounded-2xl border border-[#252d31] bg-[#111719] p-4" key={request.id}>
+              <article className="grid gap-3 rounded-2xl border border-[#252d31] bg-[#101512] p-4" key={request.id}>
                 <header className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <h2 className="m-0 text-lg font-bold text-ink">{request.sender.name}<span className="ml-2 text-sm font-normal text-muted">@{request.sender.username}</span></h2>
                     <time className="mt-1 block text-xs text-muted" dateTime={request.createdAt}>{formatRequestDate(request.createdAt)}</time>
                   </div>
-                  <a className="inline-flex min-h-9 items-center rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-sm font-semibold text-accent-light no-underline hover:bg-[#223b32]" href={`/profile/${encodeURIComponent(request.sender.username)}`}>View profile</a>
+                  <a className="inline-flex min-h-9 items-center rounded-lg border border-[#28634f] bg-[#18231C] px-3 text-sm font-semibold text-accent-light no-underline hover:bg-[#223b32]" href={`/profile/${encodeURIComponent(request.sender.username)}`}>View profile</a>
                 </header>
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#252d31] pt-3">
                   <div className="grid min-w-0 flex-1 gap-2">
@@ -268,12 +268,12 @@ export default function NotificationsPage({ handleAppNavigation }) {
                   </div>
                   <footer className="flex shrink-0 flex-wrap justify-end gap-2">
                     <button className="min-h-10 cursor-pointer rounded-lg border border-[#923e48] bg-transparent px-4 text-sm font-semibold text-[#ffaaaa] hover:bg-[#301b20] disabled:opacity-60" type="button" disabled={Boolean(actionRequestId)} onClick={() => resolveInvitation(request, "DECLINED")}>Decline</button>
-                    <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:opacity-60" type="button" disabled={Boolean(actionRequestId)} onClick={() => resolveInvitation(request, "ACCEPTED")}>{actionRequestId === request.id ? "Updating..." : "Accept"}</button>
+                    <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-button px-4 text-sm font-bold text-[#f4fff7] hover:enabled:bg-button-hover disabled:opacity-60" type="button" disabled={Boolean(actionRequestId)} onClick={() => resolveInvitation(request, "ACCEPTED")}>{actionRequestId === request.id ? "Updating..." : "Accept"}</button>
                   </footer>
                 </div>
               </article>
             ) : (
-              <article className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#252d31] bg-[#111719] px-4 py-3" key={`request-${request.id}`}>
+              <article className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#252d31] bg-[#101512] px-4 py-3" key={`request-${request.id}`}>
                 <div className="min-w-0">
                   <h2 className="m-0 text-base font-semibold text-ink">
                     {request.sender.name}<span className="ml-2 text-sm font-normal text-muted">@{request.sender.username}</span>
@@ -284,7 +284,7 @@ export default function NotificationsPage({ handleAppNavigation }) {
                   </div>
                 </div>
                 <button
-                  className="min-h-9 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-sm font-semibold text-accent-light hover:bg-[#223b32]"
+                  className="min-h-9 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#18231C] px-3 text-sm font-semibold text-accent-light hover:bg-[#223b32]"
                   type="button"
                   onClick={() => { setActiveRequestId(request.id); setActionError({ requestId: "", message: "" }); }}
                 >
@@ -296,7 +296,7 @@ export default function NotificationsPage({ handleAppNavigation }) {
         </section>
         {activeRequest && (
           <div className="fixed inset-0 z-[80] grid place-items-center bg-black/45 p-4 max-[520px]:items-end max-[520px]:p-0" onMouseDown={(event) => { if (event.target === event.currentTarget) { setActiveRequestId(""); setRoutingRequestId(""); } }}>
-            <section className="grid max-h-[calc(100dvh-2rem)] w-full max-w-2xl gap-4 overflow-y-auto rounded-2xl border border-[#354044] bg-[#111719] p-5 shadow-2xl max-[520px]:max-h-[90dvh] max-[520px]:gap-3 max-[520px]:rounded-b-none max-[520px]:p-4" role="dialog" aria-modal="true" aria-labelledby="collaboration-request-title">
+            <section className="grid max-h-[calc(100dvh-2rem)] w-full max-w-2xl gap-4 overflow-y-auto rounded-2xl border border-[#354044] bg-[#101512] p-5 shadow-2xl max-[520px]:max-h-[90dvh] max-[520px]:gap-3 max-[520px]:rounded-b-none max-[520px]:p-4" role="dialog" aria-modal="true" aria-labelledby="collaboration-request-title">
               <header className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h2 className="m-0 text-xl font-bold text-ink" id="collaboration-request-title">Collaboration request</h2>
@@ -308,11 +308,11 @@ export default function NotificationsPage({ handleAppNavigation }) {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <a className="inline-flex min-h-9 items-center rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-sm font-semibold text-accent-light no-underline hover:bg-[#223b32]" href={`/profile/${encodeURIComponent(activeRequest.sender.username)}`}>View profile</a>
+                  <a className="inline-flex min-h-9 items-center rounded-lg border border-[#28634f] bg-[#18231C] px-3 text-sm font-semibold text-accent-light no-underline hover:bg-[#223b32]" href={`/profile/${encodeURIComponent(activeRequest.sender.username)}`}>View profile</a>
                   <button className="min-h-9 cursor-pointer rounded-md px-2 text-lg text-muted hover:bg-[#222d31] hover:text-ink" type="button" onClick={() => { setActiveRequestId(""); setRoutingRequestId(""); }} aria-label="Close request">×</button>
                 </div>
               </header>
-              <div className="grid gap-2 rounded-xl border border-[#252d31] bg-[#0d1315] p-4 max-[520px]:p-3">
+              <div className="grid gap-2 rounded-xl border border-[#252d31] bg-[#141A16] p-4 max-[520px]:p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="m-0 text-sm font-semibold text-accent-light">Opportunity</h3>
                   <span className="rounded-full border border-[#354044] px-2.5 py-1 text-xs text-muted">{activeRequest.opportunity.status === "PAUSED" ? "Paused · pending requests remain open" : "Open"}</span>
@@ -335,12 +335,12 @@ export default function NotificationsPage({ handleAppNavigation }) {
               {activeRequest.status === "PENDING" ? <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[#252d31] pt-4 max-[520px]:grid max-[520px]:grid-cols-1">
                 <button className="min-h-10 cursor-pointer rounded-lg border border-[#923e48] bg-transparent px-4 text-sm font-semibold text-[#ffaaaa] hover:bg-[#301b20] disabled:cursor-wait disabled:opacity-60 max-[520px]:w-full" type="button" disabled={Boolean(actionRequestId)} onClick={() => resolveRequest(activeRequest.id, "DECLINED")}>{actionRequestId === activeRequest.id ? "Updating…" : "Decline"}</button>
                 <div className="flex flex-wrap justify-end gap-2 max-[520px]:grid max-[520px]:grid-cols-1">
-                  <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-wait disabled:opacity-60 max-[520px]:w-full" type="button" disabled={Boolean(actionRequestId)} onClick={() => resolveRequest(activeRequest.id, "ACCEPTED", { type: "PRIVATE_CHAT" })}>{actionRequestId === activeRequest.id ? "Updating…" : "Accept into private chat"}</button>
-                  <button className="min-h-10 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-4 text-sm font-semibold text-accent-light hover:enabled:bg-[#223b32] disabled:cursor-wait disabled:opacity-60 max-[520px]:w-full" type="button" disabled={Boolean(actionRequestId)} onClick={() => openSpacePicker(activeRequest.id)}>Add to Collabspace</button>
+                  <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-button px-4 text-sm font-bold text-[#f4fff7] hover:enabled:bg-button-hover disabled:cursor-wait disabled:opacity-60 max-[520px]:w-full" type="button" disabled={Boolean(actionRequestId)} onClick={() => resolveRequest(activeRequest.id, "ACCEPTED", { type: "PRIVATE_CHAT" })}>{actionRequestId === activeRequest.id ? "Updating…" : "Accept into private chat"}</button>
+                  <button className="min-h-10 cursor-pointer rounded-lg border border-[#28634f] bg-[#18231C] px-4 text-sm font-semibold text-accent-light hover:enabled:bg-[#223b32] disabled:cursor-wait disabled:opacity-60 max-[520px]:w-full" type="button" disabled={Boolean(actionRequestId)} onClick={() => openSpacePicker(activeRequest.id)}>Add to Collabspace</button>
                 </div>
               </footer> : <p className="m-0 border-t border-[#252d31] pt-3 text-sm text-muted">Request {activeRequest.status === "ACCEPTED" ? "accepted" : "declined"}.</p>}
               {routingRequestId === activeRequest.id && (
-                <section className="grid gap-3 rounded-xl border border-[#354044] bg-[#111719] p-4" aria-label="Choose a Collabspace" aria-busy={spacesLoading}>
+                <section className="grid gap-3 rounded-xl border border-[#354044] bg-[#101512] p-4" aria-label="Choose a Collabspace" aria-busy={spacesLoading}>
                   <div className="flex items-start justify-between gap-3">
                     <h3 className="m-0 text-base font-semibold text-ink">Add {activeRequest.sender.name} to a Collabspace</h3>
                     <button className="min-h-8 cursor-pointer rounded-md px-2 text-muted hover:bg-[#222d31] hover:text-ink" type="button" onClick={() => setRoutingRequestId("")} aria-label="Cancel Collabspace selection">×</button>
@@ -349,18 +349,18 @@ export default function NotificationsPage({ handleAppNavigation }) {
                     <>
                       {createSpace ? (
                         <>
-                          <label className="grid gap-1 text-sm text-muted"><span>Collabspace name</span><input className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={spaceName} onChange={(event) => setSpaceName(event.target.value)} maxLength={100} autoFocus /></label>
+                          <label className="grid gap-1 text-sm text-muted"><span>Collabspace name</span><input className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-ink" value={spaceName} onChange={(event) => setSpaceName(event.target.value)} maxLength={100} autoFocus /></label>
                           {spaceCreationError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{spaceCreationError}</p>}
                         </>
                       ) : spaces.length === 0 ? (
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <p className="m-0 text-sm text-muted">Create a Collabspace first to add someone here.</p>
-                          <button className="min-h-10 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-4 text-sm font-semibold text-accent-light hover:bg-[#223b32]" type="button" onClick={() => { setSpaceCreationError(""); setCreateSpace(true); }}>Create Collabspace</button>
+                          <button className="min-h-10 cursor-pointer rounded-lg border border-[#28634f] bg-[#18231C] px-4 text-sm font-semibold text-accent-light hover:bg-[#223b32]" type="button" onClick={() => { setSpaceCreationError(""); setCreateSpace(true); }}>Create Collabspace</button>
                         </div>
                       ) : (
                         <label className="grid gap-1 text-sm text-muted">
                           <span>Choose a space you own or administer</span>
-                          <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={createSpace ? "create" : selectedSpaceId} onChange={(event) => {
+                          <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-ink" value={createSpace ? "create" : selectedSpaceId} onChange={(event) => {
                             if (event.target.value === "create") { setSpaceCreationError(""); setCreateSpace(true); }
                             else { setCreateSpace(false); setSelectedSpaceId(event.target.value); }
                           }}>
@@ -372,9 +372,9 @@ export default function NotificationsPage({ handleAppNavigation }) {
                       <div className="flex flex-wrap justify-end gap-2">
                         <button className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] px-4 text-sm text-ink hover:bg-[#222d31]" type="button" disabled={isCreatingSpace} onClick={() => createSpace ? setCreateSpace(false) : setRoutingRequestId("")}>{createSpace ? "Cancel" : "Close"}</button>
                         {createSpace ? (
-                          <button className="min-h-10 cursor-pointer rounded-lg bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={isCreatingSpace || !spaceName.trim()} onClick={createCollabspace}>{isCreatingSpace ? "Creating…" : "Create"}</button>
+                          <button className="min-h-10 cursor-pointer rounded-lg bg-button px-4 text-sm font-bold text-[#f4fff7] hover:enabled:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={isCreatingSpace || !spaceName.trim()} onClick={createCollabspace}>{isCreatingSpace ? "Creating…" : "Create"}</button>
                         ) : spaces.length > 0 ? (
-                          <button className="min-h-10 cursor-pointer rounded-lg bg-accent px-4 text-sm font-bold text-[#06251a] hover:enabled:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={Boolean(actionRequestId) || spacesLoading || !selectedSpaceId} onClick={() => resolveRequest(activeRequest.id, "ACCEPTED", { type: "COLLABSPACE", workspaceId: selectedSpaceId })}>{actionRequestId === activeRequest.id ? "Accepting…" : "Add and accept"}</button>
+                          <button className="min-h-10 cursor-pointer rounded-lg bg-button px-4 text-sm font-bold text-[#f4fff7] hover:enabled:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50" type="button" disabled={Boolean(actionRequestId) || spacesLoading || !selectedSpaceId} onClick={() => resolveRequest(activeRequest.id, "ACCEPTED", { type: "COLLABSPACE", workspaceId: selectedSpaceId })}>{actionRequestId === activeRequest.id ? "Accepting…" : "Add and accept"}</button>
                         ) : null}
                       </div>
                     </>

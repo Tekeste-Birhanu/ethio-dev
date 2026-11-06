@@ -26,7 +26,7 @@ function CollabspaceItem({ collabspace, isSelected, onOpen }) {
       </button>
       <div className="grid shrink-0 justify-items-end gap-2">
         {collabspace.unreadCount > 0 && (
-          <span className="grid min-h-6 min-w-6 place-items-center rounded-full bg-[#38e6b0] px-2 text-xs font-bold text-[#0b1113]" aria-label={`${collabspace.unreadCount} unread group messages`}>
+          <span className="grid min-h-6 min-w-6 place-items-center rounded-full bg-[#68D996] px-2 text-xs font-bold text-[#0b1113]" aria-label={`${collabspace.unreadCount} unread group messages`}>
             {collabspace.unreadCount}
           </span>
         )}
@@ -104,11 +104,11 @@ function MembersPanel({ selected, user, memberActionError, memberActionPending, 
   }
 
   return (
-    <section className="overflow-visible rounded-2xl border border-[#293236] bg-[#111719]" aria-label="Collabspace members">
+    <section className="overflow-visible rounded-2xl border border-[#293236] bg-[#101512]" aria-label="Collabspace members">
       {memberActionError && <p className="m-3 rounded-xl border border-[#85434b] p-3 text-sm text-[#ffb6be]" role="alert">{memberActionError}</p>}
       {canInvite && (
         <div className="flex justify-end border-b border-[#293236] px-4 py-3">
-          <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:bg-[#28dfa5]" type="button" onClick={() => { setDeveloperSearch(""); setDeveloperSearchError(""); setInviteError(""); setIsInviteOpen(true); }}>Add members</button>
+          <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-button px-4 text-sm font-bold text-[#f4fff7] hover:bg-button-hover" type="button" onClick={() => { setDeveloperSearch(""); setDeveloperSearchError(""); setInviteError(""); setIsInviteOpen(true); }}>Add members</button>
         </div>
       )}
       <div>
@@ -132,7 +132,7 @@ function MembersPanel({ selected, user, memberActionError, memberActionPending, 
               return (
                 <details className="relative shrink-0">
                   <summary className="grid size-9 cursor-pointer list-none place-items-center rounded-full text-xl text-muted hover:bg-[#20292d] hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent" aria-label={`Actions for ${membership.user.name}`}><span aria-hidden="true">•••</span></summary>
-                  <div className="absolute right-0 top-full z-40 mt-1 grid min-w-48 overflow-hidden rounded-xl border border-[#354044] bg-[#111719] p-1 shadow-xl">
+                  <div className="absolute right-0 top-full z-40 mt-1 grid min-w-48 overflow-hidden rounded-xl border border-[#354044] bg-[#101512] p-1 shadow-xl">
                     {canManageRole && membership.role === "MEMBER" && <button type="button" disabled={memberActionPending} className="rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm text-ink hover:bg-[#20292d] disabled:opacity-50" onClick={() => handleMemberAction(membership.user.id, "role", "ADMIN")}>Make admin</button>}
                     {canManageRole && membership.role === "ADMIN" && <button type="button" disabled={memberActionPending} className="rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm text-ink hover:bg-[#20292d] disabled:opacity-50" onClick={() => handleMemberAction(membership.user.id, "role", "MEMBER")}>Remove admin role</button>}
                     {(canRemove || canLeave) && <button type="button" disabled={memberActionPending} className="rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm text-[#ffb6be] hover:bg-[#382125] disabled:opacity-50" onClick={() => handleMemberAction(membership.user.id, "access")}>{canLeave ? "Leave Collabspace" : "Remove member"}</button>}
@@ -145,24 +145,24 @@ function MembersPanel({ selected, user, memberActionError, memberActionPending, 
       </div>
       {isInviteOpen && (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/45 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !invitePendingUserId) setIsInviteOpen(false); }}>
-          <section className="grid max-h-[min(80dvh,38rem)] w-full max-w-lg gap-4 overflow-y-auto rounded-2xl border border-[#354044] bg-[#111719] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="add-collabspace-members-title">
+          <section className="grid max-h-[min(80dvh,38rem)] w-full max-w-lg gap-4 overflow-y-auto rounded-2xl border border-[#354044] bg-[#101512] p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="add-collabspace-members-title">
             <header className="flex items-center justify-between gap-3">
               <h2 className="m-0 text-lg font-bold text-ink" id="add-collabspace-members-title">Add members</h2>
               <button className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent text-xl text-muted hover:bg-[#222d31] hover:text-ink" type="button" disabled={Boolean(invitePendingUserId)} onClick={() => setIsInviteOpen(false)} aria-label="Close developer search">×</button>
             </header>
             <label className="grid gap-2 text-sm font-semibold text-ink" htmlFor="collabspace-developer-search">Search developers</label>
-            <input id="collabspace-developer-search" className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" type="search" autoFocus value={developerSearch} onChange={(event) => { setDeveloperSearch(event.target.value); setInviteError(""); }} placeholder="Name or username" />
+            <input id="collabspace-developer-search" className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-ink" type="search" autoFocus value={developerSearch} onChange={(event) => { setDeveloperSearch(event.target.value); setInviteError(""); }} placeholder="Name or username" />
             {inviteError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{inviteError}</p>}
             {query.length < 2 ? <p className="m-0 text-sm text-muted">Enter at least 2 characters to search.</p> : isSearchingDevelopers ? <p className="m-0 text-sm text-muted" role="status">Searching developers…</p> : developerSearchError ? <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{developerSearchError}</p> : developers.length === 0 ? <p className="m-0 text-sm text-muted" role="status">No developers found.</p> : (
               <ul className="m-0 grid list-none gap-2 p-0" aria-label="Developer search results">
                 {developers.map((developer) => (
-                  <li className="flex min-w-0 items-center gap-3 rounded-xl border border-[#293236] bg-[#0d1315] px-3 py-2" key={developer.id}>
+                  <li className="flex min-w-0 items-center gap-3 rounded-xl border border-[#293236] bg-[#141A16] px-3 py-2" key={developer.id}>
                     <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#20332f] font-bold text-accent" aria-hidden="true">{developer.name.slice(0, 1).toUpperCase()}</span>
                     <span className="grid min-w-0 flex-1 gap-0.5">
                       <span className="truncate text-sm font-semibold text-ink">{developer.name}</span>
                       <span className="truncate text-xs text-muted">@{developer.username}</span>
                     </span>
-                    <button className="min-h-9 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#1b3029] px-3 text-sm font-semibold text-accent-light hover:bg-[#223b32] disabled:cursor-wait disabled:opacity-60" type="button" disabled={Boolean(invitePendingUserId) || invitedUserIds.has(developer.id)} onClick={() => inviteDeveloper(developer)}>{invitePendingUserId === developer.id ? "Sending…" : invitedUserIds.has(developer.id) ? "Sent" : "Invite"}</button>
+                    <button className="min-h-9 shrink-0 cursor-pointer rounded-lg border border-[#28634f] bg-[#18231C] px-3 text-sm font-semibold text-accent-light hover:bg-[#223b32] disabled:cursor-wait disabled:opacity-60" type="button" disabled={Boolean(invitePendingUserId) || invitedUserIds.has(developer.id)} onClick={() => inviteDeveloper(developer)}>{invitePendingUserId === developer.id ? "Sending…" : invitedUserIds.has(developer.id) ? "Sent" : "Invite"}</button>
                   </li>
                 ))}
               </ul>
@@ -179,7 +179,7 @@ function SettingsPanel({ selected, user, spaceName, onSpaceNameChange, onRename,
 
   return (
     <section className="grid max-w-3xl gap-4" aria-label="Collabspace settings">
-      <form className="grid gap-4 rounded-2xl border border-[#293236] bg-[#111719] p-5 sm:p-6" onSubmit={onRename}>
+      <form className="grid gap-4 rounded-2xl border border-[#293236] bg-[#101512] p-5 sm:p-6" onSubmit={onRename}>
         <div className="grid gap-1 border-b border-[#293236] pb-3">
           <h3 className="m-0 text-base font-bold">Space name</h3>
         </div>
@@ -188,7 +188,7 @@ function SettingsPanel({ selected, user, spaceName, onSpaceNameChange, onRename,
             <div className="flex flex-wrap items-end gap-3">
               <div className="min-w-0 flex-1">
                 <input
-                  className="min-h-11 w-full rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-base text-ink outline-none focus:border-[#38e6b0]"
+                  className="min-h-11 w-full rounded-lg border border-[#354044] bg-[#141A16] px-3 text-base text-ink outline-none focus:border-[#48C97B]"
                   id="collabspace-settings-name"
                   aria-label="Space name"
                   maxLength={100}
@@ -452,7 +452,7 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
   };
 
   return (
-    <main className="app-page bg-page text-ink">
+    <main className="mx-auto min-h-[100dvh] w-full max-w-[1200px] min-w-0 p-8 text-ink max-[760px]:px-4 max-[760px]:pt-4 max-[760px]:pb-[calc(104px+env(safe-area-inset-bottom))] bg-page">
       <ConfirmDialog confirmation={confirmation} onClose={closeConfirmation} />
       {selectedId ? (
         <div className="mx-auto grid min-h-[calc(100dvh-4rem)] max-w-[1440px] content-start gap-4">
@@ -473,10 +473,10 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
 
               <div className="grid gap-5">
                 <div className="flex flex-wrap gap-2 border-b border-[#293236]" role="tablist" aria-label="Collabspace sections">
-                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "chat" ? "border-[#38e6b0] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-chat-tab" type="button" role="tab" aria-selected={selectedTab === "chat"} aria-controls="collabspace-chat-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "chat" })}>Group chat</button>
-                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "taskboard" ? "border-[#38e6b0] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-taskboard-tab" type="button" role="tab" aria-selected={selectedTab === "taskboard"} aria-controls="collabspace-taskboard-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "taskboard" })}>Taskboard</button>
-                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "members" ? "border-[#38e6b0] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-members-tab" type="button" role="tab" aria-selected={selectedTab === "members"} aria-controls="collabspace-members-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "members" })}>Members <span className="ml-1 text-xs">{selected.memberships.length}</span></button>
-                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "settings" ? "border-[#38e6b0] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-settings-tab" type="button" role="tab" aria-selected={selectedTab === "settings"} aria-controls="collabspace-settings-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "settings" })}>Settings</button>
+                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "chat" ? "border-[#45BD76] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-chat-tab" type="button" role="tab" aria-selected={selectedTab === "chat"} aria-controls="collabspace-chat-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "chat" })}>Group chat</button>
+                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "taskboard" ? "border-[#45BD76] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-taskboard-tab" type="button" role="tab" aria-selected={selectedTab === "taskboard"} aria-controls="collabspace-taskboard-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "taskboard" })}>Taskboard</button>
+                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "members" ? "border-[#45BD76] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-members-tab" type="button" role="tab" aria-selected={selectedTab === "members"} aria-controls="collabspace-members-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "members" })}>Members <span className="ml-1 text-xs">{selected.memberships.length}</span></button>
+                  <button className={`min-h-11 border-b-2 px-4 text-sm font-semibold ${selectedTab === "settings" ? "border-[#45BD76] text-accent" : "border-transparent text-muted hover:text-ink"}`} id="collabspace-settings-tab" type="button" role="tab" aria-selected={selectedTab === "settings"} aria-controls="collabspace-settings-panel" onClick={() => setTabSelection({ collabspaceId: selected.id, tab: "settings" })}>Settings</button>
                 </div>
                 {selectedTab === "chat" ? (
                   <section id="collabspace-chat-panel" role="tabpanel" aria-labelledby="collabspace-chat-tab">
@@ -513,7 +513,7 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
           </header>
           {isCreateOpen && (
             <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget && !isCreating) { setIsCreateOpen(false); setCreateError(""); } }} onKeyDown={(event) => { if (event.key === "Escape" && !isCreating) { setIsCreateOpen(false); setCreateError(""); } }}>
-              <form className="grid w-full max-w-xl gap-4 rounded-2xl border border-[#293236] bg-[#111719] p-5 shadow-2xl sm:p-6" onSubmit={handleCreateCollabspace} role="dialog" aria-modal="true" aria-labelledby="create-collabspace-title">
+              <form className="grid w-full max-w-xl gap-4 rounded-2xl border border-[#293236] bg-[#101512] p-5 shadow-2xl sm:p-6" onSubmit={handleCreateCollabspace} role="dialog" aria-modal="true" aria-labelledby="create-collabspace-title">
                 <div>
                   <h2 className="m-0 text-lg font-bold" id="create-collabspace-title">Create a Collabspace</h2>
                   <p className="mb-0 mt-1 text-sm text-muted">You will be the Owner and the first member.</p>
@@ -523,7 +523,7 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
                     Name
                     <input
                       autoFocus
-                      className="min-h-12 w-full rounded-xl border border-[#354044] bg-[#0d1315] px-4 text-base text-ink outline-none placeholder:text-[#87979c] focus:border-[#38e6b0]"
+                      className="min-h-12 w-full rounded-xl border border-[#354044] bg-[#141A16] px-4 text-base text-ink outline-none placeholder:text-[#87979c] focus:border-[#48C97B]"
                       id="new-collabspace-name"
                       maxLength={100}
                       name="name"
@@ -551,13 +551,13 @@ export default function CollabspacesPage({ selectedId = "", user, onOpen, onBack
           ) : isLoading ? (
             <p className="rounded-xl border border-[#303a3e] p-6 text-center text-muted" role="status">Loading Collabspaces...</p>
           ) : collabspaces.length ? (
-            <div className="overflow-hidden rounded-2xl border border-[#293236] bg-[#111719]">
+            <div className="overflow-hidden rounded-2xl border border-[#293236] bg-[#101512]">
               {collabspaces.map((collabspace) => (
                 <CollabspaceItem key={collabspace.id} collabspace={collabspace} onOpen={onOpen} />
               ))}
             </div>
           ) : (
-            <p className="rounded-2xl border border-[#293236] bg-[#111719] p-8 text-center text-muted">
+            <p className="rounded-2xl border border-[#293236] bg-[#101512] p-8 text-center text-muted">
               You are not a member of any Collabspaces yet. Create a Collabspace to get started.
             </p>
           )}

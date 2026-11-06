@@ -129,7 +129,7 @@
 - [ ] **T-49 — Review authorization and privacy.** Verify server-side access checks for profiles, opportunities, requests, chats, Collabspaces, and tasks; confirm private data is not exposed.
 - [ ] **T-50 — Complete loading, empty, success, and error states.** Review the main user journeys and make failures understandable.
 - [ ] **T-51 — Review responsive and accessible behavior.** Check navigation, forms, dialogs, chat, and taskboard interactions across screen sizes and keyboard use.
-- [ ] **T-52 — Run configured verification.** Run the available automated tests, linting, and production builds; fix release-blocking issues.
+- [x] **T-52 — Run configured verification.** Run the available automated tests, linting, and production builds; fix release-blocking issues.
 - [ ] **T-53 — Final product and UI review.** Check the MVP against the approved requirements and remove unfinished or out-of-scope interface elements.
 
 ## M10. Production and deployment

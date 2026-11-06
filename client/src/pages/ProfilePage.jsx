@@ -175,7 +175,7 @@ export default function ProfilePage(props) {
 
   return (
     <section
-                  className={`app-page app-main-content${page === "profile" || page === "public-profile" ? " profile-main-content" : ""}`}
+                  className={`app-main-content mx-auto min-h-[100dvh] w-full max-w-[1200px] min-w-0 p-8 max-[760px]:px-4 max-[760px]:pt-4 max-[760px]:pb-[calc(104px+env(safe-area-inset-bottom))]${page === "profile" || page === "public-profile" ? " profile-main-content" : ""}`}
                 >
                   <section className="profile-shell mx-auto w-full max-w-[1440px] min-w-0">
                     {page !== "profile" && page !== "public-profile" && (
@@ -204,7 +204,7 @@ export default function ProfilePage(props) {
                     ) : profileData ? (
                       page === "create-opportunity" && user ? (
                         <section
-                          className="profile-panel [padding:clamp(24px,_5vw,_48px)] [border:1px_solid_#252d31] [border-radius:20px] [background:#141a1e]"
+                          className="profile-panel [padding:clamp(24px,_5vw,_48px)] [border:1px_solid_#252d31] [border-radius:20px] [background:#151C18]"
                           aria-labelledby="create-opportunity-heading"
                         >
                           <h1
@@ -353,11 +353,11 @@ export default function ProfilePage(props) {
                                   {opportunityCategoryOptions.map(
                                     ([value, label]) => (
                                       <label
-                                        className="opportunity-category-option [&:has(input:checked)]:border-[#28634f] [&:has(input:checked)]:bg-[#1b3029] [&:has(input:checked)]:text-[#65e7b7] [display:inline-flex] [min-height:38px] [align-items:center] [gap:8px] [padding:7px_11px] [border:1px_solid_#303a3e] [border-radius:999px] [background:#0d1215] [color:#c7d2d3] [cursor:pointer] [font-size:13px]"
+                                        className="opportunity-category-option [&:has(input:checked)]:border-[#28634f] [&:has(input:checked)]:bg-[#18231C] [&:has(input:checked)]:text-[#58CE87] [display:inline-flex] [min-height:38px] [align-items:center] [gap:8px] [padding:7px_11px] [border:1px_solid_#303a3e] [border-radius:999px] [background:#141A16] [color:#c7d2d3] [cursor:pointer] [font-size:13px]"
                                         key={value}
                                       >
                                         <input
-                                          className="[width:15px] [height:15px] [margin:0] [accent-color:#19c990]"
+                                          className="[width:15px] [height:15px] [margin:0] [accent-color:#55D188]"
                                           type="checkbox"
                                           name="categories"
                                           value={value}
@@ -387,7 +387,7 @@ export default function ProfilePage(props) {
                                     Experience sought
                                   </label>
                                   <select
-                                    className="[display:block] [width:100%] [height:48px] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [padding:0_40px_0_14px] [appearance:none] [background-color:#0d1215] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2] focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+                                    className="[display:block] [width:100%] [height:48px] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease] [padding:0_40px_0_14px] [appearance:none] [background-color:#141A16] [background-image:url(data:image/svg+xml,%3Csvg_xmlns='http://www.w3.org/2000/svg'_width='16'_height='16'_viewBox='0_0_16_16'_fill='none'%3E%3Cpath_d='m4_6_4_4_4-4'_stroke='%2391a2a5'_stroke-width='1.5'_stroke-linecap='round'_stroke-linejoin='round'/%3E%3C/svg%3E)] [background-position:right_14px_center] [background-repeat:no-repeat] [cursor:pointer] [line-height:1.2] focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
                                     id="opportunity-experience"
                                     name="experienceSought"
                                     value={opportunityForm.experienceSought}
@@ -418,7 +418,7 @@ export default function ProfilePage(props) {
                                     City (optional)
                                   </label>
                                   <input
-                                    className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+                                    className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
                                     id="profile-opportunity-city"
                                     name="city"
                                     type="text"
@@ -478,7 +478,7 @@ export default function ProfilePage(props) {
                         </section>
                       ) : page === "settings" && isOwnProfile ? (
                         <section
-                          className="profile-panel [padding:clamp(24px,_5vw,_48px)] [border:1px_solid_#252d31] [border-radius:20px] [background:#141a1e]"
+                          className="profile-panel [padding:clamp(24px,_5vw,_48px)] [border:1px_solid_#252d31] [border-radius:20px] [background:#151C18]"
                           aria-labelledby="settings-heading"
                         >
                           <h1
@@ -518,7 +518,7 @@ export default function ProfilePage(props) {
                                       {labels[fieldName]}
                                     </label>
                                     <input
-                                      className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+                                      className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
                                       id={fieldName}
                                       name={fieldName}
                                       type="password"
@@ -567,14 +567,14 @@ export default function ProfilePage(props) {
                       ) : (
                         <>
                           <article
-                            className="profile-panel public-profile w-full rounded-2xl border border-[#252d31] bg-[#111719] px-7 pb-6 pt-7 max-[760px]:px-4 max-[760px]:pb-5 max-[760px]:pt-5"
+                            className="profile-panel public-profile w-full rounded-2xl border border-[#252d31] bg-[#101512] px-7 pb-6 pt-7 max-[760px]:px-4 max-[760px]:pb-5 max-[760px]:pt-5"
                             aria-labelledby="profile-name"
                           >
                             <header
                               className={`profile-header grid items-center gap-x-5 gap-y-4 ${isOwnProfile ? "grid-cols-[88px_minmax(0,1fr)_auto] max-[760px]:grid-cols-[72px_minmax(0,1fr)]" : "grid-cols-[88px_minmax(0,1fr)] max-[760px]:grid-cols-[72px_minmax(0,1fr)]"}`}
                             >
                               <div
-                                className="profile-avatar grid size-[88px] shrink-0 place-items-center rounded-full border border-[#28634f] bg-accent-dark text-[30px] font-bold text-accent-light max-[760px]:size-[72px] max-[760px]:text-[25px]"
+                                className="profile-avatar grid size-[88px] shrink-0 place-items-center rounded-full border border-[#28634f] bg-selected text-[30px] font-bold text-accent-light max-[760px]:size-[72px] max-[760px]:text-[25px]"
                                 aria-hidden="true"
                               >
                                 {profileData.name.slice(0, 1).toUpperCase()}
@@ -589,7 +589,7 @@ export default function ProfilePage(props) {
                                   </h1>
                                   {isOwnProfile && (
                                     <button
-                                      className="profile-edit-button [display:inline-grid] [width:36px] [height:36px] [flex:0_0_auto] [place-items:center] [margin-bottom:5px] [padding:0] [border:1px_solid_#303a3e] [border-radius:50%] [background:transparent] [color:#aebabb] [cursor:pointer] hover:[border-color:#65e7b7] hover:[background:#1b3029] hover:[color:#65e7b7] focus-visible:[outline:2px_solid_#9af1d0] focus-visible:[outline-offset:2px]"
+                                      className="profile-edit-button [display:inline-grid] [width:36px] [height:36px] [flex:0_0_auto] [place-items:center] [margin-bottom:5px] [padding:0] [border:1px_solid_#303a3e] [border-radius:50%] [background:transparent] [color:#aebabb] [cursor:pointer] hover:[border-color:#58CE87] hover:[background:#18231C] hover:[color:#58CE87] focus-visible:[outline:2px_solid_#9af1d0] focus-visible:[outline-offset:2px]"
                                       type="button"
                                       aria-label="Edit profile"
                                       title="Edit profile"
@@ -673,7 +673,7 @@ export default function ProfilePage(props) {
                             {inviteSuccess && <p className="mt-3 text-sm text-accent" role="status">{inviteSuccess}</p>}
                             {inviteDialogOpen && (
                               <div className="fixed inset-0 z-[80] grid place-items-center overflow-y-auto bg-black/70 p-4" onMouseDown={(event) => { if (event.target === event.currentTarget) setInviteDialogOpen(false); }}>
-                                <section className="grid w-full max-w-lg gap-4 rounded-2xl border border-[#303a3e] bg-[#111719] p-5 shadow-2xl sm:p-6" role="dialog" aria-modal="true" aria-labelledby="invite-developer-heading">
+                                <section className="grid w-full max-w-lg gap-4 rounded-2xl border border-[#303a3e] bg-[#101512] p-5 shadow-2xl sm:p-6" role="dialog" aria-modal="true" aria-labelledby="invite-developer-heading">
                                   <header className="flex items-start justify-between gap-4">
                                     <div>
                                       <h2 className="m-0 text-xl font-bold text-ink" id="invite-developer-heading">Invite {profileData.name}</h2>
@@ -685,7 +685,7 @@ export default function ProfilePage(props) {
                                     <form className="grid gap-4" onSubmit={sendDeveloperInvitation}>
                                       <label className="grid gap-2 text-sm font-semibold text-ink">
                                         Invite to
-                                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={inviteDestinationType} onChange={(event) => {
+                                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-ink" value={inviteDestinationType} onChange={(event) => {
                                           const nextType = event.target.value;
                                           setInviteDestinationType(nextType);
                                           const destinations = nextType === "CHAT_INVITATION" ? inviteOptions.opportunities : inviteOptions.collabspaces;
@@ -697,7 +697,7 @@ export default function ProfilePage(props) {
                                       </label>
                                       <label className="grid gap-2 text-sm font-semibold text-ink">
                                         {inviteDestinationType === "CHAT_INVITATION" ? "Open opportunity" : "Collabspace"}
-                                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#0d1315] px-3 text-ink" value={inviteDestinationId} onChange={(event) => setInviteDestinationId(event.target.value)}>
+                                        <select className="min-h-11 rounded-lg border border-[#354044] bg-[#141A16] px-3 text-ink" value={inviteDestinationId} onChange={(event) => setInviteDestinationId(event.target.value)}>
                                           {(inviteDestinationType === "CHAT_INVITATION" ? inviteOptions.opportunities : inviteOptions.collabspaces).map((destination) => (
                                             <option key={destination.id} value={destination.id}>
                                               {destination.name ?? destination.description.slice(0, 100)}
@@ -707,13 +707,13 @@ export default function ProfilePage(props) {
                                       </label>
                                       <label className="grid gap-2 text-sm font-semibold text-ink">
                                         Optional message
-                                        <textarea className="min-h-24 resize-y rounded-lg border border-[#354044] bg-[#0d1315] p-3 text-ink" maxLength={1000} value={inviteMessage} onChange={(event) => setInviteMessage(event.target.value)} placeholder="Add a short note (optional)" />
+                                        <textarea className="min-h-24 resize-y rounded-lg border border-[#354044] bg-[#141A16] p-3 text-ink" maxLength={1000} value={inviteMessage} onChange={(event) => setInviteMessage(event.target.value)} placeholder="Add a short note (optional)" />
                                       </label>
                                       {inviteOptions.opportunities.length === 0 && inviteOptions.collabspaces.length === 0 && <p className="m-0 text-sm text-muted">You need an open opportunity or a Collabspace you own or administer before you can invite someone.</p>}
                                       {inviteError && <p className="m-0 text-sm text-[#ffaaaa]" role="alert">{inviteError}</p>}
                                       <footer className="flex justify-end gap-2">
                                         <button className="min-h-10 cursor-pointer rounded-lg border border-[#303a3e] bg-transparent px-4 text-sm font-semibold text-ink hover:bg-[#222d31]" type="button" onClick={() => setInviteDialogOpen(false)}>Cancel</button>
-                                        <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-accent px-4 text-sm font-bold text-[#06251a] hover:bg-[#28dfa5] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={inviteSubmitting || !inviteDestinationId || (inviteDestinationType === "CHAT_INVITATION" ? inviteOptions.opportunities.length === 0 : inviteOptions.collabspaces.length === 0)}>
+                                        <button className="min-h-10 cursor-pointer rounded-lg border-0 bg-button px-4 text-sm font-bold text-[#f4fff7] hover:bg-button-hover disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={inviteSubmitting || !inviteDestinationId || (inviteDestinationType === "CHAT_INVITATION" ? inviteOptions.opportunities.length === 0 : inviteOptions.collabspaces.length === 0)}>
                                           {inviteSubmitting ? "Sending…" : "Send invitation"}
                                         </button>
                                       </footer>
@@ -786,7 +786,7 @@ export default function ProfilePage(props) {
                               }}
                             >
                               <section
-                                className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none]"
+                                className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none]"
                                 role="dialog"
                                 aria-modal="true"
                                 aria-labelledby="edit-profile-heading"
@@ -822,7 +822,7 @@ export default function ProfilePage(props) {
                                           Name
                                         </label>
                                         <input
-                                          className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+                                          className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
                                           id="edit-name"
                                           name="name"
                                           value={profileForm.name}
@@ -845,7 +845,7 @@ export default function ProfilePage(props) {
                                           Username
                                         </label>
                                         <input
-                                          className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+                                          className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
                                           id="edit-username"
                                           name="username"
                                           value={profileForm.username}
@@ -915,7 +915,7 @@ export default function ProfilePage(props) {
                               }}
                             >
                               <section
-                                className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 settings-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none]"
+                                className="profile-edit-modal [&::-webkit-scrollbar]:hidden max-[600px]:[&:not(.confirmation-modal)]:w-full max-[600px]:[&:not(.confirmation-modal)]:max-w-none max-[600px]:[&:not(.confirmation-modal)]:h-dvh max-[600px]:[&:not(.confirmation-modal)]:max-h-dvh max-[600px]:[&:not(.confirmation-modal)]:rounded-none max-[600px]:[&:not(.confirmation-modal)]:border-0 max-[600px]:[&:not(.confirmation-modal)]:p-0 settings-modal [width:min(100%,_760px)] [max-height:min(88vh,_820px)] [max-height:min(88dvh,_820px)] [display:flex] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)] [scrollbar-width:none]"
                                 role="dialog"
                                 aria-modal="true"
                                 aria-labelledby="settings-heading"
@@ -968,7 +968,7 @@ export default function ProfilePage(props) {
                                               {labels[fieldName]}
                                             </label>
                                             <input
-                                              className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)]"
+                                              className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)]"
                                               id={fieldName}
                                               name={fieldName}
                                               type="password"
@@ -1049,7 +1049,7 @@ export default function ProfilePage(props) {
                               }}
                             >
                               <section
-                                className="profile-edit-modal confirmation-modal flex max-h-[80dvh] w-[min(100%,_420px)] flex-col overflow-hidden rounded-[18px] border border-[#303a3e] bg-[#141a1e] p-0 shadow-[0_24px_80px_rgb(0_0_0_/_45%)] [&::-webkit-scrollbar]:hidden"
+                                className="profile-edit-modal confirmation-modal flex max-h-[80dvh] w-[min(100%,_420px)] flex-col overflow-hidden rounded-[18px] border border-[#303a3e] bg-[#151C18] p-0 shadow-[0_24px_80px_rgb(0_0_0_/_45%)] [&::-webkit-scrollbar]:hidden"
                                 role="alertdialog"
                                 aria-modal="true"
                                 aria-labelledby="delete-opportunity-heading"
@@ -1125,7 +1125,7 @@ export default function ProfilePage(props) {
                               >
                                 {isOwnProfile && (
                                   <button
-                                    className={`[display:inline-flex] [align-items:center] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${profileTab === "requests" ? "[border-bottom-color:#19c990] [color:#65e7b7]" : ""}`}
+                                    className={`[display:inline-flex] [align-items:center] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${profileTab === "requests" ? "[border-bottom-color:#55D188] [color:#58CE87]" : ""}`}
                                     type="button"
                                     aria-pressed={profileTab === "requests"}
                                     onClick={() => setProfileTab("requests")}
@@ -1134,7 +1134,7 @@ export default function ProfilePage(props) {
                                   </button>
                                 )}
                                 <button
-                                  className={`[display:inline-flex] [align-items:center] [gap:8px] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${!isOwnProfile || profileTab === "opportunities" ? "[border-bottom-color:#19c990] [color:#65e7b7]" : ""}`}
+                                  className={`[display:inline-flex] [align-items:center] [gap:8px] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${!isOwnProfile || profileTab === "opportunities" ? "[border-bottom-color:#55D188] [color:#58CE87]" : ""}`}
                                   type="button"
                                   aria-pressed={
                                     !isOwnProfile || profileTab === "opportunities"
@@ -1147,7 +1147,7 @@ export default function ProfilePage(props) {
                                 </button>
                                 {isOwnProfile && (
                                   <button
-                                    className={`[display:inline-flex] [align-items:center] [gap:8px] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${profileTab === "saved" ? "[border-bottom-color:#19c990] [color:#65e7b7]" : ""}`}
+                                    className={`[display:inline-flex] [align-items:center] [gap:8px] [margin-bottom:-1px] [padding:10px_2px_12px] [border:0] [border-bottom:2px_solid_transparent] [background:transparent] [color:#9baeb3] [cursor:pointer] [font:inherit] [font-weight:600] ${profileTab === "saved" ? "[border-bottom-color:#55D188] [color:#58CE87]" : ""}`}
                                     type="button"
                                     aria-pressed={profileTab === "saved"}
                                     onClick={() => setProfileTab("saved")}
@@ -1281,7 +1281,7 @@ export default function ProfilePage(props) {
                                   ) : outgoingItems.length > 0 ? (
                                     <ol className="grid list-none gap-3 p-0">
                                       {outgoingItems.map((request) => (
-                                        <li className="rounded-xl border border-[#252d31] bg-[#111719] p-4" key={request.id}>
+                                        <li className="rounded-xl border border-[#252d31] bg-[#101512] p-4" key={request.id}>
                                           <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div className="min-w-0">
                                               <p className="m-0 font-semibold text-ink">To {request.recipient?.name ?? "Developer"} <span className="font-normal text-muted">@{request.recipient?.username ?? "unknown"}</span></p>

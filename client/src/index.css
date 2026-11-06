@@ -1,16 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  --color-page: #0d1114;
-  --color-surface: #141a1e;
+  --color-page: #0A0E0C;
+  --color-surface: #101512;
   --color-border: #252d31;
   --color-ink: #edf3f4;
   --color-muted: #91a2a5;
-  --color-accent: #19c990;
-  --color-accent-light: #65e7b7;
-  --color-accent-dark: #1b3029;
-}
+  --color-accent: #55D188;
+  --color-accent-light: #58CE87;
+  --color-accent-dark: #18231C;
+  --color-chat: #0C110E;
+  --color-sidebar: #0D1210;
+  --color-chat-header: #0D120F;
+  --color-composer: #141A16;
+  --color-message: #151C18;
+  --color-sent-message: #1C5937;
+  --color-selected: #18231C;
+  --color-button: #288653;
+  --color-button-hover: #31A262;
+  --color-navigation-active: #68D996;
+  --color-selection: #45BD76;
+  --color-focus: #48C97B;
 
+  --animate-chat-empty-state-in: chat-empty-state-in 240ms ease-out both;
+
+  @keyframes chat-empty-state-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
 * {
   box-sizing: border-box;
 }
@@ -45,7 +70,7 @@ textarea {
   input:not([type="checkbox"]):not([type="radio"]),
   select,
   textarea {
-    @apply w-full rounded-xl border border-[#39464a] bg-[#0d1215] px-3.5 text-ink outline-none transition-[border-color,box-shadow];
+    @apply w-full rounded-xl border border-[#39464a] bg-composer px-3.5 text-ink outline-none transition-[border-color,box-shadow];
     min-height: 3rem;
   }
 
@@ -56,41 +81,13 @@ textarea {
   input:not([type="checkbox"]):not([type="radio"]):focus-visible,
   select:focus-visible,
   textarea:focus-visible {
-    @apply border-accent;
-    box-shadow: 0 0 0 3px rgb(25 201 144 / 15%);
+    @apply border-focus;
+    box-shadow: 0 0 0 3px rgb(72 201 123 / 15%);
   }
 
   input[aria-invalid="true"],
   select[aria-invalid="true"],
   textarea[aria-invalid="true"] {
     @apply border-[#f27a7a];
-  }
-}
-
-.app-page {
-  width: 100%;
-  max-width: 1200px;
-  min-width: 0;
-  min-height: 100dvh;
-  margin-inline: auto;
-  padding: 32px;
-}
-
-.app-page--chat {
-  height: 100dvh;
-  min-height: 0;
-  padding: 16px 20px;
-}
-
-@media (max-width: 760px) {
-  .app-page {
-    min-height: 100dvh;
-    padding: 16px 16px calc(104px + env(safe-area-inset-bottom));
-  }
-
-  .app-page--chat {
-    height: calc(100dvh - 68px - env(safe-area-inset-bottom));
-    min-height: 0;
-    padding: 8px 0 0;
   }
 }

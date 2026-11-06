@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 const buttonVariants = {
   primary:
-    "min-h-12 w-full cursor-pointer rounded-xl border-0 bg-accent px-4 font-bold text-[#06251a] transition-[background,transform] duration-[120ms] hover:enabled:bg-[#28dfa5] hover:enabled:-translate-y-px focus-visible:outline-3 focus-visible:outline-[#9af1d0] focus-visible:outline-offset-3 disabled:cursor-wait disabled:opacity-70",
+    "min-h-12 w-full cursor-pointer rounded-xl border-0 bg-button px-4 font-bold text-[#f4fff7] transition-[background,transform] duration-[120ms] hover:enabled:bg-button-hover hover:enabled:-translate-y-px focus-visible:outline-3 focus-visible:outline-focus focus-visible:outline-offset-3 disabled:cursor-wait disabled:opacity-70",
   secondary:
     "inline-flex min-h-[42px] cursor-pointer items-center rounded-[10px] border border-[#303a3e] bg-[#1b2327] px-[15px] font-semibold text-ink no-underline hover:border-[#59696c] hover:bg-[#222d31]",
   danger:
@@ -99,7 +99,7 @@ export function ConfirmDialog({ confirmation, onClose }) {
       }}
     >
       <section
-        className="w-full max-w-lg rounded-2xl border border-[#354044] bg-[#111719] p-5 shadow-[0_24px_72px_rgb(0_0_0_/_55%)] sm:p-6"
+        className="w-full max-w-lg rounded-2xl border border-[#354044] bg-[#101512] p-5 shadow-[0_24px_72px_rgb(0_0_0_/_55%)] sm:p-6"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirmation-title"

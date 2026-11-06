@@ -1840,7 +1840,7 @@ function App() {
 
   if (isCheckingSession) {
     return (
-      <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0d1114]">
+      <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0A0E0C]">
         <p className="session-loading [color:#c0cece]">Checking sign-in...</p>
       </main>
     );
@@ -1848,9 +1848,9 @@ function App() {
 
   if (user && !user.username) {
     return (
-      <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0d1114]">
+      <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0A0E0C]">
         <section
-          className="auth-card [width:min(100%,_440px)] [padding:38px] [border:1px_solid_#252d31] [border-radius:20px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_24%)] [padding:28px_22px]"
+          className="auth-card [width:min(100%,_440px)] [padding:38px] [border:1px_solid_#252d31] [border-radius:20px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_24%)] [padding:28px_22px]"
           aria-labelledby="signed-in-heading"
         >
           {user.username && user.profileDetailsPromptPending ? (
@@ -1924,7 +1924,7 @@ function App() {
                     Username
                   </label>
                   <input
-                    className="focus:[border-color:#19c990] focus:[box-shadow:0_0_0_3px_rgb(25_201_144_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#0d1215] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
+                    className="focus:[border-color:#48C97B] focus:[box-shadow:0_0_0_3px_rgb(72_201_123_/_15%)] [width:100%] [min-height:48px] [padding:0_14px] [border:1px_solid_#303a3e] [border-radius:12px] [outline:none] [background:#141A16] [color:#f4f7f7] [transition:border-color_120ms_ease,_box-shadow_120ms_ease]"
                     id="google-username"
                     name="username"
                     type="text"
@@ -1972,9 +1972,9 @@ function App() {
 
   if (user?.profileDetailsPromptPending && !publicUsername) {
     return (
-      <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0d1114]">
+      <main className="auth-page [min-height:100vh] [display:grid] [place-items:center] [padding:32px_20px] [background:radial-gradient(ellipse_at_50%_0%,_rgb(23_92_73_/_16%),_transparent_45%),_#0A0E0C]">
         <section
-          className="auth-card [width:min(100%,_440px)] [padding:38px] [border:1px_solid_#252d31] [border-radius:20px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_24%)] [padding:28px_22px]"
+          className="auth-card [width:min(100%,_440px)] [padding:38px] [border:1px_solid_#252d31] [border-radius:20px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_24%)] [padding:28px_22px]"
           aria-labelledby="signed-in-heading"
         >
           <h1 className="max-[520px]:[font-size:26px]" id="signed-in-heading">
@@ -2151,7 +2151,7 @@ function App() {
 
     return (
       <main className="profile-page min-h-dvh bg-page p-0">
-        <div className="app-shell grid min-h-dvh min-w-0 grid-cols-[250px_minmax(0,1fr)] max-[760px]:grid-cols-[minmax(0,1fr)] max-[760px]:grid-rows-[auto_minmax(0,1fr)]">
+        <div className="app-shell grid min-h-dvh min-w-0 grid-cols-[250px_minmax(0,1fr)] max-[1024px]:grid-cols-[72px_minmax(0,1fr)] max-[760px]:grid-cols-[minmax(0,1fr)] max-[760px]:grid-rows-[auto_minmax(0,1fr)]">
           <AppSidebar
             user={user}
             activePage={
@@ -2181,7 +2181,7 @@ function App() {
           />
           {chatAlertToast && (
             <div
-              className="fixed bottom-6 right-6 z-[60] flex max-w-[min(92vw,_420px)] items-center gap-4 rounded-xl border border-[#354044] bg-[#141a1e] px-5 py-4 text-[#e9f1f4] shadow-xl"
+              className="fixed bottom-6 right-6 z-[60] flex max-w-[min(92vw,_420px)] items-center gap-4 rounded-xl border border-[#354044] bg-[#151C18] px-5 py-4 text-[#e9f1f4] shadow-xl"
               role="status"
               aria-live="polite"
             >
@@ -2195,7 +2195,7 @@ function App() {
                     : `New message from ${chatAlertToast.message?.sender?.name ?? "a developer"}.`}
               </span>
               <button
-                className="shrink-0 text-[#38e6b0] hover:text-white"
+                className="shrink-0 text-[#68D996] hover:text-white"
                 onClick={() => {
                   setChatAlertToast(null);
                   if (chatAlertToast.type === "COLLABORATION_REQUEST_ACCEPTED") {
@@ -2257,7 +2257,7 @@ function App() {
               }}
             >
               <section
-                className="profile-edit-modal confirmation-modal flex max-h-[80dvh] w-[min(100%,_420px)] flex-col overflow-hidden rounded-[18px] border border-[#303a3e] bg-[#141a1e] p-0 shadow-[0_24px_80px_rgb(0_0_0_/_45%)] [&::-webkit-scrollbar]:hidden"
+                className="profile-edit-modal confirmation-modal flex max-h-[80dvh] w-[min(100%,_420px)] flex-col overflow-hidden rounded-[18px] border border-[#303a3e] bg-[#151C18] p-0 shadow-[0_24px_80px_rgb(0_0_0_/_45%)] [&::-webkit-scrollbar]:hidden"
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby="delete-opportunity-heading"
@@ -2332,7 +2332,7 @@ function App() {
               }}
             >
               <section
-                className="profile-edit-modal confirmation-modal [display:flex] [width:min(100%,_420px)] [height:auto] [max-height:80dvh] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#141a1e] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)]"
+                className="profile-edit-modal confirmation-modal [display:flex] [width:min(100%,_420px)] [height:auto] [max-height:80dvh] [flex-direction:column] [overflow:hidden] [padding:0] [border:1px_solid_#303a3e] [border-radius:18px] [background:#151C18] [box-shadow:0_24px_80px_rgb(0_0_0_/_45%)]"
                 role="alertdialog"
                 aria-modal="true"
                 aria-labelledby="complete-opportunity-heading"

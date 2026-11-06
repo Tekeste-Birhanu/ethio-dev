@@ -18,7 +18,7 @@ function renderMessage(content) {
       if (!["http:", "https:"].includes(url.protocol)) return part;
       return (
         <a
-          className="break-all text-[#6be9c1] underline"
+          className="break-all text-accent-light underline"
           href={url.href}
           key={`${url.href}-${index}`}
           rel="noreferrer noopener"
@@ -427,10 +427,10 @@ export default function CollabspaceGroupChat({
   return (
     <>
     <ConfirmDialog confirmation={confirmation} onClose={closeConfirmation} />
-    <section className="grid h-[min(68dvh,780px)] min-h-[480px] grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-[#293236] bg-[#111719]" aria-label="Collabspace group chat">
+    <section className="grid h-[min(68dvh,780px)] min-h-[480px] grid-rows-[minmax(0,1fr)_auto] overflow-hidden rounded-2xl border border-[#293236] bg-surface" aria-label="Collabspace group chat">
       <div
         ref={scrollRef}
-        className="flex min-h-0 flex-col gap-3 overflow-y-auto p-4 sm:p-5"
+        className="flex min-h-0 flex-col gap-3 overflow-y-auto bg-chat p-4 sm:p-5"
         onScroll={(event) => {
           const element = event.currentTarget;
           shouldStickToBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 80;
@@ -453,16 +453,16 @@ export default function CollabspaceGroupChat({
           const mayDelete = ownMessage || canDeleteForOthers;
             const senderName = message.sender?.name ?? "Member";
           return (
-            <article className={`relative grid max-w-[88%] gap-1 rounded-2xl px-4 py-3 sm:max-w-[75%] ${ownMessage ? "self-end bg-[#17483c]" : "self-start bg-[#20292d]"}`} key={message.id ?? message.clientMessageId}>
-              <span className="block pr-8 text-xs font-semibold text-[#8debc9]">
+            <article className={`relative grid max-w-[88%] gap-1 rounded-2xl px-4 py-3 sm:max-w-[75%] ${ownMessage ? "self-end bg-sent-message" : "self-start bg-message"}`} key={message.id ?? message.clientMessageId}>
+              <span className="block pr-8 text-xs font-semibold text-accent-light">
                 {ownMessage ? "You" : senderName}
               </span>
               {isEditing ? (
                 <div className="grid gap-2">
-                  <textarea className="min-h-20 w-full resize-y rounded-lg border border-[#354044] bg-[#0d1315] p-2 text-sm text-ink outline-none focus:border-[#38e6b0]" maxLength={5000} value={editingDraft} onChange={(event) => setEditingDraft(event.target.value)} aria-label="Edit group message" />
+                  <textarea className="min-h-20 w-full resize-y rounded-lg border border-[#354044] bg-[#141A16] p-2 text-sm text-ink outline-none focus:border-[#48C97B]" maxLength={5000} value={editingDraft} onChange={(event) => setEditingDraft(event.target.value)} aria-label="Edit group message" />
                   <div className="flex justify-end gap-3 text-xs">
                     <button className="text-muted underline" type="button" onClick={() => { setEditingMessageId(""); setEditingDraft(""); }}>Cancel</button>
-                    <button className="text-[#6be9c1] underline disabled:opacity-50" type="button" disabled={!editingDraft.trim() || actionId === message.id} onClick={() => editMessage(message)}>{actionId === message.id ? "Saving…" : "Save"}</button>
+                    <button className="text-accent-light underline disabled:opacity-50" type="button" disabled={!editingDraft.trim() || actionId === message.id} onClick={() => editMessage(message)}>{actionId === message.id ? "Saving…" : "Save"}</button>
                   </div>
                 </div>
               ) : (
@@ -473,7 +473,7 @@ export default function CollabspaceGroupChat({
               </time>
               {canWrite && message.id && !isEditing && (ownMessage || canDeleteForOthers) && (
                 <details className="absolute right-2 top-1 z-20 text-xs">
-                  <summary className="grid size-7 cursor-pointer list-none place-items-center rounded-full text-[#b6c5c6] hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-[#38e6b0]" aria-label="Group message actions">
+                  <summary className="grid size-7 cursor-pointer list-none place-items-center rounded-full text-[#b6c5c6] hover:bg-white/10 hover:text-ink focus-visible:outline-2 focus-visible:outline-[#48C97B]" aria-label="Group message actions">
                     <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
                   </summary>
                   <div className="absolute right-0 top-full z-20 mt-1 w-28 rounded-xl border border-[#303a3e] bg-[#171f23] p-1 shadow-[0_14px_32px_rgb(0_0_0_/_32%)]">
@@ -497,8 +497,8 @@ export default function CollabspaceGroupChat({
           <p className="m-0 text-center text-sm text-muted">This group chat is read only.</p>
         ) : (
           <form className="flex items-end gap-2" onSubmit={sendMessage}>
-            <input className="min-h-12 min-w-0 flex-1 rounded-xl border border-[#354044] bg-[#0d1315] px-4 text-sm text-ink outline-none placeholder:text-[#87979c] focus:border-[#38e6b0]" type="text" maxLength={5000} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Write a message or paste a link" aria-label="Group chat message" />
-            <button className="min-h-12 shrink-0 rounded-xl border-0 bg-[#1b9b76] px-4 font-bold text-[#061d16] hover:bg-[#24bd91] disabled:cursor-not-allowed disabled:opacity-50" type="submit" disabled={!draft.trim()}>Send</button>
+            <input className="min-h-12 min-w-0 flex-1 rounded-xl border border-[#354044] bg-composer px-4 text-sm text-ink outline-none placeholder:text-[#87979c] focus:border-[#48C97B]" type="text" maxLength={5000} value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Write a message or paste a link" aria-label="Group chat message" />
+            <button className="min-h-12 shrink-0 rounded-xl border-0 bg-button px-4 font-bold text-[#f4fff7] hover:enabled:bg-button-hover disabled:cursor-not-allowed disabled:bg-[#1b2529] disabled:text-[#718080]" type="submit" disabled={!draft.trim()}>Send</button>
           </form>
         )}
       </div>
